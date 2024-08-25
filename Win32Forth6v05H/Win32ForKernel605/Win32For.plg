@@ -1,0 +1,53 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: Win32For - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x409 /fo"WinRel/Forth.res" /d "NDEBUG" "Z:\Win32ForKernel605\Forth.rc"" 
+Creating temporary file "C:\DOCUME~1\HOWERD~1\LOCALS~1\Temp\RSPDF.tmp" with contents
+[
+/nologo /ML /W4 /GX /O1 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MERGE_DATA_" /FR"WinRel/" /Fp"WinRel/Win32For.pch" /YX /Fo"WinRel/" /Fd"WinRel/" /FD /c 
+"Z:\Win32ForKernel605\Forth.c"
+"Z:\Win32ForKernel605\Term.c"
+]
+Creating command line "cl.exe @C:\DOCUME~1\HOWERD~1\LOCALS~1\Temp\RSPDF.tmp" 
+Creating temporary file "C:\DOCUME~1\HOWERD~1\LOCALS~1\Temp\RSPE0.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:no /pdb:"WinRel/FKernel.pdb" /machine:I386 /out:"FKernel.exe" /filealign:512 
+.\WinRel\Forth.obj
+.\WinRel\Term.obj
+.\WinRel\Forth.res
+]
+Creating command line "link.exe @C:\DOCUME~1\HOWERD~1\LOCALS~1\Temp\RSPE0.tmp"
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+Forth.c
+C:\Program Files\Microsoft Visual Studio\VC98\INCLUDE\rpcasync.h(45) : warning C4115: '_RPC_ASYNC_STATE' : named type definition in parentheses
+Term.c
+C:\Program Files\Microsoft Visual Studio\VC98\INCLUDE\rpcasync.h(45) : warning C4115: '_RPC_ASYNC_STATE' : named type definition in parentheses
+Linking...
+Creating command line "bscmake.exe /nologo /o"WinRel/Win32For.bsc"  .\WinRel\Forth.sbr .\WinRel\Term.sbr"
+Creating browse info file...
+<h3>Output Window</h3>
+Creating temporary file "C:\DOCUME~1\HOWERD~1\LOCALS~1\Temp\RSPE2.bat" with contents
+[
+@echo off
+copy FKernel.exe Win32For.exe
+copy FKernel.exe Kernel.bin
+]
+Creating command line "C:\DOCUME~1\HOWERD~1\LOCALS~1\Temp\RSPE2.bat"
+
+        1 file(s) copied.
+        1 file(s) copied.
+
+
+
+<h3>Results</h3>
+FKernel.exe - 0 error(s), 2 warning(s)
+</pre>
+</body>
+</html>

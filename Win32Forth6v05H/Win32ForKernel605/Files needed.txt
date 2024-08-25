@@ -1,0 +1,34 @@
+Files required for Visual C++ V6
+
+Win32For.dsw
+Win32For.dsp
+
+Forth.c
+Forth.rc
+Term.c
+
+Forth.h
+Term.h
+ResForth.h
+
+App_Icon.ico
+Hand.cur
+HArrow.cur
+Magnify.cur
+SplitH.cur
+SplitV.cur
+Win32For.ico
+
+
+Output (all these are identical):
+
+FKernel.exe
+Win32For.exe
+Kernel.bin
+
+
+Required:
+
+FKernel.img
+Win32For.img
+Wincon.dll

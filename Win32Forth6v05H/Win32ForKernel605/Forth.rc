@@ -1,0 +1,71 @@
+//Microsoft Visual C++ generated resource script.
+//
+#include "resforth.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "forth.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resforth.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""forth.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+ICON_FORTH              ICON    DISCARDABLE     "WIN32FOR.ICO"
+APP_ICON                ICON    DISCARDABLE     "APP_ICON.ICO"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+IDC_SPLITV              CURSOR  DISCARDABLE     "SPLITV.CUR"
+IDC_SPLITH              CURSOR  DISCARDABLE     "SPLITH.CUR"
+IDC_MAGNIFY             CURSOR  DISCARDABLE     "MAGNIFY.CUR"
+IDC_HAND                CURSOR  DISCARDABLE     "HAND.CUR"
+IDC_HARROW              CURSOR  DISCARDABLE     "harrow.cur"
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

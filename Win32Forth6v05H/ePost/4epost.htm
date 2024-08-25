@@ -1,0 +1,257 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Manual 4ePost version 1.</title>
+</head>
+
+<body bgcolor="#FEFFE6">
+
+<p><font size="5"><b>Manual 4ePost</b></font><font size="2"><b>
+version 1.0</b></font></p>
+
+<p><font size="4"><b>Introduction<br>
+</b>4ePost is a mailer which is able to exchange email or news in
+ASCII using the Internet.<br>
+The special features of 4ePost are: It&#146;s speed and the
+spamstring.<br>
+Warning: This is *not* a beginners pack.<br>
+Minimal needs:<br>
+1. </font><a href="http://home.planet.nl/~josv"><font size="4">Win32Forth
+Version: 4.2 Build: 0671</font></a><font size="4"><br>
+2. Windows95</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4"> or better<br>
+3. Internet Explorer 4.0 or better<br>
+</font></p>
+
+<p><font size="4"><b>Status 4ePost:<br>
+</b>This is a test release. So there might be some bugs.<br>
+4ePost is an open project.<br>
+That means it is not finished yet and you are free to contribute
+to this pack.<br>
+mailto &quot;Jos v.d.Ven&quot; </font><a
+href="mailto:josv@wxs.nl"><font size="4">josv@wxs.nl</font></a><font
+size="4"> when you are serious.<br>
+Do not forget my full name, otherwise I might miss your message.<br>
+Add an entry to </font><a href="#Bug/whishlist for 4ePost"><font
+size="4">the Bug/wishlist</font></a><font size="4"> and your name
+when you have the intension to solve it.<br>
+Send the entry to me so I can change the </font><a
+href="#Bug/whishlist for 4ePost"><font size="4">the Bug/wishlist</font></a><font
+size="4"> on my site at </font><a
+href="http://home.planet.nl/~josv"><font size="4">http://home.planet.nl/~josv</font></a><font
+size="4">. Put your name and date near your modifications when
+you change sources. Check </font><a
+href="http://home.planet.nl/~josv"><font size="4">my site</font></a><font
+size="4"> for progress.<br>
+An updated version of <strong>4ePost</strong> might have another
+database definition.<br>
+In this case you will loose all you messages when you update the
+program.<br>
+Save your valuable messages as a txt-file in another directory.
+Use a clear name.<br>
+4ePost is free and you are allowed to use it as you wish at <b>your
+own risk</b>.</font></p>
+
+<p><font size="4"><b>Preparing Win32Forth and WinView for 4ePost:<br>
+</b>You can skip this section when you use Windows95</font><font
+size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4">.<br>
+In Windows2000</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4">, WindowsXP</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4"> and some versions of Windows NT</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4"> you might experience an error when Winview gets to the
+Setforeground.<u><br>
+Work around:</u><b><br>
+</b>An easy way out for setforegroundwindow in Winview is to<br>
+remove or disable ( 2 times ) <b>setforegroundwindow: self<br>
+</b>Then choose <b>Make Winview </b>of the Win32Forth package.<br>
+Check the date and name of new image it might be Wv.img rename it
+to Winview.img<br>
+Note: On Windows NT</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4"> Windows2000</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4"> and WindowsXP</font><font size="1"><sup><sup><sup><cite>tm</cite></sup></sup></sup></font><font
+size="4"> there should only be a Winview.exe It makes Winview
+more stable.I use it and I do not miss it.</font></p>
+
+<p><font size="4"><b>Startup:<br>
+</b>Compile </font><font size="5"><strong>_</strong></font><font
+size="4"><strong>4ePost.f </strong>( Do not forget the underscore
+)<br>
+The first time a number of questions are asked.<br>
+When you are entering the password, you must enter the password
+with which you receive email.<br>
+The answers will be saved for the next time.<br>
+Resize the window, open the menu <b>accounts</b> and add your
+newsgroups en mail lists.<br>
+Close 4ePost and restart 4ePost by recompiling _4ePost.f<br>
+Now you are ready to send or receive mail.<br>
+When you would like to change your own account you will have to<br>
+follow the steps at </font><a href="#Restart for a new startup:"><font
+size="4">restart for a new startup.</font></a></p>
+
+<p><font size="4"><b>Receiving mail:<br>
+</b>Received mail or news will be clustered.<br>
+A cluster can be an account, newsgroup, list or an email address
+or a part of anything you find in the header fields: <b>From: To:
+Cc:</b> and <b>Bcc:<br>
+</b>When a message does not fit in one the defined clusters it is
+considered to be spam.<br>
+There is a separate cluster for spam.<br>
+Check the spam cluster when not all received messages are shown. <br>
+A spamstring protects your personal account.<br>
+The default spamstring begins with a wildcard ( * ) followed by
+you email address<br>
+In 4ePost a wildcard represents a number of unknown characters
+before the next character. The level of spam can be reduced when
+you include a part of your name in it.<br>
+EG: <br>
+Your name is Leonardo da Vincy and your email address is: </font><a
+href="mailto:leon@wxs.com"><font size="4">leon@wxs.com</font></a><font
+size="4"><br>
+During the first startup there was a cluster defined as </font><a
+href="mailto:leon@wxs.com"><font size="4">leon@wxs.com</font></a><font
+size="4"><br>
+A good spamstring might be *L*Vin*</font><a
+href="mailto:leon@wxs.com"><font size="4">leon@wxs.com</font></a><font
+size="4"><br>
+As soon as you get mail there will be a check to see if indeed
+something containing a L*Vin*</font><a href="mailto:leon@wxs.com"><font
+size="4">leon@wxs.com</font></a><font size="4"> is in the email
+address. When it is in the email in the header fields <b>From:
+To: Cc:</b> and <b>Bcc: </b>the message will be shown in the
+cluster </font><a href="mailto:leon@wxs.com"><font size="4">leon@wxs.com</font></a><font
+size="4"><br>
+Notes: <br>
+<strong>1.</strong>Clusters and spamstrings are case sensitive.<br>
+<strong>2.</strong>A spamstring must start with a wildcard
+otherwise all your mail might be spam.<br>
+<strong>3.</strong>Substrings between the wildcards must be
+unique!<br>
+<strong>4.</strong>Only your account is checked for spam.<br>
+Messages with spam can be deleted without downloading the body of
+the message.<br>
+Open the menu <strong>Options </strong>and choose <b>Include spam
+</b>to receive spam or not.<br>
+Do not do this at the start. Look some time what is going in your
+spamcluster.<br>
+Test your spamstring by sending an email to yourself.<br>
+<strong><br>
+Seeing mail:</strong><br>
+As soon as you received mail you will only see new mail which is
+not in the spamcluster. When you open the menu <strong>Messages </strong>and
+choose <strong>Show all messages </strong>you will see all the
+messages again. To see spam you will have to open the
+spamcluster. Click 2 times on <strong>Spam</strong> in the
+treeview to do this.<br>
+Attachments can be extracted using a decoder like UUDEVIEW FOR
+WINDOWS<br>
+Messages with long lines can be seen by copying and pasting them
+into wordpad.<br>
+</font></p>
+
+<p><font size="4"><b>The addressbook:<br>
+</b>Anyone you add to the addressbook can be emailed. <br>
+Open the menu <strong>Accounts</strong> and choose <strong>Add to
+addressbook</strong>.<br>
+Add yourself and send an email to yourself</font></p>
+
+<p><font size="4"><b>Sending Mail:</b><br>
+1. Select a message, a cluster or a person from the addressbook ,
+<br>
+2. Open the menu <b>Messages</b>. Choose: <b>Prepare a reply or
+new message<br>
+</b>3. Accept or change the subjectline.<br>
+4. Write your mail in WinView using the new file.<br>
+5. <strong>Save</strong> and <b>close </b>the message in WinView<br>
+6. Open the menu <b>Messages</b>. Choose: <b>Send message<br>
+</b>7. Check if the person or newsgroup is right and put it in
+your outbox.<br>
+8. The next time you open the menu <b>Internet</b> and choose <b>Get/send
+mail and News</b> all messages will be send.<br>
+When you would like to test the newsmailer you can use <strong>alt.test.clienttest</strong>.<br>
+<strong>Notes: <br>
+1.</strong>Your mail will not be received when a cluster has an
+invalid email address or newsgroup name.<br>
+2.When a message is deleted from the outbox it will not be send.</font></p>
+
+<p><font size="4"><b>Deleting mail or cluster:</b><br>
+Select your cluster or mail.<br>
+Open the menu <strong>Options</strong> and choose <strong>Delete
+item</strong>.<br>
+The last-read counters of news-groups are not changed. <br>
+To reset these counters you have to open the menu <strong>Options
+</strong>and <br>
+choose <strong>Delete all messages from cluster</strong>.<br>
+When you delete one or more a messages they are going to the
+spamcluster. <br>
+The deletion of messages and headers and the recycling of the
+database space are still on </font><a
+href="#Bug/whishlist for 4ePost"><font size="4">the Bug/wishlist</font></a></p>
+
+<p><a name="Restart for a new startup:"><font size="4"><b>Restart
+for a new startup:</b></font></a><font size="4"><b> <br>
+</b>1.Delete the ini-file from the program directory where 4ePost
+is located<br>
+2.Empty or delete the mail directory</font></p>
+
+<p><font size="4"><b>Delete an invalid message using Win32Forth</b><br>
+When you do a little experiment with this pack the last message
+might be invalid.<br>
+In this case the 4ePost-window will not be shown.<br>
+Enter the following line in Win32Forth after compiling 4ePost:<br>
+</font><font size="3">MAP&gt;LAST-RECORD DELETE-ITEM DROP<br>
+</font><font size="4">When this does not solve your problem you
+will have to </font><a href="#Restart for a new startup:"><font
+size="4">restart for a new startup.</font></a></p>
+
+<p><font size="4"><strong>Password encryption:<br>
+</strong>The key can be changed by changing the string in the
+definition encryption-key.<br>
+When you do this you must enter your password again.</font></p>
+
+<table border="1" cellpadding="5" cellspacing="1" width="767">
+    <tr>
+        <td valign="top" width="50%"><a
+        name="Bug/whishlist for 4ePost"><font size="4"><b>Bug/wishlist
+        for 4ePost </b></font></a></td>
+        <td valign="top" width="50%"><font size="4"><b>Intended
+        developer</b></font></td>
+    </tr>
+    <tr>
+        <td valign="top" width="50%"><font size="4">Recylce
+        database space</font></td>
+        <td valign="top" width="50%"><font size="4">Jos</font></td>
+    </tr>
+    <tr>
+        <td valign="top" width="50%"><font size="4">Deletion of
+        messages and headers</font></td>
+        <td valign="top" width="50%"><font size="4">Jos</font></td>
+    </tr>
+    <tr>
+        <td valign="top" width="50%"><font size="4">Translate
+        MIME text/plain to ASCII for Winview</font></td>
+        <td valign="top" width="50%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top" width="50%"><font size="4">Attachments</font></td>
+        <td valign="top" width="50%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top" width="50%"><font size="4">Quoting from
+        the orignal post</font></td>
+        <td valign="top" width="50%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top" width="50%"><font size="4">A better
+        Setforeground for all windows systems</font></td>
+        <td valign="top" width="50%">&nbsp;</td>
+    </tr>
+</table>
+
+<p><font size="4"><br>
+</font><font size="1">The used trademarks are of Microsoft </font></p>
+</body>
+</html>
