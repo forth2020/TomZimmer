@@ -4,7 +4,7 @@ Win32Forth original version by Tom Zimmer
 
 the files present in this folder (/Win32Forth6v05H) belong to a distribution in ZIP and 7z
 of Win32forth prepared by our friend Howerd Oakfoard from his inventio.co.uk website. 
-With the intention to access the sources easier from a webbrowser. 
+This should allow  easier access to the source files. 
 
 Latest News!     2022 Oct 06     Win32Forth6v05H 2022 Oct 06
 
