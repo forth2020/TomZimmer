@@ -1,0 +1,1269 @@
+<html>
+<body>
+<pre>STARTUP.TXT     Getting Started with Win32Forth   By: Tom Zimmer
+
+Updated: December 18th, 1998
+
+
+<HR>
+<B>START HERE!</B> ... ok, ok, I'll quit shouting.
+
+  As the "Hichhikers Guide To The Galaxy" would say;
+      
+
+                                <B>"DON'T PANIC"</B>
+
+
+  Getting started isn't that difficult and the rest, you can pickup along
+  the way.
+
+  But first a message from our sponsor ... only kidding.
+
+  You are about to embark on a great adventure.  Your intelligence and
+  determination will allow you to explore, discover and conquer the
+  complex world of Forth in a Windows environment.  Proceed slowly and
+  carefully, you don't want to get shot down too often or too quickly,
+  and remember that the rewards you receive for your effort, include:
+  mastery of the well known, but little understood programming continent,
+  calls Windows.  But, the fun is in the trip, so enjoy it.  Don't be
+  afraid to make mistakes, few of them are likely to be fatal.  Share
+  what you learn with others.  Remember, discovery within a group is
+  rewarding for everyone in the group.  Don't take this too seriously.
+
+<B>NOTICE:</B> This file is intended to be viewed using Win32Forth.  If you
+        began editing this file by pressing the F1 key from Win32Forth,
+        then the left edge of this window should be dark blue.  The dark
+        blue color indicates that Win32Forth's editor is in browse move.
+        You can view the remainder of this file, and click on the
+        hypertext links (underlined text) to view the various parts of
+        the documentation.  Also note, the two side pointing lightning
+        bolts on the toolbar next to the blue bug. The left pointing
+        button allows you to move back to a previous link after
+        hypertexting to another section for viewing. The right pointing
+        button moves forward through the previously visited hyper links.
+
+
+<HR>
+<B>Sections Titles</B>
+
+        <A HREF="#Overview">Overview</A>
+        <A HREF="#Philosophy">Philosophy</A>
+        <A HREF="#WARNING, THERE IS NO WARRANTY!!!">WARNING, THERE IS NO WARRANTY!!!</A>
+        <A HREF="#History">History</A>
+        <A HREF="#Architecture">Architecture</A>
+        <A HREF="#Other Resources You May Need">Other Resources You May Need</A>
+        <A HREF="#Documentation For Win32Forth">Documentation For Win32Forth</A>
+        <A HREF="#Actually Getting Started">Actually Getting Started</A>
+        <A HREF="#Debugging Words in Win32Forth">Debugging Words in Win32Forth</A>
+        <A HREF="#Example Programs">Example Programs</A>
+        <A HREF="#Loading Files">Loading Files</A>
+        <A HREF="#Object Oriented Programming Concepts">Object Oriented Programming Concepts</A>
+        <A HREF="#Creating and Deleting Dynamic Objects">Creating and Deleting Dynamic Objects</A>
+        <A HREF="#Calling Windows Procedures">Calling Windows Procedures</A>
+        <A HREF="#Building Contiguous Data Fields in a Class">Building Contiguous Data Fields in a Class</A>
+        <A HREF="#Making a New Forth Executable">Making a New Forth Executable</A>
+        <A HREF="#Enough Already">Enough Already (I Hope)</A>
+        <A HREF="#Other Help Files">Other Help Files</A>
+
+
+
+<HR>
+<A NAME="Overview"></A></A><B>Overview</B>
+
+  Win32Forth is a public domain, ANS compatible, Forth language
+  application development system.  It was initially written by Andrew
+  McKewan, Tom Zimmer, Robert Smith and Jim Schnieder during 1994 and
+  1995. Win32Forth is a FAT system, adhering to the phylosophy that if
+  some tools are good, many tools must be better.  It includes an
+  interactive console and an integrated extensible source level debugger.
+  Editing of source text is facilitated by the included WinView [now called
+  WinEd] hypertext file editor, which allows easy exploration of the many
+  mega-bytes of source code that makes up Win32Forth.
+
+
+
+<HR>
+<A NAME="Philosophy"></A><B>Philosophy</B>
+
+  This file contains the bear minimum of information to get you started
+  with Win32Forth.  Forth is not inherently a complex language, but when
+  it is integrated into a Windows environment, much complexity creeps in.
+
+  I have never been known as a simplist (one who seeks simplicity), but I
+  do believe programs should be as simple as possible as long as they
+  are not so simple that you can't easily get your job done.
+
+  Basically, when faced with Windows, you can either say: "It is too
+  complicated, I won't use it", or you can say: "it is a complex
+  environment, I will attempt to master it and bring some order to the
+  complexity".  Both of these statments acknowledge that Windows is a big
+  ugly creature, but the second statments also acknowledges that there
+  may be some value in Windows that can be extracted and used to personal
+  advantage.  This is the approach I take, mostly because "Its my job",
+  but also because some of the things Windows does are indeed
+  interesting.  If you, like me, find something interesting in Windows,
+  then follow along.  I can't tell you there won't be any pain or
+  pitfalls associated with this little journey, but there will be
+  discovery, excitement and lots and LOTS of exploration.
+
+
+
+<HR>
+<A NAME="WARNING, THERE IS NO WARRANTY!!!"></A><B>WARNING, THERE IS NO WARRANTY!!!</B>
+
+  Win32Forth (including the integrated WinEd editor) is a public domain
+  Forth language development system.  That means it is provided without
+  support.  As time and inclination permit, I will at times update
+  Win32Forth and repair bugs that I decide to fix.  However no warranty
+  for usability, reliability, correctness or any other characteristic is
+  provided or implied.  If you choose to use Win32Forth for an
+  application, either personal or commercial, you assume the
+  responsibility for its usability, reliability, correctness and all
+  other program characteristics and warranty responsibilities.  Neither
+  Thomas Zimmer nor any other contributor to Win32Forth will assume any
+  responsibility for its use in any manner.
+
+  I appologize for the need for the previous paragraph, but you do need
+  to be warned.
+
+  I should also mention, that the amount of time I have to answer
+  questions is quite limited.  If you email me a question, I will try to
+  answer, the first time.  After that first set of questions, you should
+  post your questions on the Forth news group;
+
+        news:comp.lang.forth
+
+  There are lots of people on that news group who love to answer
+  questions, and you are likely to get a much quicker answer.  There are
+  also several tutorials on Forth available on line, at;
+
+        <A HREF=http://www.forth.org/fig.html>http://www.forth.org/fig.html</A>
+        <A HREF=http://www.forth.org/fig/literature.html>http://www.forth.org/fig/literature.html</A>
+        <A HREF=http://www.forth.org/fig/compilers.html>http://www.forth.org/fig/compilers.html</A>
+
+  By the way, if you aren't a member of the Forth Interest Group (FIG)
+  and you are using Forth, you _should_ be a member.  Win32Forth is free,
+  if you like it and believe it provides you some value, then support
+  FIG.
+
+  If you find you are not able to use Win32Forth, because of its lack of
+  detailed documentation, then you might want to contact a commercial
+  vendor at;
+
+        <A HREF=http://www.forth.org/fig/commercial.html>http://www.forth.org/fig/commercial.html</A>
+
+  These companies are in business to supply Forth system, and are paid to
+  provide documentation and support for your development project.
+
+
+<HR>
+<A NAME="History"></A><B>History</B>
+
+  Andrew initially wrote the kernel for Win32Forth (mid 1994) in assembly
+  language as a personal experiment in the process of bringing up a Forth
+  under Microsoft WindowsNT.  Win32Forth uses a (relatively) small
+  wrapper or loader written in 'C' that loads the Forth image file and
+  executes it. The wrapper provides some limited console I/O to support
+  program development.  Andrew also ported (re-wrote actually) the NEON
+  OOP (Object Oriented Programming) support to simplify the interface to
+  the windows operating system calls.
+
+  In late 1994, Andrew's "baby" kernel was turned over to me (Tom Zimmer)
+  for possible use in porting a large data processing application from
+  DOS into the WindowsNT environment.  We had looked at and purchased
+  what seemed the only available commercial Forth system at the time, but
+  unfortunatly it was not yet mature enough to handle our task or needs.
+  I ported most of the tools and utilities from my public domain F-PC
+  Forth system to Win32Forth to make the application porting task easier.
+  The Win32Forth system, derived from Andrew's personal work, and the
+  public domain F-PC, has remainded in the public domain
+
+  Jim Schnieder wrote the 486 prefix assembler for Win32Forth, included
+  under the GNU public license.  This is the only part of Win32Forth that
+  is not truely public domain.  Please read Jim's documents for details
+  of its use in commercial applications:
+
+      486READ.ME
+      486ASM.DOC
+      COPYASM.486
+
+  In early 1995, Robert Smith wrote the floating point support for
+  Win32Forth.  Robert is very experienced with such tasks, having written
+  several floating point packages in the past, including two for F-PC.
+  The floating point package includes support for both the eight byte and
+  the ten byte floating point formats.
+
+  Win32Forth took a side road into the area of using only absolute
+  addresses during 1995, but many problems with compatibility with
+  Windows95 and Win32s led me to return to relative addressing as a much
+  more portable solution.
+
+  In January 1996, Andrew completed the "F83" style meta-compiler and
+  forth source kernel for Win32Forth.  This opened the door to further
+  kernel development, including separated heads, and dual dictionaries.
+
+  Version 3.1 released in March 1996, Includes 'Ctrl+F1' help on the ANS
+  Forth words described in the DPANS94 document while in the WinView
+  editor. I hypertext compiled the DPAMS94 without making any changes to
+  the document by extending the hypertext compiler to recognize
+  additional search word context.
+
+  This version also has much better compatibility with Win32s running
+  under OS/2 and Windows 3.1, due to corrections made to the memory
+  management code in the wrapper.
+
+  In May 1996, the sourcelevel debugger interface to the WinView editor
+  was completed.  It is now possible to debug a Win32Forth application
+  remotely, including; setting breakpoints, single step execution, and
+  parameter monitoring.  The requirement to be able to perform these
+  operations is that the application be created with the "APPLICATION"
+  program save facility rather than the "TURNKEY" facility so that the
+  programs symbols are still available for remote debugger control.
+
+  July 1996, Enhancements to windows to allow them to each have their own
+  menus, and enhancements to objects to allow the use of a dotted
+  notation to access local data within an object.
+
+  An updated version of Jim Schnieder's assembler has also been included
+  with this release.
+
+  Compatibility with Win32s under Windows 3.1 and OS/2 has been retained,
+  but you should be warned that Microsoft has stopped supporting Win32s
+  in their latest version (4.2) of Visual C++.  Future versions of
+  Win32Forth may not be compatible with Win32s. I believe the hand
+  writing is on the wall.  It is time to start moving off of Windows 3.1
+  and onto Windows95 or WindowsNT. I don't know what you users of OS/2
+  will do.  If IBM doesn't support the Win32 API directly, then you will
+  soon lose access to programs developed for Windows95 and WindowsNT.
+
+  Version 3.2 released July 1996, included enhancements to Windows
+  support including separate menus for each application window. Added
+  documentation (in the file Win32For.PRV) on how to create a DLL with
+  Win32Forth. Added an Optimizer (in the form of OPTIMIZE.F) to
+  Win32Forth that allows code sections to be compiled to assembly
+  language to improve performance. Fixed various minor bugs in floating
+  point number support.  Added data structure support (in the form of
+  RECORD:) for use inside classes.  Added dotted notation support to
+  classes and sub objects.
+
+  Version 3.3 Released October 1996, includes a new Font class, making
+  font manipulation in an application more managable. I have started
+  adding HTML support to WinView, so it may evenually be used for
+  documentaton. Bill Muench donated multi-tasking support. Additional
+  changes were made to enahnce ANS compatibility.  Andrew donated a DLL
+  that allowed the removal of over 2000 Windows constants.  The DLL is
+  linked into NUMBER, so it can be used to lookup over 8000 Windows
+  constants without them having to be in the Forth dictionary.  Extensive
+  documentation has been added to FSAVE, TURNKEY and APPLICATION, the
+  words used to create programs.
+
+  Version 3.5 Released mid 1997, is primarily a bug fix release, but
+  several enhancements to the WinView editor, now allow it to edit
+  multiple files in memory at the same time (you need more memory), and I
+  have fixed the screen update code, to improve the redisplay
+  performance, which several people complained about.
+
+
+
+<HR>
+<A NAME="Architecture"></A><B>Architecture</B>
+
+  Win32Forth is a linear 32bit addressing Forth that uses relative
+  addressing within the Forth dictionary.  That is Forth is always
+  origined at logical address zero (0).  Since Windows95 (or NT) will
+  load Win32Forth at whatever address it wants, and will never actually
+  load a program at physical address zero, we end up having to translate
+  logical address to physical addresses when performing calls to the
+  operating system.  This is an unfortunate but neccesary side effect of
+  the fact that Windows does not set aside a predefined area of memory
+  exclusively for user application program use. The overall effect of
+  this design is that addresses passed to and received from the operating
+  system must pass through two Forth words; REL>ABS and ABS>REL .  These
+  two words translate between relative and absolute (physical) addresses.
+  Fortunately most interfacing with the operating system is performed at
+  a fairly low level, and as such is normally hidden from your
+  application program.
+
+  In January 1996, Win32Forth had grown to over 5000 words and 550k bytes
+  of dictionary, which seemed like a lot of overhead to add to a small
+  application program. The solution Andrew came up with was to split the
+  forth dictionary architecture into two parts, application and system.
+  The Application dictionary holds "bodies" of all the words that an
+  application might need to use at program run-time.  The System
+  dictionary holds all the non-application words, like those used only
+  during program compile time.  These include vocabularies, windows
+  constants (they are compiled as literals),  assembler, disassembler and
+  the headers for all the words in both dictionaries.  Using this split
+  or dual dictionary architecture reduces a TURNKEYed applications
+  overhead by over 200k bytes.  We realize of course that not all
+  applications can be turnkeyed, so the old standby FSAVE (from F-PC)
+  continues to be provided, so that applications that need full forth
+  dictionary access can still be created.  A new program save word
+  APPLICATION allows saving programs like TURNKEY, but allows setting the
+  amount of free application dictionary and system dictionary space for
+  the application to use at runtime.  APPLICATION also saves the program
+  with all headers and the system dictionary, so it can be easily
+  debugged using the Integrated debugger interface.
+
+
+
+<HR>
+<A NAME="Other Resources You May Need"></A><B>Other Resources You May Need</B>
+
+  The SAMS book called Win32 API (ISBN 0-672-30364-7 or LCCN 93-84382)
+  (currently out of print) which although it doesn't document the Forth
+  in any way, does document the Windows 32 API interface, is the cheapest
+  (about 50 dollars) and best resource I know of, for anyone wanting to
+  get started with Windows95 or NT programing.  Otherwise you will have
+  to purchase Microsoft Visual C++ for about 400 dollars, or Symantec C++
+  for about the same price.
+
+  Questions can be posted to the news group: <A HREF="news:comp.lang.forth">NEWS:COMP.LANG.FORTH</A>
+
+  Updated versions of Win32Forth as they become available are posted to
+  the Taygeta archive at: <A HREF="http://www.taygeta.com/forth.html">HTTP://WWW.TAYGETA.COM/FORTH.HTML</A> under the
+  <A HREF="http://www.taygeta.com/forthcomp.html">Forth Compilers</A> page.  Also be sure to check out the <A HREF="http://www.taygeta.com/forthlit.html">Literature</A> page.
+
+
+
+<HR>
+<A NAME="Documentation For Win32Forth"></A><B>Documentation For Win32Forth</B>
+
+  The only documentation currently available for Win32Forth are the files
+  listed in the Help menu in the Forth console window.  The Help menu
+  provides access to these small documents.  They provide various hints
+  on to how to use the features of Win32Forth. Version 3.1 also
+  introduced help through the Control+F1 key.  Position the editors
+  cursor within an ANSI standard word and press Control+F1, the ANSI
+  DPANS94 document will be opened on the standard definition of that
+  word.
+
+  The only way to learn to use Win32Forth currently is to look at the
+  provided example programs listed later in this file, and at the start
+  of the file WIN32FOR.NEW.
+
+
+
+<HR>
+<A NAME="Actually Getting Started"></A><B>Actually Getting Started</B>
+
+  Having installed Win32Forth, and gotten to this point, you are probably
+  starting to become familiar with the hyper-text editor/browser (and now
+  also debugger) inegrated into Win32Forth.
+
+  <B>NOTE:</B> If you aren't using the Win32Forth integrated editor called
+        WinView at this moment (look at the title bar of the program you
+        are running, it should say WinView in the upper left corner),
+        then you should quit your current editor, start Win32Forth by
+        double clicking the Win32Forth icon in the Win32Forth program
+        group and Press F1 from within Forth to startup WinView on this
+        file.  The tutorial information following requires you to be
+        running WinView.
+
+  WinView is an editor written in Forth (source provided in the file
+  WINVIEW.F) and integrated into Win32Forth.  You will see a fairly
+  normal looking toolbar at the top of the program window (below the
+  menus). The toolbar provides shortcuts to often used operations like;
+  Open, Save, Cut, Copy, Paste, Search and HyperText.  If you hold your
+  mouse cursor over one of those buttons, you will see a "tooltip" popup
+  in a second or so, telling you what the button does.
+
+  If you started WinView as described above, then Win32Forth is already
+  running, and you can click in its "pane" at the bottom of the window.
+  You can then click back in the WinView editor window to continue
+  browsing this file.
+
+  You can edit, load, print or save a file using the File menu.  The
+  Display menu allows you to easily display various types of information.
+  The Help menu contains entries to various pieces of information
+  including a reference to F1 which you used to get to this help file.
+  There is also an About menu item you may have looked at that tells a
+  little bit about Win32Forth and the people that have worked on it.
+
+  Forth is really a commandline oriented interactive environment.  Even
+  though it is nice to have menus, most of what you will do while
+  programming an application requires typing.  If you don't like typing,
+  then maybe you are in the wrong line of work (or hobby).  This is also
+  probably a good time to mention that Win32Forth was written to match my
+  style (or view) of development, that is it includes tools for
+  searching, browsing and exploring.  If you are a reader, and not an
+  explorer, then you may have trouble with Win32Forth, since there is
+  very limited documentation currently (as in, this file is about it).
+  Having said that, Lets try some of the more common utility words to
+  help you get a feel for what using Win32Forth is like.
+
+  Click in the Win32Forth console pane, at the bottom of the editor.
+  Remember, you can always click back in the editor pane, if you need to
+  scroll to see more of this file.  then click back in the console pane,
+  to continue typing into Forth.
+
+  <B>NOTE:</B> You may want to drag the splitter bar separating the console
+        form the editor up, to make the console window larger.
+
+  <B>NOTE:</B> If you can't see any window at the bottom of the Win32Forth or
+        WinView programs, open the preferences dialog, and click the
+        "show console window" button.
+
+  We will start by looking at;
+
+        <B>WORDS  CONSTANTS  SEE  ORDER  VOCS  V  E  EDIT</B>
+
+  The first word you need to know in Forth is;
+
+        <B>WORDS [substring] [substring]</B>
+
+  WORDS displays all or a set of words from the Forth dictionary.  Since
+  Win32Forth has almost 4000 functions and over 8000 constants available,
+  you can't hope to remember the names and functions of all of them, so
+  WORDS allows you to select a set of those words by specifying one or
+  two substrings (partial words) following the WORDS command on the Forth
+  commandline. Uou needn't worry about upper or lower case, Win32Forth is
+  case InSeNsItIvE (See note on Calling Windows Procedures). Go to the
+  Forth console window and type;
+
+        <B>WORDS ! [enter]</B>
+
+  Forth will display a list of all the words in all vocabularies that
+  contain the substring "!".  The word "CONSTANTS" is very simpliar to
+  "WORDS", except it displays Windows constants that contain one or both
+  of the following substrings.  For example, if you type;
+
+
+        <B>CONSTANTS CR ALPHA</B>
+
+  Then "CONSTANTS" will display the Windows constants shown here;
+
+        ----------- Windows Constants -----------------------------
+        IMAGE_REL_ALPHA_SECREL             IMAGE_REL_ALPHA_SECRELHI
+        IMAGE_REL_ALPHA_SECRELLO
+        -----------------------------------------------------------
+        Displayed 3 of the 8293 Windows Constants in the system
+
+  This will prove very valuble when you find yourself trying to remember
+  how to spell the name of a needed windows constant.
+
+  Now back to "WORDS".  If you typed the "WORDS" statment as shown
+  above, you will see the words "BEEP!" and "+!" listed in the FORTH
+  vocabulary.  Go to the Forth window and type;
+
+        <B>SEE BEEP! [enter]</B>
+
+  and then;
+
+        <B>SEE +! [enter]</B>
+
+  You will see that BEEP! is a ":" (colon) definition and "+!" is a CODE
+  word that gets disassembled.
+
+  <B>NOTE:</B> As you can see, the decompiler and disassembler display
+        information in a form that is close to being re-compilable.  If
+        you were to save the console buffer, you could later edit
+        CONSOLE.TXT and extract code for editing and re-compilation.
+
+  WORDS shows the vocabulary where a word is located, and you must make
+  sure the correct vocabulary is selected before using SEE to decompile
+  it.  The word that displays the current vocabulary search order is
+  ORDER, type;
+
+        <B>ORDER [enter]</B>
+
+  A list of the vocabularies in the search order is displayed.  The
+  Context list is the list of vocabularies that is searched, and the
+  Current vocabulary is the vocabulary where new definitions are
+  compiled.  So for example, if you were to type;
+
+        <B>WORDS CODE [enter]</B>
+
+  You would see a list of words displayed, including the word .CODE
+  (pronounced dot code) in the HIDDEN vocabulary.  To see .CODE, you
+  would type;
+
+        <B>HIDDEN SEE .CODE [enter]</B>
+
+  To select the hidden vocabulary and then decompile the word .CODE.  If
+  you then type ORDER, you will see that the top (left most) entry of the
+  vocabulary search order is HIDDEN.
+
+  Lets try another example of CONSTANTS that you may find useful someday,
+  type;
+
+        <B>CONSTANTS WM_ [enter]</B>
+
+  You should have seen all of the windows message constants listed.
+  These are all of the messages windows can send to an application.
+  Don't worry, most of these are handled automatically, you only need to
+  handle the ones your application needs to handle in a special way.  All
+  of the standard windows constants are kept in the WINCON vocabulary.
+
+  <B>NOTE:</B> You can also notice that the scroll bar at the right of the
+        console window allows you to scroll back to the last 500 lines
+        displayed in the console window.  This can be very handy for
+        looking back at the output of a long debugging session.  The
+        number of lines Win32Forth saves, is adjustable in the
+        preferences dialog.
+
+  Since we are talking about vocabularies, type;
+
+        <B>VOCS [enter]</B>
+
+  VOCS will display some statistics on all of the vocabularies in
+  Win32Forth.  There were 13 vocabularies the last time I looked. The
+  VOCS display includes information about the number of HASH threads for
+  each vocabulary, the number of words in the vocabulary, and the average
+  hash bucket thread depth for the vocabulary.  Win32Forth uses a hashed
+  dictionary, with a variable number of hash buckets for each vocabulary
+  defined.  As you can probably guess, since most vocabularies have seven
+  threads, seven threads is the default number of threads for a
+  vocabulary you create. The more threads a vocabulary has, the faster it
+  is to search that vocabulary (up to a point).  I typically try to limit
+  the average thread depth to between 10 and 20, to assure fast
+  compiling, but as you can see some vocabularies (like HIDDEN and
+  ASM-HIDDEN) have a large average thread depth.  This is done because
+  those vocabularies are not searched very often, and I didn't want to
+  waste the space.
+
+  It is useful to note that all vocabulary threads are kept in the SYSTEM
+  dictionary, so when you create a TURNKEYed application, the
+  vocabularies are thrown away.
+
+  <B>NOTE:</B> in the following section, you will be told to view and edit the
+        source for various words in the Win32Forth dictionary.  To return
+        to this document after viewing a source file, press Ctrl-PgUp, or
+        use the 'Previous Hyper Link' menu item under the 'Hyper' menu.
+        If you view or open several files, you may need to press
+        Ctrl-PgUp several times to get back to this file.
+
+  You can also View the source for any word in the dictionary, with the
+  word 'V' or 'VIEW', used as;
+
+        <B>V DUP [enter]</B>
+
+  If you type the above into the Forth console window, Win32Forth will
+  tell WinView to display the source for DUP.  The editor will dutifully
+  open the file FKERNEL.F and display the desired line.  When viewing a
+  word, The editor uses BROWSE mode (BLUE left border in the editor) to
+  prevent you from accidently changing a source file. Notice the BLUE
+  words "Browse Mode" in the toolbar to the right of the toolbar buttons.
+  V and VIEW search all vocabularies for the requested word, so the
+  vocabulary search order is not important unless you have defined a
+  particulary word more than once.  Return here as described in the note
+  above.
+
+  The forth word 'E' or 'ED' words like 'V' or 'VIEW' except that WinView
+  is told to enter EDIT mode (CYAN left border) instead of BROWSE mode on
+  the requested word. Notice the words "Edit Mode" to the right of the
+  toolbar buttons for an unmodified file, and "* MODIFIED *" in RED to
+  the right of the toolbar buttons for a file you have changes.
+
+  <B>NOTE:</B> The editor keys Ctrl-PgUp and Ctrl-PgDn can be used to walk
+        around between the files you have opened.  WinView can handle 128
+        files opened during an edit session.  You can display a
+        selectable list of files opened by selecting the menu item
+        'Display Current Files Window' under the 'File' menu.  You can
+        move to a file that has been opened by clicking on the filename
+        in the "Current Files List" window, or by using Ctrl-PgUp and
+        Ctrl-PgDn to move to a desired file.  You can close and remove a
+        file from the list by selecting the file and then selecting
+        'Close File' under the 'File' menu.
+
+
+
+<HR>
+<A NAME="Debugging Words in Win32Forth"></A><B>Debugging Words in Win32Forth</B>
+
+  Win32Forth includes a debugging facility similiar to the debugger in
+  F-PC.  The keys you press however may have changes, so you can use the
+  '?' (question mark) key while debugging to see a list of the available
+  debugging commands.
+
+  To select a word for debugging, you use the word DEBUG as follows;
+
+        <B>DEBUG WORDS [enter]</B>
+
+  The debugger installs a breakpoint into the first cell of the
+  definition WORDS, and waits for WORDS to be executed.  Since we
+  haven't executed WORDS yet, nothing more happens.
+
+  <B>NOTE:</B> As soon as you perform the following suggested command, the
+        debugger will automatically tell the editor to display the source
+        for WORDS.  To return here, use Ctrl-PgUp.
+
+  To get the debugger to start, you need to execute the word where the
+  breakpoint is set like this;
+
+        <B>WORDS ! [enter]</B>
+
+  The debugger will be invoked, and it will display the stack on entry to
+  WORDS, and the source for WORDS will be displayed in the editor  Return
+  here as described in the note above.
+
+  Following the stack display (probably the word 'empty'), you will see
+  'const 0' which means CONSTANT with a value of zero.  If you press
+  [enter] while the console window is selected, you will see a '[1] 0'
+  displayed indicating one stack item with a value of zero.  The debugger
+  then displays 'TO WORDS-CNT' which is where the zero is about to be
+  stored, into the value WORDS-CNT.  You can press the '?' key at this
+  point to see the commands available in the debugger.  Specifically the
+  commands 'N' (nest) and 'U' (unnest) are useful for stepping into or
+  out of definitions while debugging to get to the point where you can
+  see what is really happening in your program.
+
+  Another debugging words is DBG, it works like DEBUG, but it immediately
+  invokes the word following. So you need to setup whatever stack
+  arguments before using it.  Of course you also need to do this with
+  DEBUG as well, before the word being debugged gets executed.  Here is
+  an example;
+
+        <B>DBG WORDS ! [enter]</B>
+
+  The debugger starts immediately debugging WORDS, the character '!' is
+  passed to WORDS in the input stream as a substring parameter.
+
+  <B>NOTE:</B> The debugger commands are shown here;
+
+        ENTER/SPACE     Single step execute you program
+        ESC/Q           Quit, unbug, abort to forth
+        . (dot)         Display the depth of the floating point stack
+        C               continuous step program execution till key press
+        D               Done debugging, run the program to completion
+        F               Allow entry of a Forth commandline
+        H               Toggle the display of Hex and Decimal numbers
+        J               Jump over next Word, useful for exiting LOOPs
+        N               Nest into a colon or does> definition
+        P               Proceed to initial breakpoint location again
+       ^P               Proceed to the current program point again
+        R               Show the Return stack functions
+        U               Unnest to definition above this one
+        V               Display the current vocabulary search order
+        W               Allow the entry of watch commands
+
+
+  <B>NOTE:</B> The words WITHOUT-SOURCE and WITH-SOURCE can be used to turn
+        source level debugging off and on respectively.  If you have
+        limited memory, you may need to use WITHOUT-SOURCE to turn off
+        source level debugging.
+
+
+<HR>
+<A NAME="Example Programs"></A><B>Example Programs</B>
+
+  Win32Forth includes several example programs to help you get started
+  with application development.  I don't want to minimize the difficulty
+  or complexity of doing Windows programming.  Developing for Windows is
+  not easy.  You will need to learn a lot of new stuff just to begin to
+  make changes, enhancements or additions to the demo programs provided,
+  not to mention creating a new application from nothing.  You may need
+  Visual C++ for documentation, and you will definitely need it if you
+  need to make changes to the Win32Forth C++ Wrapper.
+
+  The demo programs included are as follows;
+
+     Name                  Subject
+
+    FILEDUMP.F   A File Dump program contributed by Jih-tung Pai
+    HELLO.F      Windows interfacing without objects by Andrew McKewan
+    ROMCALC.F    A Roman numeral calculator by Lars Krueger
+    WINBROWS.F   File handling and window scrolling
+    WINDEMO.F    Graphics operations in a window
+    WINDILOG.F   User designed dialog box
+    WINHELLO.F   Windows interfacing with objects
+    WINMULTI.F   A multi window/menu program by Wolfgang Engler
+    WINPAR.F     Simple parallel port output
+    WINSER.F     Simple serial communications program
+    WINVIEW.F    Complete multi-file macro editor
+
+
+
+<HR>
+<A NAME="Loading Files"></A><B>Loading Files</B>
+
+  Since Win32Forth is ANS Forth compatible, you can use the normal ANS
+  words if you are familiar with them to load files, but my favorite file
+  load words from F-PC Forth is FLOAD.  It is used as follows;
+
+        <B>FLOAD WINDEMO [enter]</B>
+
+  <B>NOTE:</B> Win32Forth knows that the default file extension for Win32Forth
+        files is ".F", so you needn't specify it when loading things from
+        the command line of within a file.
+
+  If all went well, the Win32Forth will have loaded WINDEMO.F, and you
+  can type the next line to run the demo program;
+
+        <B>WINDEMO [enter]</B>
+
+  If the "\S" near the end of WINDEMO.F is commented out, then an
+  application WINDEMO.EXE with its overlay WINDEMO.IMG will have been
+  created also.
+
+  <B>NOTE:</B> Since WINDEMO is intended to be a complete program, if you quit
+        windemo using its 'File' menu, then Forth will terminate also.
+        You can start up Win32Forth again, by opening it in the Program
+        Manager.
+
+  Each of the demo programs provided creates a complete program with some
+  functionality.  You are welcome to extend them or use them as provided.
+  I will be interested in any other demo programs you create, and if I
+  think they would be useful to others, I would like to distribute them
+  with Win32Forth until I get so many that they have to be distributed as
+  a separate archive.
+
+
+
+<HR>
+<A NAME="Object Oriented Programming Concepts"></A><B>Object Oriented Programming Concepts</B>
+
+  Win32Forth uses the MOPS metaphor for object oriented programming.
+  That is you can define classes which are used to create objects.
+  Classes define data which is local to each individual object it
+  creates, and methods which are available to all the objects it creates.
+  here is an example of a simple class;
+
+        :Class Disk  <Super Object
+
+             int cylinders
+             int sectors
+             int b/sec
+        32 bytes disk-name
+
+        :M ClassInit:   ( -- )
+                        0 to cylinders
+                        0 to sectors
+                        0 to b/sec      ;M
+
+        :M !Attributes: ( cyl sec b/sec -- )
+                        to b/sec
+                        to sectors
+                        to cylinders    ;M
+
+        :M Attributes:  ( -- cyl sec b/sec )
+                        cylinders
+                        sectors
+                        b/sec           ;M
+
+        :M FreeBytes:   ( -- freebytes )
+                        cylinders sectors * b/sec * ;M
+
+        ;Class
+
+  Now that we have define the class, we can create an object of the class
+  as follows;
+
+        Disk myDisk1
+        1024 32 512 !Attributes: myDisk1
+
+  Here we have defined an object called "myDisk", and given this new disk
+  the attributes of: cylinders=1024, sectors=32, b/sec=512
+
+  So ":Class" and ";Class" encompass a collection of data items and
+  methods that define and identify an object and the way it behaves.
+  The word "int" defines a local data item similar to a "value" that is
+  local to each object created by a class.  A second data type available
+  for use within a class is "bytes", which was used to create a buffer to
+  hold the disk name.
+
+  The "ClassInit:" method is special in the sense that it is
+  automatically executed right after the object is created.  So it is a
+  perfect place to initialize an object to the common default values that
+  are shared by all objects of this class.
+
+  Additional methods, (their names always end with a ':' so they can be
+  identified as methods) can be defined in your class to initialize,
+  display, calculate, or perform whatever type of operation you will need
+  to perform on the objects of this class.
+
+
+<HR>
+<A NAME="Creating and Deleting Dynamic Objects"></A><B>Creating and Deleting Dynamic Objects</B>
+
+  So far we have discussed static objects, objects that reside in the
+  application dictionary and always consume space.  Another way to create
+  objects is to create them dynamically in ALLOCATEd memory.  Win32Forth
+  provides a simple way to do this as follows;
+
+
+        <B>NEW> Disk       ( -- a1 )</B>
+
+  This creates an object of Class Disk, by allocating memory for the
+  object.  Forth then executes the ClassInit: method on the object, and
+  returns a1 the address of the object on the Windows heap.  The objects
+  address can then be saved in a variable, value or array for use later
+  in your program.  To execute a method on the object, you need to put
+  its address into a variable or value like this.
+
+
+        0 value DiskObj
+
+        : makeObj  ( -- )
+                   NEW> Disk to DiskObj ;
+
+        makeObj                 \ make a Disk Object
+
+        FreeBytes: DiskObj      \ -- freebytes
+
+  You can create as many dynamic objects as you want, within the
+  constraints of your available memory.  When you are done with an
+  object, you can dispose of it like this;
+
+        DiskObj Dispose         \ dispose of the object
+        0 to DiskObj            \ clear the object holder
+
+  It is always a good idea to dispose of any dynamically created object
+  once you are done using it.  A special method ~: (tilda colon) is
+  automatically executed before an object memory is released to allow you
+  a chanse to do any needed cleanup before the objects is destroyed.  The
+  ~: method is defined as a noop in Class Object, but you can define it
+  as whatever you need when you create a new class that will have objects
+  created dynamically.
+
+  If you should happen to forget to dispose of any of the dynamic objects
+  you create, before your program terminates, then Forth will
+  automatically release their allocated memory at program termination.
+
+
+
+<HR>
+<A NAME="Calling Windows Procedures"></A><B>Calling Windows Procedures</B>
+
+  Earlier I said the Win32Forth was case insensitive, well thats true
+  except when dealing with Windows Procedure calls or with the identical
+  condition of calling any external DLL.  When using the CALL word to
+  call any DLL procedure, you must match the letter case of the procedure
+  you are calling.  For example;
+
+    CALL CreateWindow    \ works the word CALL is not case sensitive
+    call CreateWindow    \ works the word CALL is not case sensitive
+    Call CreateWindow    \ works the word CALL is not case sensitive
+
+    CALL createwindow    \ won't work, called procedure is case sensitive
+    CALL Createwindow    \ won't work, called procedure is case sensitive
+    CALL CREATEWINDOW    \ won't work, called procedure is case sensitive
+
+  This choice was made because the name stored in the dictionary is also
+  passed to  Windows as the name of the procedure when getting the
+  procedures load address.
+
+  When calling Windows procedures, you must pass all parameters to window
+  in reverse order to the order specified by any window documentation you
+  may have seen.  For example, the Windows MessageBox function is
+  defined in the Win32API help as follows;
+
+      int MessageBox(
+
+        HWND     hWnd,      // HANDLE of owner window
+        LPCTSTR  lpText,    // address of TEXT in message box
+        LPCTSTR  lpCaption, // address of TITLE of message box
+        UINT     uType      // STYLE of message box
+       );
+
+  In this example, MessageBox receives a handle, two string, then a style
+  parameter.  To invoke this function from Win32Forth you must use code
+  like the following;
+
+   : ?MessageBox { flag adr len \ message$ -- }
+                max-path localAlloc: message$
+                flag
+                if      adr len message$ place
+                        message$ +NULL
+
+                        MB_OK MB_ICONSTOP or  \ message box STYLE
+                        z" Notice!" REL>ABS   \ TITLE string
+                        message$ 1+ REL>ABS   \ TEXT string
+                        CONHNDL               \ parents window HANDLE
+                        call MessageBox       \ call the DLL function
+                        drop                  \ discard always returned
+                                              \ parameter
+                then    ;
+
+  Notice that all the parameters are passed in the reverse order in
+  which they are specified in the window documentation.  Also notice that
+  any address passed to or received from a windows procedure must be
+  converted to an absolute address or converted back to a relative
+  address for use by Forth.  Finally notice that ALL windows procedure
+  calls return a result.  The result may be garbage, but they always
+  return something, which you can discard or use as you desire.
+
+
+
+<HR>
+<A NAME="Building Contiguous Data Fields in a Class"></A><B>Building Contiguous Data Fields in a Class</B>
+
+  It is sometimes useful to be able to define a series of data objects
+  inside a class that will be layed down next to each other in memory.
+  This is often useful when you are trying to build a data structure that
+  will be passed to a Windows Procedure Call.  Normally Forth lays down
+  data items in a class separated by an additonal CELL that holds the
+  class pointer for the object.  This makes it easy to decompile and
+  debug objects.  If you don't mind limited debugging of a method
+  containing the previously described continuous data structure, then you
+  can create them in Win32Forth as follows;
+
+  here is an example of a 'C' data structure;
+
+        typedef struct _WIN32_FIND_DATA { 
+            DWORD dwFileAttributes;
+            FILETIME ftCreationTime;
+            FILETIME ftLastAccessTime;
+            FILETIME ftLastWriteTime;
+            DWORD    nFileSizeHigh;
+            DWORD    nFileSizeLow;
+            DWORD    dwReserved0;
+            DWORD    dwReserved1;
+            TCHAR    cFileName[ MAX_PATH ];
+            TCHAR    cAlternateFileName[ 14 ];
+        } WIN32_FIND_DATA;
+
+  Here is the equivelant Forth Class and data structure that can be used
+  to get files from the Windows Directory;
+
+
+<HR>
+        <B>--- Start of Example ---</B>
+
+  :Class DirObject <Super Object
+
+        Record: FIND_DATA       \ returns the address of the structure
+
+            int dwFileAttributes
+           dint ftCreationTime
+           dint ftLastAccessTime
+           dint ftLastWriteTime
+            int nFileSizeHigh
+            int nFileSizeLow
+            int dwReserved0
+            int dwReserved1
+ max-path bytes cFileName
+       14 bytes cAlternateFileName
+
+        ;Record
+
+\ Note the instance variable defining words that are used between
+\ Record: and ;Record, words like;  int, dint and bytes.  In addition to
+\ these data types, Win32Forth now supports;  byte, bits and short.  If
+\ you look at the file WINSER.F, you will see an example of the use of
+\ these additional data types.  Now we will continue including the source
+\ for the rest of this example.
+
+            int findHandle
+
+  :M ClassInit: ( -- )                  \ init the structure
+                ClassInit: super
+                0   to dwFileAttributes
+                0.0 to ftCreationTime
+                0.0 to ftLastAccessTime
+                0.0 to ftLastWriteTime
+                0   to nFileSizeHigh
+                0   to nFileSizeLow
+                0   to dwReserved0
+                0   to dwReserved1
+                cFileName off
+                cAlternateFileName off
+                -1  to findHandle
+                ;M
+
+  :M FindFirst: { adr len \ filename$ -- f }    \ f1=TRUE if found file
+                max-path LocalAlloc: filename$
+                adr len filename$ place
+                        filename$ +NULL
+                FIND_DATA    rel>abs
+                filename$ 1+ rel>abs
+                Call FindFirstFile to findHandle
+                findHandle
+                ;M
+
+  :M FindNext:  ( -- f )
+                FIND_DATA rel>abs
+                findHandle Call FindNextFile
+                ;M
+
+
+  :M FindClose: ( -- f )        \ close the find when we are all done
+                findHandle
+                Call FindClose 0=
+                -1 to findHandle
+                ;M
+
+  :M ShowFile:  ( -- )          \ display last found file
+                cFileName max-path 2dup 0 scan nip - type
+                ;M
+
+  ;Class
+
+  DirObject aFile       \ make an instance of the class DirObject
+
+  : SIMPLEDIR ( -- )
+        s" *.F" FindFirst: aFile
+        if      begin   cr ShowFile: aFile
+                        start/stop      \ pause if key pressed
+                        FindNext: aFile 0=
+                until   cr
+                FindClose: aFile drop
+        then    ;
+
+        <B>--- End of Example ---</B>
+<HR>
+
+  This last definition when typed at the Forth commandline, displays a
+  list of the *.F files in the current directory;
+
+  <B>NOTE:</B> The above code can be loaded into Win32Forth, by highlighting the
+        lines you want to load, and then press Ctrl+C (or use "Copy" in
+        the Edit menu) to copy the text, then select the Win32Forth
+        onsole window, and press CTRL+V (or use "Paste to Keyboard" in
+        the Edit menu) to paste the text into Win32Forth. The lines will
+        be pasted one at a time to Win32Forth, which will compile them as
+        if you had typed them from the keyboard.  After doing this, just
+        type: SIMPLEDIR [enter] you should see the program display a list
+        of forth files in the current directory.
+
+
+<HR>
+<A NAME="Making a New Forth Executable"></A><B>Making a New Forth Executable</B>
+
+  After you have compiled you new program, you will need to create a
+  definition that will get executed when the program is first started up.
+  It will need to initialize some things, and then call your main program
+  word to perform whatever tasks your program needs to perform.  Here is
+  an example of a startup definition as extracted from the file
+  WINDEMO.F.
+
+  : DEMO-HELLO  ( -- )                  \ startup stuff
+                decimal
+                init-console            \ -- f1
+                if      initialization-chain do-chain
+                then
+                exception@
+                if      bye
+                then
+                hide-console
+                WINDEMO ;
+
+  ' DEMO-HELLO TURNKEY windemo
+
+  As you can see, we perform several operations;
+
+  1. select the number base we want to use in the program.
+  2. initialize the Forth console. It always starts up minimized, we can
+     hide it later if we wish.
+  3. then, if the console initialization returns TRUE meaning this was
+     the first time it happened, then we perform all the functions of the
+     forth initialization chain.  This prepares all of the facilities in
+     Win32Forth for use by initializing all of Forth's sub-systems.
+  4. Then we test for whether an exception has occured, and if it has,
+     then we terminate the program.  Any fatal error that occurs either
+     during initialization, or later during program execution will cause
+     our initialization word to be executed again. This test prevents
+     infinite loops, and allows the program to terminate when a fatal
+     error occurs.
+  5. Now we can hide the forth console, since our application doesn't
+     need to do any forth command entry.
+  6. and finally we call WINDEMO to begin execution of our program.
+  7. Notice in the last line above, that "windemo" following TURNKEY does
+
+     not have a file extension.  The appropriate file extensions are
+     added by the save words automatically, and should not be added by
+     you on the save line.
+
+  It is worth while to note a couple of things;
+
+  1. The vocabulary search order will remain the same as it was when the
+     save was performed.
+  2. you must NOT put any vocabulary words in your program initialization
+     word if you are TURNKEYing your program, because all of the
+     vocabulary words are located in the SYSTEM dictionary, which is
+     discarded during the TURNKEY.  Win32Forth will warn you about doing
+     this, but if you do it anyway, then your program will surely crash.
+
+  There are three words in Win32Forth that can create new programs, they
+  are FSAVE, TURNKEY and APPLICATION.   All of them create new programs
+  on your hard drive, though they differ, in the type of program they
+  create.  We will cover each in some detail;
+
+  <B>FSAVE</B>  Creates a new copy of Win32Forth on your harddrive, that is a
+         duplicate of the Forth you are already running, and will still
+         startup running Forth when the new program is executed.  FSAVE
+         is followed by the name of the program to create.  The name
+         passed to FSAVE must not be the same name as the Forth program
+         you are currently running. See notes following.   FSAVE is used
+         as follows;
+
+         <B>FSAVE newforth [enter]</B>
+
+         The amount of available dictionary space available will remain
+         the same as before FSAVE was performed.  If you need to expand
+         the amount of application dictionary or system dictionary space
+         available for a subsequent program compile, you can use the
+         words;
+
+         <free-bytes> SYS-FREE!   \ set system dictionary free space
+         <free-bytes> APP-FREE!   \ set application dictionary free space
+
+         Setting the available dictionary space to a very large value
+         will cause slowdowns and possible crashes.  As Win32Forth is
+         shipped, you can expand the application dictionary upto a total
+         of about one megabyte before it will run into the system
+         dictionary.  Use ".FREE" to see the current status of the two
+         dictionaries.  If you need to build an applicaiton that will
+         have an application dictionary larger than one megabyte, then
+         you will need to edit the line in META.F that contains
+         SSEPARATION, to a larger value, re-metacompile, re-extend
+         Win32Forth, and then fsave a new copy of Win32Forth with an
+         APP-FREE! value as large as you require.
+
+         1024 1024 * 1 * VALUE SSEPARATION \ offset from target to heads
+
+         Can be change to something like;
+
+         1024 1024 * 4 * VALUE SSEPARATION \ offset from target to heads
+
+         To increase the separation between the application dictionary
+         and the system dictionary to four megabytes.  If you do this,
+         you will need machine with at least 32 megabytes of memory.
+
+         You can also reduce somewhat, Win32Forth's memory requirements
+         by changing the line to something liek this;
+
+         1024 512 * VALUE SSEPARATION  \ offset from target to heads
+
+         After you re-metacompile and re-extend Win32Forth, the
+         separation between the application dictionary and the system
+         dictionary will be 512k bytes, leaving about 250k bytes for your
+         program. Since Windows 3.1 and O/S2 seem to allocate all of the
+         memory from the start of Win32Forth up through the end of the
+         system dictionary, doing this might reduce system resource
+         requirements significantly.
+
+  <B>TURNKEY</B> Creates an application program that cannot run Forth any
+         longer, because all headers are discarded during the program
+         save process.  The 'cfa' of a forth definition that runs your
+         program must be passed to TURNKEY. TURNKEY reduces the newly
+         saved program image size by over 200k bytes. TURNKEYed programs
+         cannot be debugged. TURNKEY is followed by the name of the
+         program to create. The name passed to TURNKEY must not be the
+         same name as the Forth you are currently running. See notes
+         following. TURNKEY is used as follows;
+
+         <B>' do-myprogram TURNKEY newprogram [enter]</B>
+
+         TURNKEYed programs always have 3000 bytes of application
+         dictionary space available at program startup, and zero bytes of
+         system dictionary space available, since all of the system
+         dictionary is discarded.
+
+         TURNKEY performs a default form of initialization as shown here;
+
+         : _default-hello ( -- )        \ startup stuff
+                        decimal
+                        0 to source-id  \ not loading from a file yet
+                        init-console    \ -- f1
+                        if      initialization-chain do-chain
+                        then
+                        exception@
+                        if      bye
+                        then
+                        hide-console
+                        get-commandline         \ commandline to SOURCE
+                        default-application ;
+
+         Your application word 'do-myprogram' as used above, is installed
+         into the deferred word DEFAULT-APPLICATION by TURNKEY, so it will
+         be run after initialization is completed.  If you need to
+         perform some other initialization that shown above, then you
+         will need to copy copy the original definition of
+         _DEFAULT-HELLO, change it and then install it into the deferred
+         word DEFAULT-HELLO.
+
+  <B>APPLICATION</B> Creates an application program  on your harddisk that is
+         also fully Forth. The 'cfa' of a forth definition that performs
+         any needed program initialization must be passed to APPLICATION.
+         APPLICATIONed programs can still be debugged. APPLICATION is
+         followed by the name of the program to create. The name passed
+         to APPLICATION must not be the same name as the Forth you are
+         currently running. See notes following. APPLICATION is used as
+         follows;
+
+         <B>4000 4000 ' do-newapplication APPLICATION newapplication [enter]</B>
+
+         Where the first number is the bytes of application dictionary
+         space you want to be available at program startup.  The second
+         number is the bytes of system dictionary space you want to be
+         available at program startup.
+
+  <B>NOTES:</B> All of the program save words require that a file called
+         KERNEL.BIN must be resident in the Win32Forth installation
+         directory. KERNEL.BIN is a copy of the file FKERNEL.EXE.
+         KERNEL.BIN is copied to the new program you specify as
+         "name".EXE, then the Forth image is written to disk either into
+         the resource fork of "name".EXE (if you are running WindowsNT),
+         or into file "name".IMG (if you are running Windows 3.1 with
+         Win32s, or Windows95).  The reason the program save works the
+         way it does, is because only WindowsNT supports writing into the
+         resource of a program, and Windows 3.1 and Windows95 won't allow
+         a running program to copy its own executable.  Even worse,
+         Widows 3.1 cannot successfully read a user defined resource from
+         an executable, so even if you were to create a single file
+         executable under WindowsNT, it won't run under Windows 3.1.  For
+         this reason, if you are developing programs under WindowsNT
+         (like I am), and you want those programs to run under Windows
+         3.1 with Win32s, then you must use the WITH-IMG directive before
+         using any of these save words, to force the save to create a
+         "name".IMG file.
+
+
+<HR>
+<A NAME="Enough Already"></A><B>Enough Already (I Hope)</B>
+
+  Well thats about all I have to cover, and I hope it is enough to get
+  you started.  There is a lot to learn in Win32Forth, and I believe
+  there are enough tools provided to make it possible to learn alot about
+  Windows programming.  If you need more, you can always purchase a
+  "real" development system.
+
+                        Remember, <B>DON'T PANIC!</B>
+
+                                Tom Zimmer
+
+
+<HR>
+<A NAME="Other Help Files"></A><B>Other Help Files</B>
+
+  Click on a Topic
+
+        <A HREF="file:win32for.faq">Win32Forth Frequently Asked Questions</A>
+        <A HREF="file:win32for.new">Recent  Changes to Win32Forth</A>
+        <A HREF="file:win32for.prv">Earlier Changes to Win32Forth</A>
+
+  Web Based Resources (Opens link in your Web Browser)
+
+     Win32Forth Updates and Helps
+        <A HREF="http://www.taygeta.com/forthcomp.html#ZIMMER">Latest Win32Forth on the Forth Compilers page on Taygeta</A>
+        <A HREF="http://www.sunterr.demon.co.uk/guide.htm">Online Guide to Win32Forth</A>
+        <A HREF="http://www.concentric.net/~jkelm/">Jeff Kelm's Win32Forth page</A>
+        <A HREF="ftp://ftp.cdrom.com/pub/forth/Compilers/native/windows/Win32For/">Win32Forth mirror of Taygeta on Walnut Creek WWW.CDROM.COM</A>
+
+     Other Forth Web Pages
+        <A HREF="http://www.forth.org/">Forth Interest Group's Home Page            **Join Now**</A>
+        <A HREF="http://www.users.zetnet.co.uk/aborigine/forth.htm">Forth Interest Group Home Page in the UK</A>
+        <A HREF="http://www.taygeta.com/forth.html">Forth Information on Taygeta</A>
+        <A HREF="http://www.taygeta.com/forthlit.html">Forth Literature page on Taygeta</A>
+        <A HREF="http://www.taygeta.com/forthcomp.html">Forth Compilers page on Taygeta</A>
+        <A HREF="ftp://ftp.forth.org/pub/forth">Forth Interest Group site FTP access</A>
+
+  News Groups (Opens link in your News Reader)
+
+        <A HREF="news:comp.lang.forth">comp.lang.forth,     Misc. Forth news group</A>
+        <A HREF="news:comp.lang.forth.mac">comp.lang.forth.mac, Macintosh Forth news group</A>
+        <A HREF="news:de.comp.lang.forth">de.comp.lang.forth,  German Forth news group</A>
+
+  FAQs from comp.lang.forth (Opens link in your Web Browser)
+
+        <A HREF="http://www.faqs.org/faqs/computer-lang/forth-faq/part1/">General Information</A>
+        <A HREF="http://www.faqs.org/faqs/computer-lang/forth-faq/part2/">Online Resources</A>
+        <A HREF="http://www.faqs.org/faqs/computer-lang/forth-faq/part3/">Vendors &amp; Authors</A>
+        <A HREF="http://www.faqs.org/faqs/computer-lang/forth-faq/part4/">Forth Systems</A>
+        <A HREF="http://www.faqs.org/faqs/computer-lang/forth-faq/part5/">Books &amp; Periodicals</A>
+        <A HREF="http://www.faqs.org/faqs/computer-lang/forth-faq/part6/">Groups &amp; Organizations</A>
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,66 @@
+READ.ME for Win32forth x.x Release  Date: March 10th, 2000    Tom Zimmer
+
+Overview:
+
+  Win32Forth is a public domain Forth language development system that was
+  written to solve a specific problem, that is the porting of a very large
+  commercial data processing application into the WindowsNT environment.  This
+  project has been successfully completed.
+
+Documentation:
+
+  Win32Forth has some documentation, consisting of the help files listed under
+  the Help menu after you start Win32Forth.  If you find that it will require
+  too much of your time to become familiar with Win32Forth, then you should
+  consider an alternative development environemnt.  Writing applications for
+  the Windows environemnt is a difficult process,  Microsoft is attempting to
+  solve this problem with programs like Visual Basic, but the amount of
+  information you as an individual need to assimilate is truely staggering.
+  Win32Forth doesn't make this any easier, you still need to learn a lot, and
+  then learn Win32Forth as well.
+
+Bugs:
+
+  Win32Forth is NOT bug free.  It never will be.  It is too large and
+  complicated for me or anyone else to ever find all the bugs that can be
+  hidden within it.  As I become aware of bugs, I try to fix them, but some
+  things are better not fixed, so beware, there are definite limits to
+  Win32Forth's ability to crash gracefully.
+
+Loading:
+
+  If you have gotten to here, and decided to try Win32Forth, then it is time to
+  load it onto your system.
+
+  Win32Forth is provided in an executable installation archive file called
+  W32FORxx.EXE  Win32Forth is installed into a single directory, so deleting
+  Win32Forth from your hard disk requires that you simply delete the
+  installation directory, and then delete the group of icons that were created
+  during installation.
+
+  The Installation program W32FORxx.EXE will install Win32Forth for Windows95,
+  Windows98 and WindowsNT into the directory of your choice. It will also create 
+  a Win32Forth program group with the following icons in it;
+
+        Win32Forth                The full Forth development environment
+        Make Win32Forth           Extends FKERNEL to Win32Forth from source
+        Meta Compile Kernel       Builds the kernel, FKERNEL.IMG from source
+        WinEd Editor              Starts WinEd on a blank file
+        Win32Forth Release Notes  Documents recent changes to Win32Forth
+
+Rebuilding the Win32Forth FKERNEL.EXE file:
+
+  Normally you will not need to rebuild the wrapper FKERNEL.EXE, but you
+  can do so if you have the appropriate tools.
+
+  To rebuild the FKERNEL.EXE program you will need Visual C++ Version 6,
+  or possibly Symantec C++ Version 7.2 (see FKERNEL.PRJ, but it hasn't been
+  tried in a while).
+
+Notes:
+
+  Read the file WIN32FOR.NEW for additional notes on late breaking changes
+  and improvements in Win32Forth.
+
+Slight revison of version numbers. March 11th, 2002 - 20:43 jp
+

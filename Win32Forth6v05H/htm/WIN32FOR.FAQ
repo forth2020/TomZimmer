@@ -1,0 +1,683 @@
+Win32Forth FAQ
+
+October 23rd, 1997
+
+> I have recently returned to Forth from a 15-year hiatus.  I located
+> WinForth 3.5 and am very impressed, but have two questions, the second of
+> which may or may not be unique to that implementation.
+>
+> 1.  The documentation refers to a list of open files in WinEd, which
+> should be accessible from the Files menu.  I can navigate the list with the
+> < and > buttons, but can't find the list.  Is it still there, or has it
+> been removed?
+>
+
+There is a double border on the left edge of WinEd's edit window.
+If you drag the right one, of the two borders on the left, to the right,
+then you will open up a vertical list of all open files.  You can then
+click on any of the open files, and switch between them.  Neat Huh?
+
+
+> 2.  Many of the demo files start with the incantation "only forth also
+> definitions".  There is an archaic word "forget" that I think this may
+> somehow be related to.  Where can I find an explanation of these words?
+>
+
+You will want to look at the ANS documentation for details on vocabularies.
+Look under the help menu on the Forth console.  There is an entry that will
+open the ANS document for your perusal.
+
+
+> 3.  WinDemo includes a file Windemo.bmp, which implements the toolbar.  Are
+> there tools for constructing such a toolbar from scratch?
+
+No special tools, I used Windows Paint, and edited them up.  I would reccomend
+
+that you copy the file WINDEMO.BMP to another name, then edit the icons in it
+with Paint, and then include that new file in your application for its
+toolbar.
+
+January 22nd, 1997 
+
+> Today, I noticed that when I start up a session with Win32Forth
+> approximately 27k of the heap is in use. But as soon as I compile my
+> first word, any word, a unit of size 524,288 is allocated from the heap.
+> I recall reading somewhere that Microsoft's Window API constants (from
+> wincon.dll) are moved onto the heap at about this time, is that really
+> what this is!?
+
+No, You mention the heap, but I suspect you are talking about the number
+displayed by .FREE for Malloc/Pointer memory.  This number represents
+memory that Win32Forth is allocating, and the reason it goes up, is
+because Win32Forth during the first load of a source file, allocates
+a dictionary sized buffer to hold source level debugging information.
+This information is needed by the editor, so that source level debugging
+can be accomplished.  If you don't want that array allocated, then
+you can issue the word WITHOUT-SOURCE, which will disable all the 
+operations, including the memory allocation, associated with source level
+debugging.
+
+August 14th, 1996
+
+> I believe that I've found a parsing flaw. If you are in decimal and
+> incorrectly enter a number that contains a single character 'd or 'e', it
+> will not flag it as not found.  Win32Forth just returns an OK and nothing
+> is left on the stack.
+
+That is correct, using the leters 'd' and 'e' alone, or in combination with
+legal numbers, does not produce an error.  These are floating point numbers,
+per the IEEE floating point number format.  If you use the floating point
+stack display word "F.S", then you will see that a number has been put on
+the floating point stack.  Actually, using 'e' alone will start up the
+WinEd editor, since 'e' is defined a an synonym for the word 'edit'.
+
+
+July 26th, 1996
+
+> I tried to make a cute little stack window that shows the contents of the
+> stack when you type stuff in Forth, but DEPTH doesn't work inside of the
+> On_Paint part of it.  There is also stuff on the stack that I didn't put
+> there.
+> 
+> What are these values on top of the stack, and how can I access the Forth
+> window's stack?
+
+You are right, On_Paint is called as part of a callback, to refresh your
+window. Callbacks have their own stacks, and as such can't access the
+foreground forth's window. To access Forth's window stack, you would need
+to find where their pointers are saved during a callback.  Without
+looking, I can't tell you where that is.  If I remember right, it may
+well be hidden, deep in the return stack of the callback itself.  If this
+is the case, you probably can't access it at all, that way.  A simpler
+approach would be to add an entry to the interpret deferred word, that
+saves these pointers away after each line is interpreted, so your program
+can have access to them.  There may even be a chain you could add a
+function to.  That would be easier than trying to change interpret.
+
+July 4th, 1996
+
+>         And questions while I am trying to write some program. How can I
+> debug the words define within object or class. Mdebug can only work
+> on methods while I am trying. How can I debug the methods such as WM_COMMAND,
+> and WM_TIMER with debug or mdebug? I will help me a lot. Thanks.
+
+There is an empty colon definition called BREAKER that is defined as
+follows;
+
+: BREAKER NOOP ;
+
+If you use it like this;
+
+:M WM_TIMER    ( --- )
+               BREAKER
+               ....the definition of WM_TIMER....
+               ;M
+
+Then say this at the Forth commandline before running your program;
+
+DEBUG BREAKER
+
+Then the Forth debugger will be invoked when the break point is
+encountered in BREAKER.  Then use the 'U' command to debug UP to the
+definition of WM_TIMER.
+
+Not elegent perhaps, but functional.
+
+June 25th, 1996
+
+> 1. Although I can use "methods" and "ivars" just fine, I can not make
+> "privates" work. Did I miss something? I almost go though all the documents
+> available.
+
+Instance variables created with "int" are, or were private until I added
+the dot notation syntax to allow access to them.  So I guess there really
+are no privates now.  They are local however, since you can define a
+variable with the same name in multiple classes and objects.
+
+> 3. I like the debugger, and I like the philosophy you put in both F-PC and
+> Win32Forth. The trouble I have is I can only use "mdebug" in forth command
+> mode but not in "WinEd". Do I miss something here? For regular word, it
+> works just fine. Although, I notice the highlighted word in "WinEd"
+> doesn't always match the current word. And sometimes, there will be more
+> than one step performed instead of one step when I use "step".
+
+MDEBUG is something I haven't implemented yet in the WinEd part of the
+debugger.  I guess you will have to use it from the Forth command line
+till I get around to implementing it.
+
+> 4. I followed the "winbrows.f" and wrote a simpler "filedump.f" program. It
+> is just my practice. But if you find it useful as one of your example, you
+> will be more than welcomed to adapt it and make any modification you want.
+> ( For beginner like me, I feel simple example is helpful.) I will append it
+> at the end of the letter.
+
+I greatly appreciate all submissions.  I will take a look at it, and
+perhaps change few things, since I can't ever seem to leave other peoples
+code alone. But I will try not to mess it up too much.
+
+May 1st, 1996
+
+>I've been building dialog boxes, and I've noticed that text is bigger (in
+>pixels) on an SVGA monitor than on a VGA monitor.  I made a word called
+>SCALE that adjusts the spacing between dialog items to compensate for this.
+>The question is, how can SCALE determine what size text it's going to be
+>stuck with?
+
+Good question, I believe you are talking about the fact that under
+Windows you can select a larger system font, or a smaller system font.
+And on a VGA monitor, you just get a larger font with no choice.  What I
+have had to do on my application, is just to use spacing for the larger
+font, and let the smaller font fall where it falls.
+
+There may be some Win32 API call to tell you what the system font size
+is, but you would have to research that, I don't know what it is.
+Probably something to do with "system metrics".
+
+>I fail to understand when rel>abs should be used, I 
+>already got that memory allocated with POINTER returns abs address but if 
+>I allocate it with MALLOC or with a CREATE its a rel address, but I fail 
+>to see why since I dont have the internals of the stuff. Give me a 
+>summary of Win32Forth's internal machine register usage and threading 
+>technique ( I thing its ITC, isnt it?).
+
+Win32Forth is ITC, relative.  All addresses that you CREATE, MALLOC, or
+POINTER will be relative addresses.  The only time you need to worry about
+absolute addresses, is when you are passing addresses to Windows in a
+system call. Those addresses must be absolute. And if Windows returns
+you an address, it must be converted back to a relative address before
+Win32Forth can use it.  So basically REL>ABS and ABS>REL are only used
+when dealing with the CALL operation, everything else has the conversion
+embeded within it automatically.
+
+Register usage is described at the beginning of FKERNEL.F.  But really
+since EBX is the top of stack, EAX and ECX are the only free registers
+that don't have to be saved.
+
+>I am spending hours and hours trying to understand the principle of using
+>objects in Win32forth studying the examples
+>There is some success if I make small changes
+>But doing new stuff  like answering the callback of a MouseMove to display
+>the coordinates
+>( following a tutorial book written in C++ )    -- no chance at all.
+>I cannot figure out the overall concept !
+>Where are hidden all the case statements of  HELLO.f  in WINHELLO.f ?
+>This question may sound silly to you but if I get one or two points clear
+>perhaps I can cut the Gordian knot.
+
+This is an understandable confusion point. Andrew's example (HELLO.F) was
+implemented without using classes, so it had to do everything brute force.
+
+WINHELLO.F on the other hand was implemented using the WINDOW class,
+which will automatically scan the HelloWindow class and object looking
+for windows messages as identified by the WM_ prefix and their existence
+in the WINCON vocabulary. These constants are then treated as window
+messages and when a window message of that type is received, it is passed
+to the appropriate WM_ method.  Methods not defined are handled by a
+default windows message handler.
+
+Here is an extract from WINDOW.F.  (WndProc) is the window callback
+procedure that is called whenever windows wants to send a message to a
+Win32Forth window. The first part of this definition just deals with a
+special case having to do with window creation.  I don't fully understand
+the details, so I won't explain it to you.
+
+: (WndProc)   ( hwnd msg wparam lparam -- res )
+        [ also classes ]
+        GWL_USERDATA 4 pick Call GetWindowLong  ( object address )
+
+        ?dup 0=
+        if
+                2 pick WM_CREATE <>
+                if
+                        DefaultWindowProc exit
+                then
+
+                dup abs>rel @   \ window object pointer from
+                                \ first cell of CREATEPARMS
+
+                4 pick ( obj hwnd )
+                2dup GWL_USERDATA swap Call SetWindowLong drop
+                                \ save pointer
+                over !          \ set hWnd parameter of window struc
+
+        then
+
+Here we look for window messages that we have defined.  If it isn't,
+defined then we pass control off the "DefWindowProc: [[ ]]" which allows
+the user to redefine for each window a new default window procedure if
+needed. If the WM_ message is defined, then it is executed by the "catch"
+and if no error occurs, then the callback just returns to window.
+
+        3 pick ( msg ) over >class MFA ((findm))
+        if      sp0 @ >r sp@ 4 cells+ sp0 !
+                dup>r catch
+                ?dup
+                if      r@ WndProcError
+                then    r>drop
+                r> sp0 !
+        else    \ -- a1                                 \ the object address
+                DefWindowProc: [[ ( a1 -- ) ]]          \ gets used here
+        then
+
+        [ previous ] ;
+
+
+' (wndproc) WndProc TheWndProc
+
+DefWindowProc: is defined here, to allow any window to recognize a
+WM_WIN32FORTH message if one is defined. Otherwise control is passed to
+"DefaultWindowProc"
+
+:M DefWindowProc: ( h m w l -- res )
+                2 pick WM_WIN32FORTH =
+                if      Win32Forth: [[ self ]]
+                        0
+                else    DefaultWindowProc
+                then
+                ;M
+
+DefaultWindowProc is defined here, which just calls windows and performs
+whatever windows wants to do with the message.
+
+: DefaultWindowProc ( hwnd msg wparam lparam -- res )
+        swap 2swap swap Call DefWindowProc ;
+
+
+If you don't understand all this, don't feel bad. There is much that I
+don't understand either.  Andrew did all the really hard work, in
+figuring out how to get it to work the first time.  The primary thing you
+need to know, is that if you define a window message (one starting with
+WM_) in a window, then your method will get called if windows sends your
+window that message.  The details are messy, but the way it works in
+Win32Forth, covers much of those details.
+
+>Can objects be embeded as instance variables in Class definitions? For
+>example can I define a
+>class "Date" and then embed a Date in the class definition for "Person"?
+
+Yes, as you can see by the example WINDILOG.F (when I release it), you
+can create local objects within other classes or objects.
+
+>Is it posible to call VBX's from WIN32FORTH ?
+
+If its possible, I don't know how.  If Visual Basic could make DLL's
+(which it can't), then you could use a DLL from Win32Forth.  Sorry.
+Win32Forth can be used to create DLLs (Only under WindowsNT) that can be
+called from Visual Basic or Visual C++.  The example code in FORTHDLL.*
+illustrates how this can be done.
+
+>In your file getting started ( F1) you state that Forth is case
+>insensitive.  This isn't true for calls like " call GetStockObject"
+>It must be typed in like the template
+>It is case sensitive but after same trys I can even write GSO and it is
+>loading??
+
+Win32Forth is case insensitive, except when using the CALL word to
+call a Windows procedure.  The procedure names "as you enter" them in the
+source, are used to access the names right out of the DLL, and as such
+are case sensitive.
+
+> I have been trying to use the WinDirect DLL's from SciTech Software
+> with Win32Forth. No success. Has anybody information on the correct
+> way to use DLL's with Win32Forth or perhaps even tried WinDirect.
+
+If you are running Win32Forth 3.0 or higher and the DLL you are trying
+to access is a 32bit DLL, then you should be able to simply add a
+WinLibrary statement like this to your application:
+
+WinLibrary MYDLL.DLL
+
+Then you just call the dll functions within your application with
+something like;
+
+        CALL MyDllFunction
+
+Be sure to put all its arguments on the stack in reverse order, that is
+the argument nearest the word CALL is the argument that appears first in
+the C call description.  Also you need to use REL>ABS and ABS>REL to
+convert addresses back and forth between things sent to a DLL and things 
+received from a DLL.
+
+NOTE: Win32Forth searches all the DLL's for a particular function name,
+and compiles a reference to which ever library it first finds the
+function in.  So if you have conflicting function names, you will have a
+problem.
+
+>A couple of days ago, I downloaded Win32Forth v3.0 from taygeta and one
+>thing (perhaps the only one!) I disliked was when running on a Windows
+>95(my case), it does not allow the creation of a single image file as it
+>happened with previous versions.
+>
+>I browsed away the C wrapper and found out that the image recognosance
+> routine is still there but all support for it was removed in FSAVE
+> why? , the new 2 dictionary model does not allow it or what?.
+
+In my efforts to support Windows 3.1 with Win32s, I found that I could
+not open, read or write to the currently running program.  This made it
+very complicated to get Win32Forth to create a single executable.  For
+simplicity I have chosen to use the current separate .IMG file approach
+until some future time when I figure out how to create a single
+executable the right way.
+
+NOTE: March 28th, 1996 With Version 3.1, FSAVE will automatically create
+a single executable .EXE on WindowsNT.  The .EXE can subsequently be used
+on Windows95, and WindowsNT.  It is known that the single executable .EXE
+will not be runable on OS/2, and may not be runable on Win32s, these
+being due to a resource read error on user defined resources.  Windows95,
+Win32s on Windows 3.1 and OS/2 automatically create a split executable
+with a separate .IMG file.  These will run on any of the above mentioned
+operating systems.
+
+>One other thing, is the OLE working in version 3.0?.
+
+No, Win32Forth 3.0 does not support OLE, though there is still an attempt
+to support it included in the form of OLE.F, which was Andrew's and my
+first attempt.  Unfortunately it was not really generalized, and was very
+difficult to setup, so it is probably not useful.
+
+>A bug I found (I think its a bug!), is when you make a Call to a routine
+> in a DLL, (previouly registered )such as this :
+>
+>                parameters Call DLLRoutine
+>
+>And DLLRoutine does not exist, forth returns an error to the console,
+>but more rastic than that is that when you make .Procs to see the
+>procedure table it is there? Is this made this way so you can resolve
+>the calls later, but anyway an error is returned througth ABORT" which
+>stops the compile, so I dont know.
+
+This is not a bug, you can only compile programs on a computer that will
+run the program.  So, any DLL you reference must exist on your machine.
+You also must insert a line like;
+
+WINLIBRARY NEWDLL.DLL
+
+To tell Win32Forth that it should search the new DLL when you attempt to
+perform a CALL to a function.  I should mention that because Win32Forth
+searches all of the DLLs it knows about for any procedure you try to
+perform a CALL to, you must not create any DLLs that have a procedure
+name conflict (duplicate procedure with the same name) as any of the
+existing DLLs.
+
+>Is there any way to change the default application icon?
+
+You must have Visual C++ to change the ICON, unless someone donates a
+resource ditor that can be distributed with the system that would allow
+changing it in the existing executable. If you have Symantec C++, they
+have a resource editor that allows changing the icon of an executable
+file.
+
+>I've been trying to run two windows in an application, each with its
+>own menu bar.  It seems that both windows want to use the last loaded 
+>menu bar definition.  I have a nice binary editor that gets its own 
+>vocabulary, window and menu bar.  So far, I haven't been able to use it 
+>inside other apps because of the menu bar conflict.
+
+Starting with Win32Forth verson 3.2, each window can have its own
+menubar. Look at the example program WINMULTI.F for an illustration of
+how to create a multiple window application.
+
+>Is there a way to cut stuff from the Forth window for pasting to the 
+>editor window?  This might be useful for when you type some definitions 
+>and they work, but they're not in a file anywhere.  So, you have to 
+>re-type them in the editor.  Why now scroll back and cut (copy) them, or 
+>SEE and copy? 
+
+It is not as convenient, but if you look at the File menu, you will see
+an item for saving the console window to a file so it can then be
+re-opened with the editor. The filename is CONSOLE.TXT.  You can also
+load part of a file being edited within WinEd.  Highlight the text and
+press the Ctrl+L key combination.  This will feed the highlighted text to
+Win32Forth as if you had typed it in with the keyboard.
+
+NOTE: June 4th, 1997 Version 3.4 of Win32Forth now includes the ability
+to highlight a part of the console window with the mouse, and then copy
+the marked text to the clipboard.
+
+> Is there any written documentation on the details and philosophy
+> behind the use of Objects the <Super command, etc in this Forth.  I
+> have tried out some of the examples, and it makes me want to learn
+> more about object oriented programming with Win32forth.  I like being
+> able to try out different methods from the command line, but unless I
+> can find some written documentation I always suspect that I may be
+> missing something.
+>
+> Would it be worthwhile obtaining the documentation for Yerkes, or
+> whatever that Object Oriented FOrth for the Mac is called?  I have
+> read that there is a certain amount of similarity between the Object
+> models used.
+
+Begin by looking at STARTUP.TXT, it contains a brief description and a
+couple of examples of how to use Object Oriented Programming in
+Win32Forth.
+
+In addition, since Andrew McKewan ported the NEON (yerks/MOPS) model of
+object oriented programming to Win32Forth, the MOPS manual
+is very similar in usage and concept to the OOP model used in Win32Forth.
+
+>I'd sure like to be able to make custom dialog boxes without having to 
+>re-build the system, since I don't have Visual C++.
+
+Versions 3.0 and later include some reworked Controls code that makes it
+at least possible to create dialogs (really modal windows) without having
+a dialog editor. Look at the example WINDILOG.F for an example of how to
+do this.
+
+>I am confusing with clearing of stack parameters.
+>For example, there are two methods in Window.f source.
+>      :M On_Init:   ( -- )   ;M
+>      :M WM_CREATE   ( h m w l -- res )
+>           On_Init: [[ self ]]
+>           0 ;M
+>Why does stack parameters, hwnd msg wparam lparam, vanish
+>in On_Init: method?
+>Actually, stack parameters of On_Init:, On_Size: are different in
+>Window.f, Windemo.f and WinEd.f
+
+In the above example, "On_Init:" is a method that does nothing special,
+in fact it does nothing at all, except become a place holder for the use
+of "On_Init:" in the following method WM_CREATE.   All of the WM_ methods
+n Win32Forth are called during a callback from Windows, when it wants to
+send, in this case, a window create message (WM_CREATE).  When this
+happens, then the WM_CREATE method will call the On_Init: method. The
+double brackets "[[ self ]]" signify a runtime specified reference to
+On_Init:, so if you have redefined On_Init:, then your definition of
+On_Init: will get called instead of the default no operation shown above.
+is sort of an automatic re-definition linkage for methods defined with [[
+self ]].
+
+Your second question relates to the fact that the stack seems to be left
+in a odd state.  Well, you are right, it isn't cleaned up before
+returning from the WM_CREATE method, but it doesn't need to be.  You see
+the WM methods are called only from a windows callback, which means that
+windows calls Forth, and during that process, stacks are created for the
+method to use during execution, and they are destroyed when the method
+returns to window, so it doesn't make any difference that things are left
+on the stack.  Each WM_ method should return a zero if message processing
+was completed without errors.  In fact, it is better to leave extra
+things on the stack, than to have a stack underflow.
+
+>  Is there any posibility of porting Win32Forth to the
+>OS/2 Presentation Manager.  Since the PM is a 32 bit flat
+>memory model porting should be feasable.  If I was more
+>familiar with Forth I would attempt it my self.
+
+Unfortunately, I don't have OS/2 or any of its development tools.
+Porting Win32Forth o OS/2 would involve changing all of the system
+interface code to call OS/2 functions.  Though many would be equivelant,
+they probably don't have exactly the same interface as Win32s functions
+do, so some code would need to be re-written.
+
+Note:  I now (March 8th, 1996) have OS/2 and I have at least looked at
+the programmers manuals for Presentation Manager.  The port might not be
+too difficult, but I don't think I have time at the present.  I have
+tested Win32Forth Version 3.1 under OS/2 with Win32s Version 1.25.142 and
+now that I have fixed some memory management bugs it works fairly well.
+You will need a new version of VW32S.SYS from the IBM update center to
+get Win32s 1.25 to work properly.
+
+>We have been thinking about
+>converting our industrial control product (currently based on FPC) to
+>Windows. Do you have comments on how difficult it might be to convert an
+>existing application to Win32Forth - excluding the user interface?
+
+Well, excluding user interface, Forth is pretty much Forth, though
+Win32Forth is a linear addressed 32bit Forth versus F-PC's 16bit, which
+leads to the normal 2+ versus 4+ (or CELL + for ANSI) problems.  The
+biggest problem you will have in using Win32Forth, is it is ANSI
+compatible, not F-PC compatible, so the file words are different.
+Win32Forth also adds full object oriented support (ala NEON or MOPS)
+which is a whole new way of thinking about programming.
+
+I must warn you that excluding the user interface in Windows, or even
+F-PC, is to discard a large part of the application.
+
+The other problem you will run into, is that Win32Forth only has access
+to hardware as it is made available through the Windows operating system,
+so access to hardware is extreamly restricted.  Primarily you can access
+serial ports and the printer port.
+
+>I am somewhat familiar with Windows 3.0 programing (just enough to be
+>dangerous I guess) but have not gotten into Win95 yet. Can you suggest a
+>good reference book to go along with Win32Forth?  
+
+SAMS makes a book called Win32 API (ISBN 0-672-30364-7 or LCCN 93-84382)
+( NOTE: June 4th, 1997 Unfortunately this book is now out of print.)
+which although it doesn't document the Forth in any way, does document
+the Windows 32 API interface.  It is the cheapest (about 50 dollars) and
+best resource I know of for anyone wanting to get started with Windows95
+or NT programing. Otherwise you will have to spring for MS Visual C++ at
+about 400 dollars, or Symantec C++ about the same price.
+
+NOTE: June 4th, 1997  Addison Wesley Longman Inc publishes a book called
+"Win32 Programming" by Brent E. Rector and Joseph M. Newcomer  with an
+ISBN number of 0-201-63492-9.  Published December 1996.  This is a very
+extensive (and expensive but worth it) book on Win32 programming
+concepts, but it is not as much of a symbol reference manual as the
+SAMS's book.
+
+>I don't suppose there's another Dr. Ting around, excitedly writing
+>manuals for Win32Forth yet?  Is that ever likely to happen?
+
+There has been some disscusion about a user written manual, but the most
+helpful user input, would be simple examples of things that work, showing
+how to use small parts of the system to do useful things.
+
+
+
+>What kind of
+>activities did you undertake to get familiar enough with Win95/NT to
+>write W32F?
+
+My work was done out of necessity.  My employer hired me to port their
+application, and I needed tools to accomplish that task.  I was very
+fortunate to be working with Andrew McKewan who had just solved all of
+the really hard "windows" problems before I arrived.
+
+>Did your company send you to any training?  
+
+No, not yet.
+
+>How much of your
+>knowledge came from 'self-education'?  
+>How much of your knowledge comes from informal
+>'networking'?
+
+All of it, or you could say it was education by Andrew.
+
+>Does your company use consultants to
+>get training and info?  
+
+Like most companies we use consultants to solve short term tasks where we
+can afford not to have full knowledge "in house".
+
+>Our project requires OLE
+>elements and it would be very helpful to know what support to expect
+>in Win32Forth in future releases and when to expect those releases.
+
+OLE support is in the works, but it is not known when it will be
+complete. There is some very primitive starting code for OLE server
+already included with Win32Forth.  It has been tested to some extent, but
+is not fully tested.
+
+NOTE: June 4th, 1997  The OLE code is very old by now, and has not been
+updated.  At this point, it seems unlikely that we will ever add OLE
+support, especially since Microsoft is now pushing ActiveX.
+
+>I was very happy after I downloaded "Win32For".
+>But I have trouble in using Win32For because there are no manuals.
+>Help me
+
+The only documentation currently available is listed in the Help menu in
+the Forth console window.  This provides access to the several small
+documents that provide hints as to how to use Win32Forth.  Version 3.1
+also introduces help through the F1 key in WinEd.  Position the edit
+cursor within an ANSI standard word and press F1, the ANSI DPANS94
+document will be opened on the standard definition of that word.
+
+The only way to learn to use Win32Forth currently is to look at the
+provided example programs listed at the start of the file WIN32FOR.NEW.
+
+>Tom, when I try to use help with Win32Forth, I get a message about
+>"unable to read drive D:" . On my system, drive D is a CD-ROM. Where
+>is the HELP stuff located, so I can reconfigure? Is it trying to use
+>the old F-PC hypertext help system (which _was_ on drive D because
+>I had a split hard drive)? HELP  :-)
+
+There is no Windows help currently, though access to the Windows Help
+system is built in. If you edit the source for HELP, you will see that a
+compiled string is being used to try to locate a file API32.HLP on drive
+D:, where I have mine located.  You will need to buy Visual C++ 2.2 to
+get that file.
+
+>I am trying to find an affordable Windows-based Forth to use for
+>authoring physics tutorials, live demos, etc.
+
+>I note you, at least, have DONE THE RIGHT THING and kept the stacks
+>distinct (whether or not you cache on the co-processor and/or EBX).
+>Thus Win32Forth is a good candidate.
+>
+>My main problem now is documentation--I have not been able to make the
+>on-line docs for Win32Forth work, and I gather from reading other
+>people's troubles, that they might be only virtual.
+
+It is in fact virtual (I.E. almost completely non-existent).
+
+>If you wanted to supply me
+>with a list of the currently defined words, I would be willing to put
+>them into the form of documentation with examples, as I noodle around
+>and learn the system. 
+
+You can use WORDS to display the words of one or more vocabularies to the
+screen and then use the SAVE CONSOLE menu item under the FILE MENU to 
+generate a list of words in Win32Forth.
+
+>Some fairly complete form of documentation will
+>be necessary before we can make Win32Forth a suitable pedagogical system
+>--and I for one would emphatically like to see that happen!
+
+Documentation is seriously needed, but I don't have time to create it.
+
+> I'm trying to get some EDIT-WINDOWS on the screen, to read in some
+> numbers. I don't wont to use POPUPs build with the resourcecompiler.
+> Can you tell me some tricks how to realize this ?
+
+Win32Forth includes several demonstration programs, these are the only
+examples vailable.  Note that WINEDIT does popup a generic edit box that
+is built into Win32Forth to accept input from the user for the simpleest
+form of text search while in browse mode.  You could copy that method and
+avoid creating your own windows. if you want to get simple single
+parameter input.
+
+>A question concerning the win32for kernel: Register edx is saved and
+>restored in all primitives which use it, but as far as I have seen, it
+>is not really used as object pointer. The primitive DU< destroys edx. Do
+>you intend to use edx as object pointer in a future release? I'm not
+?shure if the gain in speed is worth the trouble.
+
+The Win32Forth kernel is still evolving, so decisions about EDX are
+basically being deferred, but if it is being preserved everywhere but in
+DU<, then that is probably a bug.
+
+NOTE: June 4th, 1997  It has been fixed.
+

@@ -1,0 +1,1762 @@
+WIN32FOR.NEW            New Stuff in Win32Forth         by Tom Zimmer
+\ Changes February 14th, 2002 - 1:38 - rls
+\ Typo fix March 11th, 2002 - 20:48 jp
+***************************************************************************
+*                                                                         *
+*     NOTE: At Tom Zimmer's request, WinView has been re-named WinEd      *
+*                                                                         *
+***************************************************************************
+
+Complete list of Win32Forth demo programs;
+
+  Name                  Subject
+
+ FILEDUMP.F     A File Dump program contributed by Jih-tung Pai
+ HELLO.F        Windows interfacing without objects by Andrew McKewan
+ ROMCALC.F      A Roman numeral calculator by Lars Krueger
+ WINBROWS.F     File handling and window scrolling
+ WINCLOCK.F     Graphic clock in a window
+ WINDEMO.F      Graphics operations in a window
+ WINDILOG.F     User designed dialog box
+ WINHELLO.F     Windows interfacing with objects
+ WINMULTI.F     A multi window/menu program by Wolfgang Engler
+ WINPAR.F       Simple parallel port output
+ WINSER.F       Simple serial communications program
+ WINEDIT.F      Complete multi-file macro editor with hypertext
+ DFC.F          Differential File Compare by Wil Baden
+
+Help on ANS definitions is now available while editing in WinEd by
+clicking the mouse on an ANS word, then press the Ctrl-F1 key.  The ANS
+definition of the word will be displayed.
+THIS DOES NOT WORK SINCE THE HYPERLINKED VERSION WAS ADDED AND THE AND
+ANSFILES WERE DELETED. JAP
+
+The change History of Win32Forth from previous versions is now in the
+file Win32For.PRV, and can be accessed from the "Previous Win32Forth
+Changes" menu item under the Help menu in the Forth console window.
+
+************************************************************************
+********************** Win32Forth Change History ***********************
+************************************************************************
+
+May 3rd, 2002 - 14:14 rls
+Major changes to DC.F, mostly made to simplify it and to add the ability to
+print extension lines.  Previously, if a line was too long to print it was
+truncated at the right side of the page, with the rest being lost.  In WinEd,
+if the "Show Page Break Markers" box is UN-checked under the WinEd Preferences,
+and the desired text is highlighted (see below), then printing the selected
+area will show extended lines with "+" to the left of the normal left margin.
+
+You may print a selected area of text of a file with WinEd by using the
+following technique:  Click the mouse pointer in the blue area to the
+left of the first (or last) line of the desired area.  Then move the mouse to
+the left of the last (or first) line.  Before you click, hold down the "Shift"
+key.  The desired area will then be highlighted (or "Selected").  Now go to the
+"Print" menu and check the box labeled "Selection", and then click "OK".  The
+selected area will then be printed.
+
+The "2-Up" printing has been modified for better appearance and functionality.
+If the paper orientation is "Portrait" and 2-up is selected, then the sub-pages
+will show in "Landscape" mode, and vice-versa.
+
+Fixed a bug in WinEd in which the Find and Replace function would repeatedly go
+through the file and never stop.  Find and Replace now stops at the end of the
+file.  If you need to continue at the top, it is necessary to re-invoke the
+function.  (There are alternative solutions to this problem, but this seems
+the simplest and safest.)
+
+March 3rd, 2002 - 11:43 rls
+Changed PREFIX to /POSTFIX and POSTFIX to /PREFIX as per Michael L. Gassanenko.
+Also changed related words.  Note: some comments may still be in error.
+Thanks Michael.
+
+March 2nd, 2002 - 19:53 rls
+Added Bruno Gauthier's suggestions for colorization.  Also added my changes
+which color ONLY if the file has a .f extension AND the color option is checked
+as a preference item.
+Elko Tchernev suggested corrections to some ENVIRONMENT? words.  Those changes
+have been made.
+At John Peter's suggestion, the default font for WinView has been changed from
+Courier to Fixedsys.
+Fixed an obscure bug which made "underscore" characters disappear while
+printing on some lines.
+
+February 13th, 2002 - 17:31 rls
+Tom Zimmer has requested that for future releases of Win32Forth that the
+name of the editor be changed from WinView to WinEd.  That change has been
+made to the latest release.  In WinEd, the file selection has been changed
+so that the extension types do not revert to *.f in the "View Text File" dialog
+box.  Added *.HTML extension to possible file types.  Corrected the spelling of
+"deferred" including the word .DEFERRED .  Icons have been created for the mew
+version of Win32Forth and WinEd.  The icon represents the sponsorship of the
+Silicon Valley Forth Interest group, abbreviated as SV FIG.  Thus the new logo
+displays a fig leaf.  For WinEd, the stem is replaced with an editing pencil.
+
+February 11, 2002 - 18:35 rls
+Added correction to BLOCK.F submitted by Roderick Mcban, via Tom Zimmer
+Changed definition of { in FKERNEL.F, submitted by Tom Zimmer, presumably in
+response to a user complaint.
+
+February 7th, 2002 - 5:36 - rls
+WinEd now allows "Rectangular" highlighting.  To highlight a rectangular
+area, first depress and hold the Control key, then select a rectangular area
+with the mouse by first moving to one of the four corners of the desired
+rectangle and pressing the left mouse button.  While holding the left mouse
+button, move to the opposite corner of the rectangle, then release the mouse
+button and then the control key.  If the desired selection exceeds the verticle
+extent of the window, the text will automatically scroll at a rate that depends
+on the distance of the mouse pointer from the screen boundary.
+
+After the highlighted area  is selected, you may use the Control-X, Control-C,
+Control-V, or the Ins or Del keys to perform various editing tasks with the
+highlighted area.
+
+WinEd also allows one or more spaces before and/or after search strings.
+The spaces indicate possible "white space" in the search.  If the white
+space is to include the region to the left of the start of a line, it is
+necessary to use the character ALT-0160 and a normal space at the start of
+the search string.
+
+At the request of John Peters, you may now print a series of lines that are
+highlighted.  After the lines are selected, select the Print File.  In the
+dialog box, click on "Selection".
+
+July 9th, 2001 - 11:24 tjz
+Modifed Win32Forth per a suggestion from Richard Adams, with code
+provided by Bernd Paysan, to allow Filenames in Win32Forth to contain
+spaces.  If a filename starts with either a ' (tick), or a " (quote) and
+ends with same, then it will be parsed using tick or quote, as a single
+word in those words that accept filenames.
+
+The code to do this is as follows;
+
+\ tjz, as posted from Bernd Paysan Thu, 05 Jul 2001  Thanks Bernd
+
+: /parse        ( -- addr u )
+                >in @ char swap >in ! dup '"' = over ''' =
+                or IF  dup parse 2drop  ELSE  drop bl  THEN  parse ;
+
+: /parse-word   ( -- a1 )
+    /parse pocket place         \ get a word that may start with ' or "
+                                \ into pocket
+    pocket +null                \ make sure it is null terminated
+    pocket ;
+
+/parse-word is then used in place of "bl word", in those places where a
+filename is expected.
+
+Thanks Bernd, and Richard for the suggestion and solution. tjz
+
+January 23rd, 2001 - 9:02 tjz
+Received a modified version of WinView from Robert Smith, that contains
+rectangular copy, paste, and deletion.  An area of text is marked using
+the normal highlight mechanism, but while holding down the Control key.
+Thanks Bob,
+
+November 27th, 2000 - 12:03 tjz
+Modified /STRING to make it ANS compatible, it now has the following
+definition with will allow n1 to be negative. BE WARNED, that if you have
+existing code that uses /STRING, and assumes it will return a null string
+when a negative n1 is passed to it, then YOUR EXISTING CODE WILL BE
+BROKEN!.  You will need to look at all uses of /STRING, and preceed those
+that may pass a negative n1 with "0MAX", to prevent unexpected things
+from happening.
+
+CODE /STRING    ( addr1 len1 n1 -- addr2 len2 )
+                pop     eax
+// November 27th, 2000 - 11:58 tjz
+// Added the following two lines to allow a negative argument to be
+// passed to /STRING, such that the string will be expanded.
+// Dangerous, but legal according to the ANS Forth standard.
+                cmp     ebx, # 0
+                jle     short @@1
+
+                cmp     ebx, eax
+                jbe     short @@1
+                mov     ebx, eax
+@@1:            add     0 [esp], ebx
+                sub     eax, ebx
+                mov     ebx, eax
+                next    c;
+
+
+
+November 20th, 2000 - 9:28 tjz
+Corrected in file 486ASM.F
+\ As reported by Michael Glassanenko, and verified by the
+\ Intel i486 Processor Programmer's Reference Manual 1990 on page
+\ 2-21, "The ESP register cannot be used as an index register".
+\ ** REMOVED THE FOLLOWING INDEXED ADDRESSING MODES **
+\ unknown   32bit     index      0c asm-op  [esp*2]
+\ unknown   32bit     index      14 asm-op  [esp*4]
+\ unknown   32bit     index      1c asm-op  [esp*8]
+
+
+October 30th, 2000 - 9:37 tjz
+Added ID. to PRIMUTILS.F, which displays the name of a word given the
+NFA. Suggested by Anton Ertle and others, trying to improve compatibility
+between the various versions of Forth. My implementation will always
+display something, even when given an invalid NFA, it will display
+"[UNKNOWN]".
+
+October 13th, 2000 - 17:31 tjz
+Changed teh wrapper, per a suggestion from Sergey Denisov, to use
+GetTextExtentPoint32 instead of GetTextMetrics.  
+
+September 12th, 2000 - 13:52 tjz
+Robert Smith reported that if you do the following;
+
+VOCABULARY XXX
+FORGET XXX
+
+Then all the dictionary is consumed, and there is therefore no more
+memory for your usage.  I have corrected this in the file NFORGET.F by
+modifying (FORGET) to stop it from incorrectly setting DP to the system
+dectionary dictionary pointer.
+
+September 8th, 2000 - 16:55 tjz
+Julian V. Noble writes:
+The Win32For Release Notes, win32for.new for v. 4.2 latest build should
+reflect the change in location of the fp stack, 4-1-98 note in float.f .
+
+August 24th, 2000 - 9:34 tjz
+After reading a bunch of discussion on the news group about [DEFINED] and
+[UNDEFINED] I have added them to Win32Forth's FORTH vocabulary.  They
+take a string, and return a flag.  They are IMMEDIATE.
+
+August 17th, 2000 - 13:58 tjz
+Added the ability in WinView to save a list of file locations that are
+found by the search in files function.  There is now an extra button in
+the search in files dialog to save the list to a file called
+SEARCHLIST.TXT.
+
+Also updated Brad's colorization facility with now includes support for
+marking assembly language files.
+
+August 10th, 2000 - 13:48 tjz
+Repaired a bug in the search in files function of WinView, it was
+inserting an garbage string when the search buffer needed to be expanded.
+Added a button to the search in files dialog, to allow saving a file
+called SEARCHLIST.TXT in the current directory that contains a list of
+the results of the current search.
+
+August 8th, 2000 - 14:43 tjz
+Brad, Eckert <Beckert@gtcocalcomp.com> has added keyword colorization to
+WinView, which I have integrated into my latest sources.  A new file
+WINVIEW.COL holds the keyword list, colors and method of colorization
+indicators.  See that file for more information on how to add your own
+keywords for a specific application.  A colorization enable/disable
+button has been added to the preferences dialog.  It does not currently
+handle multiple line comments, but that may come one day.  Thanks Brad!
+
+August 3rd, 2000 - 11:02 tjz
+Added some additional detection code, so that WinView will not
+inappropriately perform a call to a Win32API internet functions, when the
+internet functions are not present on the machine where WinView is
+running. Thanks to Julian Noble for reporting this bug.
+
+July 31st, 2000 - 15:58 tjz
+Changed the default behaviour of the toolbar to appear initially as a
+full toolbar, instead of as a minimum toobar, since some people won't
+immediately know how to switch between the various toolbar modes.
+
+Changed the default floating point cell size from 10 bytes to 8 bytes,
+since there is a big hit in performance for 10 byte floats, and they
+aren't needed by everyone.  To change this, you just need to edit the
+EXTEND.F file line just before the FLOAD FLOAT.F line, to set B/FLOAT
+from 8 bytes to 10 bytes.
+
+May 30th, 2000 - 10:31 tjz
+Added tab expansion to DC.F for use in WinView, including two new
+methods: SetTabWidth: and GetTabWidth: to set a simple default tab width,
+when you don't want to want to manually use an array of tab settings.
+The printer method Type: now expands tabs to the width set by the above
+method, which defaults to eight (8) spaces.  WinView will now expand tabs
+during printing, as well as on the display when in browse mode.
+
+May 8th, 2000 - 9:25
+Robert Smith reported that if when using WinView, you use the print
+button on the toolbar, which is setup to print the entire file, then, you
+use the PRINT menu item under FILE, it will just print the whole file
+again, and will not give you any opportunity to set page range, or other
+print parameters.  Corrected this by modifying PRINT-TEXT in WinView. 
+
+March 9th, 2000 - 10:47
+Added USED, which takes a command line following, and after interpreting
+it, displays the amount of memory used by the line.
+
+USED    ( --<commandline>-- )
+
+Added .REGISTRY which displays the current registry settings for
+Win32Forth.
+
+Updated WINBROWS.F to include the variable sized scroll bars, and to
+allow it to handle files with more than 32000 lines better.
+
+March 3rd, 2000 - 11:10
+Added a ToolBar Options submenu to the Edit menu, containing the items
+needed to open, close, float, unfloat and switch the size of the toolbar.
+
+Re-engineered the perferences dialog to be more logically grouped, and
+added Toolbar options.
+
+March 2nd, 2000 - 11:33
+After some experimentation with adjusting the value of LMAXCOUNTED, I
+believe the reason WinView was crashing, was because LMAXCOUNTED is
+passed to LOCALALLOC: lots of times, and Windows has a problem with
+allocating data on the stack that is greater than 4k bytes. Reducing
+LMAXCOUNTED to 1k seems to fix the problem.
+
+Modified the word wrap disable preferences so that a right margin of zero
+(0) disables word wrap, instead of having to enter the maximum right
+margin, which is now 1024.
+
+March 1st, 2000 - 16:37
+
+Corrected some bugs in the kenel, related to console color handling.
+Also added getFg and getBg to the wrapper, to allow getting the current
+console colors.  If either of these returns -1, then the system color is
+being used.  Corespondingly, if you set the console colors to -1 with
+FGBG! then the system colors are used.  This is the default.
+
+Also modified WinView to use the default system color.  It won't change
+colors while it is running, if you change the system colors, but if you
+shut it down, and restart it, then it will have the right colors.
+
+February 24th, 2000 - 14:34
+Changed scroll bar handling in WinView, to not use resizable scrollbars
+in the case when the file being edited has more than 32767 lines.  It
+con't easily be made to work, becasue of a problem with Windows, so
+revert to non-adjustable scrollbars for large files.
+
+January 17th, 2000 - 10:39
+Repaired a problem with BLOCK.F as reported by Clemens Hintze relating to
+the variable ?LOADING, which was being treated like a VALUE, causing a
+compile error.  FIXED
+
+Added two new variables to FKERNEL.F, relating to default file extension
+application.
+
+VARIABLE EXT_ADDED?     \ January 17th, 2000 - 10:31
+
+EXT_ADDED? contains TRUE if a file extension was added to a file after a
+call to ?DEFEXT.
+
+VARIABLE DEFEXT_ON?     \ January 17th, 2000 - 10:31
+
+DEFEXT_ON? contains TRUE if the addition of a default file extension is
+enabled, and FALSE if it is disabled.
+
+Also made some changes to WINVIEW.F, to make it behave better, when a
+file is passed to it that has no extension.  WINVIEW will try to open the
+filename as passed first, and if it failes, then it will try adding the
+default file extension. 
+
+October 12th, 1999 - 9:18 tjz
+Cleaned up a problem where the status line wasn't being updated unless
+the mouse was moved.  Added a status line update to just before KEY in
+VIEW-KEY-LOOP.
+
+October 7th, 1999 - 9:31 tjz
+Added a feature to the hyper text compiler that recognizes a lineend like
+a space, in looking for the end of a word.  Suggested by Michael Steen.
+
+October 6th, 1999 - 11:16 tjz
+Cleaned up the toolbar support somewhat.  It is now possible to float a
+toolbar, see WinView as an example.  It still isn't particularly clean,
+but it seems to work ok for the time being.  It looks like it would be a
+lot more work to do a real dockable/undockable toolbar.
+
+September 7th, 1999 - 22:48 tjz corrected a bug reported by Jos v.c. Ven,
+seems I forgot to initialize the super class of EditControl when I added
+some enhancements.
+
+September 2nd, 1999 - 3:35 tjz
+Fixed a bunch of bugs related to the changes I have been making to the
+ToolBar enhancements.  It seems I wasn't clearing the ToolBar handle to
+null, when closing the toolbar, which caused some serious problems when I
+tried to reopen it.  I also wasn't closing the tool buttons either.  It
+was easy to fix, but there are big errors.  It is clear to me, that this
+Windows programming thing is way too hard, and we should all stop doing
+it.
+
+Now that I have that off my chest, the latests WinView enhancements
+include a recent files list in the File menu, and a saved and restored
+list of recent search strings.
+
+August 17th, 1999 - 13:54 tjz
+Cleaned up some of the Forth console support in WinView, so you can
+opena nd close the console with right popup menus.  Also repaired the ?F
+command line option, so it will now open up the Console window if it
+isn't already open, and pass the remainder of the command line to Forth
+for interpretation.
+
+Added right popup menus to the toolbar, so you can easily switch between
+the two bar sizes, or clsoe the toolbar if you want.
+
+August 11th, 1999 - 11:59 tjz
+Thanks you Alan M Robertson <alan@ram-tech.co.uk> for the bug report on
+WinView.  Seems WinView was not always matching files opened multiple
+times as really one file.  FIXED
+
+I have done a bunch of work on the WInView ToolBar classes.  WinView now
+has a search text ComboBox in the ToolBar, and CLASSES.F has been updated
+to support this additional functionality as well.  A program can easily
+capture keys and KILLFOCUS from a ComboBox, and perform application
+specific operations.  For example you can edit in a new find string, and
+then press F3 to find the text in WinView.
+
+WinView also now has two toolbars. A minimum bar that has most, but not
+all the original functonality (I took out the hyper buttons), and a new
+double row toolbar that has everything.  ToolBars aren't un-dockable yet,
+but I'm thinking about it.
+
+August 2nd, 1999 - 10:25 tjz
+Updated ANS documentation to include the fact that the maximum number of
+local variables was increased from the original eight (8) to the current
+twelve (12) .
+
+The following source lines as they existed in the definition of '{' were
+originally supposed to prevent the creation of an extra local variable,
+when a 'name' type comment was inserted into a local variable
+declaration. I now believe this was a bad idea, and could prevent real
+local variables from being defined, when they start with a ''' character.
+
+        FIRSTCHR DUP [CHAR] - <>       \ as in { name -- }
+                SWAP [CHAR] ' <> AND   \ or as { name 'name' -- }
+
+Also reworked '{', to allow local variables to be broken into multiple
+lines, as suggested by Robert Smith.
+
+Added a definiton NEXTWORD, that gets a word from the input stream, even
+if a line crossing is needed.
+
+: NEXTWORD      ( char -- adr flag )
+                \ flag=TRUE if we got a word, else FALSE
+                BEGIN   DUP WORD DUP C@ 0=
+                WHILE   refill 0=
+                        IF      NIP     \ discard 'char'
+                                FALSE   \ can't find a word
+                                _EXIT   \ time to leave
+                        ELSE    DROP    \ discard empty word
+                        THEN
+                REPEAT  NIP TRUE ;
+
+
+July 29th, 1999 - 14:53 tjz
+Added new classes to BUTTON.F, for use on ToolBars.  You can now add
+either an EditField, or an editable ComboField to the ToolBar.  This
+functionality is used in WinView to put the editable find field on the
+ToolBar.  Examine WinView for details of use, but it is rellatively easy.
+
+Here is an extract of of part of the WinView ToolBar code.  Notice the
+lines between the "***" lines.  ComboField defines an editable Combo
+Select list that is 120 pixels wide named "findCombo". "findCombo" is
+used to manipulate the ComboField object.  The definitoin lower down, for
+"myWmChar", and "myWmKeyDown", provide the linkage to test for particular
+keys, like Enter or F3, so you can perform the search while the find text
+is being edited.  These functons must be installed using the methods
+SetWmChar: and SetWmKeyDown:.
+
+ToolBar Edit-Tool-Bar "WINVIEW.BMP"
+        4 HSpace
+     0 PictureButton                    new-text        ; \ new
+        ButtonInfo"  New Text File  (Ctrl+N) "
+        7 HSpace
+\ ***************************************************************
+   120 ComboField findCombo     \ "findCombo" used to manipulate the list
+        ButtonInfo"  Find Text "
+        findCombo to findEditCombo  \ link for forward reference
+\ ***************************************************************
+        7 HSpace
+     5 PictureButton                    s" STARTUP.TXT"  "browse ;
+        ButtonInfo"  Help me get started  (F1) "
+        5 HSpace
+ENDBAR
+
+: myWmChar      ( h m w l obj -- res )
+        2 pick VK_RETURN  =           \ if return
+        IF      GetText: [ ]          \ get adr,len of edit control text
+                "CLIP" find-buf place \ save string in find buffer
+                find-text-again       \ search for it
+                FALSE                 \ we already processed this message
+        ELSE    drop                  \ discard object
+                TRUE                  \ and use default processing
+        THEN    ;
+        ' myWmChar SetWmChar: findCombo
+
+: myWmKeyDown   ( h m w l obj -- res )
+        2 pick VK_F3  =               \ if F3
+        IF      GetText: [ ]          \ get adr,len of edit control text
+                "CLIP" find-buf place \ save string in find buffer
+                find-text-again       \ search for it
+                FALSE                 \ we already processed this message
+        ELSE    drop                  \ discard object
+                TRUE                  \ and use default processing
+        THEN    ;
+        ' myWmKeyDown SetWmKeyDown: findCombo
+
+Notice also, that "EditField", and "ComboField", *UNLIKE* "PictureButton"
+are NOT followed immediately by the body of a colon definiton.  Their
+function MUST be installed later as described above.
+
+These changes required significant enhancements to the EditControl class
+and the ComboControl class in the file CONTROLS.F
+
+July 28th, 1999 - 12:08 tjz
+Added automatic horizontal scrolling to the EditControl in CONTROLS.F.
+
+July 19th, 1999 - 9:25 tjz
+Removed Pierre Abbat's web page reference from the Win32Forth help menu,
+is no longer valid.
+
+June 21st, 1999 - 10:37 tjz
+Got a question from Gorg Huff, wondering if GetPixel was implemented, and
+it appears I isn't, so I have added it to DC.F in class WinDC. SetPixel,
+was already present in DC.F.
+
+June 1st, 1999 - 10:56 tjz
+Fixed a bug in DC.F, reported by Robert Smith.  When the page borders
+were turned off in printing WinView pages, it would ignore the ending
+page number of the pages to print.  FIXED.
+
+May 20th, 1999 - 11:55 tjz
+Modified Win32Forth and WinView so the console can show up inside of
+WinView's window.  There is an new item in WinView preferences dialog
+that allows showing or hiding the Forth console window.  When you open
+the console, Win32Forth is automatically started up if it isn't already
+reunning.  If Win32Forth is running, then WinView will capture the
+console window.
+
+So, you have a choice, you can have Forth and WinView use a single split
+window, or they can use separate window. 
+
+It still seems kind of flakey, to run Win32Forth in a window inside
+WinView, so you shouldn't rely on this feature sticking around, unless I
+can get it working properly all the time.
+
+May 10th, 1999 - 12:22
+Added "HTML to WinView, which reads an HTML page from the web. Added a
+User preference to the WinView preferences, to allow specifying whether
+WinView will try to open Web pages within itself, rather than posting
+them to the default system web browser.  You can't browse any images, but
+for text it is pretty fast.  Web pages are cached as numerically
+incremented WinView.xxx files, as they are opened, so you can rotate
+around them quickly with Control+PgUp and Control+PgDn.  It handles
+relative links by attempting to extract the base URL from the current
+page where the relative link is located. It seems at least with minimal
+testing to work fairly well.
+
+Increased the maximum number of local variables that are allowed in a
+single definition from ten to twelve.
+
+May 6th, 1999 - 11:10 tjz
+Added FUNC: to WinLib.F, to allow call syntax compatibility with Forth
+Inc's SwiftForth.
+
+April 29th, 1999 - 15:21 tjz
+Added tighter checking to TO and +TO, to prevent their being used on
+words that they don't work on, like VARIABLEs, CONSTANTs and DEFER-red
+words.
+
+April 26th, 1999 - 14:27 tjz
+Added the auto load feature of Win32Forth back in, so you can highlight
+text, and press F11 or use the editor menu item called "Copy & Paste to
+Win32Forth", to automatically load some code into Win32Forth.  Win32Forth
+must already be loaded, or the command is ignored.
+
+April 23rd, 1999 - 13:06 tjz
+Removed COMMCTRL.DLL from the list of DLLs listed in WINLIB.F.  It
+appears to be a 16bit DLL, and won't work with Win32Forth anyway.
+Win32Forth needs to use COMCTL32.DLL instead.
+
+Enhanced WINCON-NUMBER? in WINLIB.F, so it will be able to find constants
+that exist in both ANSI and UNICODE version in WINCON.DLL.  If a constant
+is not found, then WINCON-NUMBER? appends a 'A' to the constant name, and
+tries again.
+
+Corrected a bug in CAPS-SEARCH, that was returning a temporary buffer
+address instead of the source buffer address.
+
+Added a status bar to WinView, When you are in browse mode. It displays
+the contents of any hyper-text link you position the mouse over, at other
+times, it displays the current cursor position..
+
+April 21st, 1999 - 14:57 tjz
+Fixed some bugs in WinViews handling of hypertext links.  I'm sure all
+the bugs aren't fixed, but its getting better.
+
+Also fixed a bug related to paragraph shifting, where you highlight a
+series of lines, and use TAB and Shift-TAB to move the text right and
+left on the screen.  I had an off by one calculation error related to the
+change to longer lines.
+
+April 19th, 1999 - 14:57 tjz
+Modified WinView so it can handle longer lines.  Now lines can be upto
+1024 characters in length before they get force wrapped.
+
+April 15th, 1999 - 10:52 tjz
+Corrected a bug in ResizePointer in POINTER.F, where ResizePointer would
+crash if it was executed before the pointer being resized was allocated.
+
+April 14th, 1999 - 11:35 tjz
+Added Bitmap display support to WinView. You can now display pictures
+just by opening them, or hyper linking to them.  You can't modify them in
+any way, or print or save them though.  Thanks to Bruno Gauthier and
+others who worked on WinDemo.F, which I copied portions of to add this
+capability.
+
+April 13th, 1999 - 13:25 tjz
+Added support in WinView for the resizable scroll bars for Windows 98 and
+WindowsNT. Added Win32API help links to STARTUP.TXT.
+
+Also added the rational files from DPANS94.  Unfortunately, this pushed
+the size of Win32Forth above the 1.4meg size limit for floppies, but I
+guess it had to happen sometime.
+
+April 12th, 1999 - 14:12 tjz
+Added Autoclose to the tooltips, after 2 1/2 seconds. Changes were in
+CONTROL.F. Also added "SetAutoClose: ( flag -- )" and GetAutoClose:
+( -- flag ) to manipulate the auto closing status of a particular window.
+The default is autoclose enabled. 
+
+April 5th, 1999 - 15:28
+Added a new version of printing for bitmaps to WinDemo.F from Bruno
+Gautier.
+
+April 5th, 1999 - 15:00 tjz
+************************* Released Version 4.1 ************************
+
+April 5th, 1999 - 10:03 tjz
+Finally added Will Baden's MACRO definition to Win32Forth.
+
+April 2nd, 1999 - 17:37 tjz
+Corrected an off by one error in WinView in function ">sifEntry",
+reported by Isaac T Evans <Isaac_T_Evans@tst.tracor.com>.
+
+March 31st, 1999 - 17:26 tjz
+Added WinClock.F, another example program.  It displays a graphical
+analog clock in a resizable window.
+
+March 30th, 1999 - 8:35 tjz
+Received an enhanced version of WinDemo, that supports saving .BMP and
+.DIB image files in various color depths from Bruno Gauthier. I have also
+included some enhancements of my own, ported from a TCOM program I wrote
+some years ago called LINEWALK.
+
+March 18th, 1999 - 17:05 tjz
+Modified the Find In Files section of the files listbox, to display the
+text of the line where the searched for text was found.  This makes it
+easier to scan through a list of files and see which occurances you want
+to change.  
+
+March 17th, 1999 - 17:21 tjz
+Added a list box to the file list window at the left of the edit area of
+WinView.  The listbox allows selecting either the list of open files, or
+the list files where you most recently performed a Find In Files.  If you
+hold the mouse over one of the files, its full file path and lien number
+will be displayed.  To make the list visible, you have to drag the
+vertical splitter bar to the right, since it defaults to closed.
+
+March 16th, 1999 - 9:05 tjz
+Received a final update to FLOAT.F from Robert Smith, that deals with the
+F>D bug, as well as other floating concerns in the area of truncation and
+rounding.
+
+Also integrated FCALL from Bill McCarthy, that allows performing CALLs to
+DLL functions that pass floating point number into and out of a CALL.
+
+Also included a fix from Bill McCarth to N"OPEN, where it was failing
+when trying to open short two letter filenames.  FIXED
+
+March 12th, 1999 - 10:05 tjz
+Added right mouse popup menus to the console. Here is an example of how
+to replace the default right mouse popup.
+
+
+--- cut ---  example of a new right mouse popup menu
+
+POPUPBAR Console-Popup-bar
+    POPUP " "
+        MENUCONSOLE     "Exit"                  bye ;
+ENDBAR
+
+Console-Popup-bar to console-popup
+
+conhndl Start: console-popup
+
+--- cut ---
+
+March 9th, 1999 - 17:36 tjz
+Added correcting code for the F>D bug reported on comp.lang.forth.
+Recieved a fix from  <A HREF="mailto:josv@wxs.nl>J.v.d.Ven</A>.
+Thanks Jos.
+
+February 17th, 1999 - 11:13 tjz
+I received a report from <A HREF="mailto:surrel@cnam.fr">Yves Surrel</A>
+It seems Win32Forth's DLL support was broken, so I have corrected the
+problem, and updated Win32Forth to include the minimal DLL wrapper needed
+to allow people with WindowsNT to create simple DLLs.  NOTE!  That is
+ONLY in WindowsNT, not Windows95 or 98.
+
+The process is pretty simple, just startup Win32Forth, and type this
+commandline;
+
+FLOAD FORTHDLL.F
+
+This builds the DLL named FORTHDLL.DLL.
+
+Then type BYE, and restart Win32Forth again.  Now type in, or copy and
+paste the following lines.
+
+
+WinLibrary FORTHDLL.DLL          \ make the DLL available to Forth
+
+4 proc DLLForthEntry             \ declare the DLL entry point
+                                 \ this not needed, but it can be done
+
+fload MESSAGES.H                 \ load the DLL function names
+
+: DLLWORDS  ( -- )
+        0 0 0 DLL_WORDS          \ the four arguments to the DLL
+        call DLLForthEntry drop; \ call the DLL_WORDS function
+                                 \ in the Forth DLL
+
+DLLWORDS                         \ execute 'words' out of the DLL
+                                 \ wait for it to finish.....
+
+
+Win32Forth will link to FORTHDLL.DLL, build a word to access the
+DLL_WORDS function called DLLWORDS, and then execute that word.  You will
+see a new Win32Forth window appear on top of the Win32Forth window that
+is already on the screen (you can move it away to see both windows), and
+this new console window will be displaying the Forth word list.
+
+You just built and execute your first DLL.
+
+This is the extent of the support I can provide for building DLLs, but al
+the pieces are there, and the process is much simpler than it used to be.
+not to mention that you don't need Visual C++ any more to build the DLL
+wrapper, since I am providing the wrapper in the release..
+
+
+February 16th, 1999 - 17:33 tjz
+Added in a modified version of the WinDemo.F example program, that has
+the ability to open .BMP files, and to paste .Bit mapped graphics into
+the WinDemo window.  Thank you Fridemar, and Bruno.
+
+Added some support for some additional HTML tags.
+
+Implemented a (hopefully) correct version of EKEY>CHAR.
+
+February 8th, 1999 - 16:33 tjz
+Fixed a bug reported by Bruno Gauthier, where use of search and replace
+could have tried to search for the wrong text, if you had used Find In
+FIles multiple times.  FIXED
+
+February 1st, 1999 - 11:08 tjz
+Corrected a stack bug in WinView, reported by Bruno Gautier in the
+function "AddFile.
+
+January 28th, 1999 - 9:07 tjz
+Added additional comments submitted by Bruno Gauthier, for the ISO 8859-1
+characters set recognition in WinView.
+
+January 27th, 1999 - 11:27 tjz
+Modified MARKER to preserve and restore the search order.
+
+January 25th, 1999 - 9:13 tjz
+Removed an extra ?UPPERCASE from the definition of HASH>, as reported by
+Bruno Gauthier.
+
+January 20th, 1999 - 10:52 tjz
+Added international character support to WinViews HTML hypertext
+processor, as submitted by Bruno Gauthier.
+
+January 11th, 1999 - 11:05 tjz
+Changed the default floating point size from eight (8) bytes to ten (10)
+bytes.
+
+Extended User area in kernel from 1024 bytes to 4096 bytes.
+
+Added new kernel words relating to user variables;
+
+NEWUSER         ( bytes -<name>- )
+                define a user variable of 'bytes' size in the next
+                available bytes of user space.
+
+NEXT-USER       ( -- adr1 )
+                A static variable in the kernel that holds the offset of
+                the next available byte of user space.
+
+.USERSIZE       ( -- )
+                Displays the amount of memory used and avaiable in the
+                user space.
+
+Moved the floating point stack into USER space. This involved a change in
+registers in most floating point words, but should not effect floating
+point performance.
+
+January 8th, 1999 - 10:25 tjz
+Adjusted the maximum console window limits from 128 columns and 512 rows,
+to 200 columns and 1024 rows.
+
+Added TAB expansion to display in browse mode.  There are problems with
+trying to hyper link to words by clicking, in lines that contain HTML or
+TABs  Links will work ok, but you won't for example be able to click of a
+Forth word and have WinView show you the source if the word appears on a
+line containing HTML or any TABs.  
+
+December 23rd, 1998 - 14:47 tjz
+Removed DPANS94.TXT, and added in all the HTML DPANS files.  The help
+menu is substantially reworked, and now includes a line to access the
+list of ANS Forth words, from the HTM file that is part of the standard.
+This replaces the Control-F1 search function in WinView that was
+previously used. It isn't quite as automatic, but it is much more
+readable.
+
+December 22nd, 1998 - 11:42 tjz
+Improved HTML support, now recognizes named labels that aren't quoted.
+Also fixed some bugs in html file opening.  Changed WinView so it will
+open HTML files in browse mode, by recognizing the <HTML> tag at the
+start of the file.
+
+December 17th, 1998 - 14:18 tjz
+Enhanced support for HTML tags somewhat.  Horizontal Rules now work, and
+embeded links are now handled better.  Still a long way to go before HTML
+support would be considered really useful.
+
+December 16th, 1998 - 10:05 tjz
+Added additional Win32Forth related Home pages for users, and added the
+Forth FAQ's to the Help menu.
+
+December 15th, 1998 - 17:45 tjz
+Enhanced the hyper link support to allow multiple links on the same line
+to work correctly.
+
+December 14th, 1998 - 11:45 tjz
+Added Web hyper text links to Win32Forth. You can now use a new word
+"Web-Link, to pass a web link to the default web browser.  I have added
+a Forth console File menu item (Ctrl-W) to allow entering a web link, and
+I have added several web based help links to the console Help menu. The
+new Forth word 'WEB <link>' typed at the Forth commandline will pass the
+link on to the default web browser.
+
+Also added hypertext web links to WinView, so you can for example click
+on the link below (You must be in browse mode, press Shift-F9 if you
+aren't in browse mode), and get sent to the Forth Interest Groups Home
+page.
+
+     <A HREF="http://www.forth.org/">Forth Interest Group's Home Page</A>
+
+
+December 10th, 1998 - 16:39 tjz
+Added an option to the find in files dialog of WinView, to allo finding
+all occurances of a string, as well as just the first occurance of a
+string in a file.  It really just finds the first occurance in any line,
+but at least it finds all the lines in a file that contain the string.
+
+Added ResizePointer to POINTER.F, to allow easy resizing of allocated
+memory blocks.
+
+December 3rd, 1998 - 14:38 tjz
+Added a correction snet in from Jeff Kelm, for BLOCK.F, where it was not
+fully erasing a block that was WIPEed.  FIXED.
+
+October 9th, 1998 - 17:26 tjz
+Added corrections for several occurances of OPEN-FILE, where its use was
+leaving extra items on the stack.  This seems ot have only occured in the
+example programs. Submitted by Bruno Gauthier.  FIXED
+
+August 31st, 1998 - 13:25 tjz
+Added the definitions of FVALUE and FTO to FLOAT.F, as extracted from a
+posting to comp.lang.forth by:  Jos v.d.Ven at <josv@wxs.nl>.  Extracted
+with his permission.
+
+Added testing for Windows98, as suggested by Burno Gauthier.  Mofidied
+95? to return false when running on Windows98, and added 98? to return a
+true flag when running on Windows98.
+
+August 24th, 1998 - 9:09 tjz
+Pierre Abbat reports that CTYPE.F is in the system dictionary, and should
+be in the application dictionary.  FIXED
+
+Pierre has also reported that NUMBER? somtimes returns a non zero double
+value when it fails to convert a string.  He suggested I modify the
+indicated line, to drop the address and zero length, and then replace it
+with a double zero.  FIXED   If this causes problems for anyone, let me
+know, and I will look into it more carefully.
+
+: NUMBER?       ( addr len -- d1 f1 )
+                FALSE TO DOUBLE?              \ initially not a double #
+                -1 TO DP-LOCATION
+                OVER C@ [CHAR] - =
+                OVER 0> AND DUP>R
+                IF      1 /STRING
+                THEN
+                DUP 0=
+                IF      R>DROP
+                        \ **** change following line *****
+                        2DROP 0 0 FALSE _EXIT \ return zero on failure
+                THEN
+                ....... ;
+
+
+August 7th, 1998 - 9:30 tjz
+Added bug fixes to method DoMenu: in three places in MENU.F, to correct
+for a reentrancy problem with menus.  This was reported with fixes by
+Pierre Abbat.
+
+August 6th, 1998 - 13:54 tjz
+Added a new method;  'SetTextAlign: ( flag -- )'  to allow alignments of
+text in a window control. 
+
+July 29th, 1998 - 9:07 tjz
+Corrected a bug in FLOAT.F in the definition of 'F~', where a '@' was
+missing after FSP, which was incorrectly performing a stack depth
+calculation.  Reported by Pierre Abbat.
+
+Fixed bugs in methods PolyBezierTo: and PolyBezier:, where an extra
+'swap' followed 'rel>abs'.  Reported by Pierre Abbat.
+
+Added the method Polygon: to DC.F, as suggested by Pierre Abbat.
+
+July 20th, 1998 - 10:04 tjz
+Changed the color of the page break lines to one that would show up on a
+system that only has 256 colors. FIXED
+
+June 8th, 1998 - 8:52 tjz
+Corrected a bug in WndProcError, reported by Bruno Gauthier, where it
+would leave an extra item on the stack when it was called in an error
+condition.
+
+Corrected a stack bug in DO-LIST, in WINLIB.F, reported by Bruno Gautier.
+
+Finally corrected the crash bug in WinView, that so many people have
+seen.  It was related to browse mode, which I had never realized, and had
+subsequently not been able to reproduce.  It was related to the repeated
+creation and deletion of fonts when running under Windows95.  Apparently
+Windows95 doesn't like that.  I have fixed it by only creating the fonts
+I need once, when they are needed.  Thanks to all who providced input and
+suggestions on repairing this bug.
+
+June 5th, 1998 - 14:38 tjz
+Corrected a stack bug in HYPER.F in the definition MAKE-INDEX.  Reported
+with fix by Bruno Gauthier.
+
+June 4th, 1998 - 12:38 tjz
+Added code to windows messages WM_VSCROLL and WM_HSCROLL of class
+EditWindowClass, to prevent these methods from being re-entered
+recursively.  This could account for the out of memory problems that have
+been observed by some users.
+
+Also modified the RePaint: Method to prevent it's being called
+recursively. If it is, then the SaveDC: method will save a bunch of
+information on windows stack, and may be using up a bunch of system space
+that it shouldn't.
+
+June 3rd, 1998 - 8:13 tjz
+Corrected a bug in class BUTTON, and CONTROL, where an AND was put
+incorrectly into the method of "amForeground?:" in BUTTON, and should
+have been in method "On_MouseMove:" in class CONTROL.  Reported by Bruno
+Gauthier.
+
+Modified WinView, to wrap around when searching, to the start of a file
+and continue the search.  Also modified search backwards to wrap around
+to the end of a file and continue the search.  This is more like Visual
+C's editor, and is more preferable to me.  It will still beep, if it
+doesn't find any text after wrapping around once.
+
+June 2nd, 1998 - 18:13 tjz
+Corrected the WM_MOUSEMOVE method in class CONTROL to allow the dialog
+procedure to properly handle text highlighting.  Reported by Viviane
+Beullens.
+
+May 29th, 1998 - 16:05 tjz
+Fixed a bug in WinView, where highlighted text wouldn't backup when
+Shift-TAB was pressed.  Also changed highlighted TAB adn Shift-TAB, so
+they now shift by the normal tab size, instead of one character at a
+time.
+
+May 28th, 1998 - 14:16 tjz
+Fixed a couple of bugs, in WinView.  One related to highlighting texct in
+the first line of a file, and a couple related to properly positioning
+the cursor when performing a hypertext link, or a remote edit from
+Win32Forth.
+
+May 21st, 1998 - 9:09 tjz
+Added highlighted text detection and capture to find in files in WinView.
+Modified HIGHLIGHT" to return the first line of a multiple line highlight
+text section.
+
+May 20th, 1998 tjz
+Also changed several VALUEs to VARIABLEs, in the forget chain links that
+were used to keep track of windows and the like. This could cause
+problems for anyone who is using these internal veriables.
+
+************************* Update FOUR release ************************
+
+May 20th, 1998 - 15:23 tjz
+Fixed a bug in _ResetSrcInfo in file DBGSRC1.F, where it was dropping an
+extra item off the stack improperly under some conditions.
+
+May 20th, 1998 - 9:22 tjz
+Fixed several bugs related to FORGET.  I had a bunch of places where I
+had created classes that built linked lists, so that any object created
+in that class could be properly initialized.  Unfortunately I had
+forgotten to include code to allow these chains to be trimmed in FORGET.
+This has been corrected.
+
+
+Also added a class DialogWindow, that allows the creation of windows that
+act like dialogs, and can use tabs.
+
+May 9th, 1998 - 13:30 tjz
+Fixed stack bug in REFLECT-WINDOW in WINVIEW.F, as reported by Bruno
+Gauthier.
+
+May 8th, 1998 - 16:20 tjz
+Added stack fix to the HTML statment processor for "<A HREF". Bug found
+and fix supplied by Bruno Gauthier.
+
+May 8th, 1998 - 11:14 tjz
+Corrected the placement of info box support, from the BUTTON level, down
+to the CONTROL level, so it could be used in things like list boxes.
+Needed this change to support an enhancement to the WINVIEW editor, to
+allow full filenams to pop up as info messages over the file list window.
+This correction should not cause any compatibility problems with existing
+code, it simply opens up the possibility of using info windows on other
+controls as well as on buttons.
+
+May 7th, 1998 - 10:30 tjz
+Fixed a stack bug in the On_Init: method of object EDITW in WINVIEW.F, as
+reported by Bruno Gauthier.
+
+While I was in there, I fixed the highlighting problem that would occur
+when scrolling down the screen with the mouse button down.  It may not be
+related to the crashing problem seen under Windows95, but who knows.
+
+May 6th, 1998 - 18:00 tjz
+Fixed bugs in IN-HDRAG?, and in GET-OPTIONS in WINVIEW.F.  Reported with
+fixes by Bruno Gauthier.
+
+May 5th, 1998 - 13:28 tjz
+Fixed stack bugs in WinView, in the functons +HYPER, and _SAVE-TEXT as
+reported by Bruno Gauthier.
+
+May 4th, 1998 - 10:53 tjz
+Received several more bug fixes in WinView from Bruno Gauthier.  They
+have been installed.
+
+April 30th, 1998 - 14:17 tjz
+Modified "winedit-track" to better protect from reentrancy.  This may
+help the crashing problem that has been showing up under Windows95, when
+you scroll repeatedly down the screen with the mouse button pressed.
+
+April 27th, 1998 - 17:31 tjz
+Added a fix for the decompiler SEE in the definition of .WORD, where the
+decompiler would not correctly display the object name following a
+method.  Reported and bug fix supplied by beberst@infonie.fr
+
+April 27th, 1998 - 9:15 tjz
+Fixed a bug in GENERIC.F, removed extra 2DROP in SetWindowPos: in class
+Generic-Window.  Reported and fix supplied by by Bruno Gauthier.
+
+Removed extra upper case conversion in DC.F in RUN-DIALOG. Reported and
+fix supplied by by Bruno Gauthier.
+
+Removed @DROP from INSERT-STRING in WINVIEW.F. Reported and fix supplied
+by by Bruno Gauthier.
+
+Added Cut, Copy, Paste functions to right mouse popup menu, as suggested
+by "Jos v.d.Ven" <josv@wxs.nl>.
+
+April 22nd, 1998 - 13:03 tjz
+Fixed the get focus problem in WinView, that has been reported by several
+people.  I asked Andrew how it should work, and it seems it only needs to
+pass focus to the child window, to work properly.  FIXED 
+
+April 21st, 1998 - 16:21 tjz
+Another report from Bruno, on WinView missing a 'drop' in the method
+'SetLine:' of class 'SelectListClass'.  FIXED
+
+April 20th, 1998 - 16:35 tjz
+Corrected several bugs reported by Bruno Gautier, in DC.F, related to
+inappropriate DROPs when 'drawing?' was turned off.  Don't know how I
+missed this, but I did. FIXED
+
+April 17th, 1998 - 13:39 tjz
+Added corrections from Jeff Kelm, for BLOCK.F.  Performing a '0 BLOCK .'
+would return a different block buffer each time a BLOCK was performed.
+This was causing problems when updating blocks.  FIXED 
+
+March 4th, 1998 - 15:26 tjz
+Corrected some bugs in WinView, where it wasn't updating the title line
+after pressing HOME-LINE, END-LINE, WORD-LEFT, and WORD-RIGHT. Reported
+by Brad Eckert.
+
+February 13th, 1998 - 15:11 tjz
+Corrected RESTORE-INPUT in the files UTILS.F and BLOCK.F.  It was
+reported by "Elko Tchernev <etchernev@acm.org>" that RESTORE-INPUT should
+return a flag per the ANS standard.  
+
+************************* Update THREE release ************************
+
+January 16th, 1998 - 9:11 tjz
+Corrected a bug in the definition of F~ in FLOAT.F.  Reported and
+correction by Pierre Abbat, modified correction incorporated from Robert
+Smith.
+
+January 13th, 1998 - 9:34 tjz
+Corrected a a bug in OPEN-FILE, reported by Beberst, and corrected bugs
+in FLOAT.F reported by Pierre Abbat, and Robert Smith.
+
+November 25th, 1997 - 16:30 tjz
+Fixed documentation error, that should have said press Ctrl+F1 to get
+help on an ANS word, rather than F1.  Reported by Daryl Lee.
+
+Pierre Abbat reported that creating a color object and then subsequently
+forgetting it would cause a crash.  This has been fixed by adding
+TRIM-COLORS to FORGET-CHAIN as he suggests.
+
+MENU NOTE: I would like to note that there is a similar problem with
+defining menus, and then forgetting them, but I haven't fixed that yet,
+so don't try to forget a menu.
+
+October 28th, 1997 - 9:07 tjz
+fixed a bug in WinView, reported by Fredrich Prinz.  Seems the filelist
+displayed in the split left column of WinView didn't change the same of a
+file that had been saved with SaveAs. FIXED.
+
+October 27th, 1997 - 15:25 tjz
+Fixed a bug in FKERNEL.F.  I had reversed the order of the two variables
+that were restored in DO-INCLUDE.  I can't remember who reported this,
+but thank you, whevere you are.
+
+October 15th, 1997
+************************* Update TWO release ************************
+
+October 15th, 1997 - 8:48 tjz
+Picked up a report of the net, to fix a bug in WinView, where the hand
+cursor didn't show up when in browse mode, and the cursor is over a hyper
+link.  It was supposed to show a hand cursor, but that cursor apparently
+isn't availalbe under Win32s.  Reported by Edgar Lynk, and the fix was
+reported by Jeff Kelm.
+
+October 8th, 1997 - 8:48 tjz
+Received several WinView bug reports from Wolfgang Engler, relating to
+reverse searching, and documentation errors.  These have been corrected.
+He also reported a problem with the font changing when scrolling.  This
+has been reported by others as well, and I believe it relates to low
+memory conditions in Windows 95.  I can only suggest that you try
+increasing you swap file size, or get more memory.
+
+September 30th, 1997 - 17:37 tjz & rls
+Received and included a correction from Robert Smith for >FLOAT.
+
+September 24th, 1997 - 12:04 tjz
+Updated FLOAT.F with bug fixes from Robert Smith, and an additional
+correction to require the presence of the 'E' in a floating point number
+when it is entered interpretively.
+
+September 18th, 1997 - 16:27 tjz
+Updated WINCON.DLL, to include the constants for common controls
+(COMMCTRL.H), which are needed by some. Also added COMCTRL.DLL to the
+list of DLLs that are preloaded into Win32Forth. There are now over nine
+thousand four hundred (9400) constants in WINCON.DLL.
+
+September 10th, 1997 - 14:52 tjz
+Fixed a bug reported by Norbert Hoppe, where the debugger was
+highlighting the wrong source text when a source being debugged was
+loaded a second time.  FIXED  Required minor changes to the files:
+NFORGET.F, DBGSRC1.F and PRIMUTIL.F
+
+August 12th, 1997
+************************* Update ONE release ************************
+
+August 11th, 1997 - 9:09 tjz
+Corrected a bug in FKERNEL.F, in the definition of REFILL.  Several
+people noticed that Win32Forth was compiling slower than it used to
+compile.  Brad Eckert spent some time investigating, and found that
+REFILL was performing a FFILE-POSIITON call, to get the position
+into the current file.  It turns out that this is a very slow system
+call.  I have reworked REFILL to correct this problem.
+
+Fixed a bug reported by Charles Esson, in CLASS.F, in the definitions
+where the following is used:
+
+        dup IDX-HDR reserve
+
+Since IDX-HDR may take two items from the stack, it needed to be coded as
+follows:
+
+        dup>r IDX-HDR reserver r>
+        
+
+August 5th, 1997 - 13:55 TJZ
+Fixed several bugs in WinView, related to cursor update, plus a couple of
+stack problems.
+
+July 30th, 1997 - 8:34 tjz
+Bruno ???, informed me of a bug in WinView, in the definition of
+MARGIN-CHECK. Added a DROP to clean up the stack.  FIXED
+
+Added a nice feature to WinView.  If you hold down the Control key,
+while draging the vertical scroll button, WinView will scroll one line at
+a time, when editing very large files.  Normally WinView will scroll by
+the number of lines in the file, divided by the number of pixels in the
+scroll bar.  This provides a more precise control of local scrolling.
+
+July 29th, 1997 tjz
+******** Release of version 3.5 *************
+
+July 25th, 1997 - 17:40 tjz
+Removed NIP from ANEW, that was causing a stack underflow on reload.
+
+July 9th, 1997 - 8:56 tjz
+Received and implemented a correction from Pierre Abbat on example
+program ROMCALC.F.  FIXED
+
+June 13th, 1997 - 8:36 tjz
+Fixed a bug in MoveCursor: in file WINDOW.F.  It was positioning the
+cursor one bit too high in the line, and was leaving little cursor tracks
+when the cursor was moved.
+
+June 12th, 1997 - 17:54 tjz
+Fixed a performance problem in WinView, where it was refreshing the
+screen on every keystroke.  Now it ony refreshes the screen when it needs
+to.
+
+June 10th, 1997 - 11:03 tjz
+Fixed a bug reported by Elko Tchernev, where a negative allot (an unusual
+but legal operation) would fail if passed a value more negative than
+-1000. Fixed in FKERNEL.F in the word ?MEMCHK.
+
+June 2nd, 1997 - 8:43 tjz
+Fixed a bug reported by Gary Bergstrom, where SEARCH-WORDLIST would cause
+an exception if it was passed a string length of zero.  It turned out to
+be a problem with the code word "#HASH, which I fixed.
+
+Also fixed a bug in WinView, that was preventing the /B (browse)
+commandline option from working.
+
+May 22nd, 1997 - 10:59 tjz
+Added shift click to allow highlighting areas of the console that exceed
+the visible area of the window, and added backward drag support to allow
+highlighting areas of the console with a backwards click drag.
+
+Added back in Cut text (Ctrl+X) as function CUT-CONSOLE, to highlight all
+the console, copy it, and then clear the screen. Only cuts the console if
+no text is currently marked.  If text is marked, then it just beeps.
+
+Added Mark All (Ctrl+A) as function MARK-ALL, to highlight all the text
+in the console.
+
+Added function MARK-NONE to clear the marking of any text in the console.
+
+May 21st, 1997 - 17:17 tjz
+Added mark and copy to the console. Removed Cut, it didn't make sense
+with the new mark and copy capability.
+
+Integrated in a modified disassembler, with enhancements to the floating
+point anda  few other instructions.
+
+April 29th, 1997 - 9:32 tjz
+Modified the WINDOW.F method LoadMenu: to accept a dummy "parent"
+parameter, to make its stack effect the same as the version in MENU.F.
+
+March 26th, 1997 - 8:45 tjz
+Added extended CASE testing from Bozhil Makaveev.  Allows string
+comparison, starts_with, and contains testing.
+
+March 20th, 1997 - 15:43 tjz
+Improved the Forth console i/o routines, so that QUERY, ACCEPT, etc. now
+work properly. Allso fixed the F (forth commandline) function in the
+debugger so that it works now.
+
+March 14th, 1997 - 15:49 tjz
+Changed the subject window from my own implementation fo listbox, into a
+normal windows dropdown COMBOBOX.  Also added several additional controls
+to the CONTROLS.F file, specifically:
+
+        ComboControl, ComboListControl, ListControl and GroupControl
+
+All of these have been added to the WINDILOG.F example file.
+
+Added a conditional test to mouse tracking, to cause mosue movements to
+be ignored while tracking, if the system is already in the middle of a
+tracking operation.  It turns out that sometimes it takes a long time to
+complete a tracking operation, and this could cause crashes if too many
+tracking messages stacked up.  Now it only does the ones it can keep up
+with, and ignores the rest.
+
+March 13th, 1997 - 18:10 tjz
+Added several new items to the subject pane, and also added right mouse
+popup menus to several of the subject content panes.  For ecample, you
+can use the right mouse button to display the words in a particular
+vocabulary after selecting the vocabulary in the selection pane.
+
+March 11th, 1997 - 18:15 tjz
+
+Received information from Andrew that he was contacted by Forth inc.
+today, about the possiblity of their using Win32Forth as the basis for a
+new low cost Windows Forth development system.  This is very exciting,
+and I hope it happens.
+
+February 20th, 1997 - 8:06 tjz
+Removed a bunch of value's that were perpetuating conflicts between the
+new environment and application development. The value's were:
+
+CurrentWindow, CurrentHbar, CurrentAbar, CurrentVbar and CurrentLRbar
+
+Some of these were used in WinView, and would cause crashes, when they
+were changed by an application being developed. It turns out, that they
+were only used in an application anyway, and so, should have been in the
+application, and not in BUTTON.F.
+
+February 11th, 1997 - 9:17 tjz
+Upgraded to Jim Schneider's version 1.26 of his 486 assembler. He
+corrected a couple of minor bugs.
+
+February 10th, 1997 - 13:38 tjz
+Modified WINSER.F, to include some changes from Skip Inskeep, relating to
+CTS serial control.
+
+Added Menu items to the File menu, for Save all changes across all files
+loaded, along with a toolbar button to perform the same function.
+
+Added an Unlink menu entry to the Hyper menu, as F10, which is a synonym
+for close file.  This is more compatible with the old F-PC editor.  I
+also added a Shift+F10 File menu item to save all changes of all files
+and Exit WinView.
+
+February 7th, 1997 - 18:33 tjz
+Modified COLORS.F to include additional functions to generate 'colorref'
+values.  Renamed RGB to PALETTERGB, Added a new implementation of RGB
+that generates a color that is not in the palette, and added PALETTEINDEX
+to return the colorref of a specific system palette entry.
+
+WinView now keeps all files being edited in memory, until you save them,
+so be sure to save your changes if you want to be able to compile your
+modified files.  I will be adding a saveall function soon.  Still got
+some bugs, but its very interesting.
+
+February 3rd, 1997 - 16:44 tjz
+Integrated a bunch of changes from Robert Smith into DC.F.  Added
+functions for raw drawing to the printer, which Bob needed for his font
+editor.  Additional functions now allow opening the printer either as a
+scaled printing device, a raw printing device, or a isotropic device,
+where the image is scaled, but the aspect ratio is maintained.  To avoid
+creating a bunch of new drawing words for raw drawing, I have changed
+the drawing word names from things like ScaledMoveTo:, to PrinterMoveTo:.
+The way the printer is opened, controls how the drawing words operate.
+this does unfortunately require changing any code you have that
+references the printer methods, but I think it is a better solution than
+the alternative, which was to create a bunch of extra methods with names
+like RawMoveTo:.  The changes are too numerous to list here, so you will
+have to look at DC.F to learn about them.  I have changed the example
+programs accordingly.
+
+January 31st, 1997 - 16:43 tjz
+Added WindowStyle: and ExWindowStyle: methods to the ModlessDialog class.
+This allows the use of some of the extra window styles available in
+Windows95 and WindowsNT 4.x
+
+Modified the Find/Replace and FindInFiles dialogs to preserve their
+position during an edit, across multiple opens and closes.
+
+Changed the ClassName: method to take an address and length, and changed
+its name to SetClassName:. Several sample programs were edited to correct
+for this name change. Changed the
+GetClassName: method to return an address and length, rather than a null
+terminated string.  Notice however, that I did not change its name. Here
+are their new definitions:
+
+:M SetClassName: ( adr len -- )
+                WindowClassName place
+                ;M
+
+:M GetClassName: ( -- adr len )
+                WindowClassName count
+                ;M
+
+
+January 29th, 1997 - 10:14 tjz
+Fixed a bug reported by Robert Smith, where CAPS-SEARCH was returning an
+address that was one more than it should have been, when the string being
+searched for was found.  This problem was seen when searching for a
+string in WinView backwards, and there was more than one occurance of the
+string in the line where the text was found.  Fixed in PRIMUTIL.F
+
+At the request of Robert Smith, I have added ExtColorObject to the file
+COLORS.F, which is only supported on Windows95 and WindowsNT.  It allows
+more control of the brush being created than the simpler ColorObject.
+
+Also added PenStyle to the instance variables of ColorObject, to allow
+changing the style of the pen being create for the ColorObject.
+
+January 20th, 1997 - 14:21 tjz
+Added additional methods to the WinDC class as follows;
+
+PenColor:       \ really a synonym for LineColor:
+BruchColor:     \ set the brush/fill color
+Ellipse:        \ draw an Ellipse
+Arc:            \ draw an Arc
+FillCircle:     \ draw a filled circle
+Circle:         \ draw a circle
+
+Updated the code for GetTextExtent: to use dynamically allocated memory,
+rather than a static buffer.
+
+Here is a very simple example, that allow the console window to be used
+for graphics.  About all you have to do, is create a WinDC object, and
+fill its handle with the DC of the console.  Then any of the graphic
+operations can be used on that WinDC object, as seen here;
+
+    WinDC theDC
+
+    : test  ( -- )
+            CONDC PutHandle: theDC  \ initialize theDC to the console
+                                    \ window's DC
+            0 0 500 500 WHITE FillArea: theDC
+            BLACK            LineColor: theDC
+              0   0             MoveTo: theDC
+            100 100             LineTo: theDC
+            BLUE            BrushColor: theDC
+            50 50 20        FillCircle: theDC ;
+
+Fixed several extra stack item problems in WINVIEW.F.
+
+January 20th, 1997 - 9:11 tjz
+Fixed a bug in WINDEMO.F, reported by Phil Monson. He informed me I had
+inverted the polarity of the origin offset BIT-ORIGINY.  It was causing a
+4our pixel droop on one side of the display.
+
+He also reported a problem with color selection in WINDEMO, apparently
+only the last color used is shown when printing. This problem has also
+been fixed in DC.F.  Now I save the color reference of the color being
+selected, instead of saving the color object itself.  It seem that some
+applications, particularly WINDEMO.F, use only a single color object, and
+change the color within the object.
+
+January 8th, 1997 - 10:52 tjz
+Updated STARTUP.TXT to include additional information on these latest
+changes as described below.
+
+January 7th, 1997 - 15:25 tjz
+I have noticed that the page breaks and page numbers displayed in WinView
+are generally accurate only after the first page has been printed.  This
+is because the lines per page is calculated in DC.F by the code doing the
+printing.  What this means, is simply that if you print using the normal
+six (6) lines per inch, you will see page breaks in your document that
+are correct.  If however, you change the line per inch to something else,
+two through twelve, then the page breaks shown won't be correct until you
+have at least printed one page of the document.  I haven't found an easy
+way to fix this, as the printer needs to be open at the time that the
+lines per page is calculated.  I will continue to look into this, and
+apply a solution when I can find one.
+
+
+January 6th, 1997 - 18:25 tjz
+Added page breaks to WinView.  Also now display the page number beside
+page breaks in the left border.  The left border automatically resizes to
+be wide enough to hold the page number of the highest page in the current
+file. Fixed a bug in DC.F, reported by Robert Smith.  I wasn't
+maintaining the #PAGES properly, so that page numbers would be display on
+the printed pages properly.  I also adjusted several things in DC.F, to
+make the footer font larger, to right justify the page numbers properly,
+and to display the filename on a second footer line by itself, rather
+than trying to center it between the date and the page number.
+
+January 3nd, 1997 - 15:00 tjz
+Enhancements to OOP.
+    Added 'short' (16bit) instance variables. it was a missing datatype
+        for structure creation
+
+    Added Bit field instance variables to the Record structure within
+        classes.  Bit fields are supported in 'byte', 'short' and 'int'
+        instance variables. In the example below, an 'int BinaryBits' is
+        created, then the bit fields within it are defined.  Be sure to
+        create exactly enough bit fields (8, 16 or 32) to fill the
+        instance variable you are defining, or a warning will be issued.
+
+    Added ';RecordSize: SIZEOFRECORDNAME' for ending the definition of a
+        record, and defining a constant that is the size in bytes of the
+        record just created. This is handy when initializing structures
+        as shown in this example code
+
+        ---------------------------------------------
+
+        :Object DCB  <Super Object
+
+        Record: AddrOf
+                int   DCBlength
+                int   BaudRate
+                int   BinaryBits        \ a 32bit cell of bit fields
+              1 bits  fBinary           \ define each bit field from
+              1 bits  fParity           \ low to high in sequence
+              1 bits  fOutxCtsFlow
+              1 bits  fOutxRtsFlow
+              2 bits  fDtrControl
+              1 bits  fDtrSensitivity
+              1 bits  fTXContinueOnXoff
+              1 bits  fOutX
+              1 bits  fInx
+              1 bits  fErrorChar
+              1 bits  fNull
+              2 bits  fRtsControl
+              1 bits  fAbortOnError
+             17 bits  fDummy            \ fill up the remaining bits
+                short wReserved
+                short XonLim
+                short XoffLim
+                byte  ByteSize
+                byte  Parity
+                byte  StopBits
+                byte  XonChar
+                byte  XoffChar
+                byte  ErrorChar
+                byte  EofChar
+                byte  EvtChar
+                short wReserved1
+        ;RecordSize: SIZEOFDCB
+
+        :M Reset:       ( -- )          \ clear the DCB structure
+                        AddrOf SIZEOFDCB erase ;M
+
+        :M ClassInit:   ( -- )
+                        ClassInit: super
+                        Reset: self     \ create structure as Reset
+                        ;M
+        ;Object
+
+        ---------------------------------------------
+
+Modified WINSER.F to contain some enhancements suggested by Skip Inskeep.
+The various fields of the DCB now become instance variables of the DCB
+structure.  Note, that bit fields are automatically scaled up to their
+appropriate bit within the larger byte, word, or int (cell) field.
+
+
+                DCB.AddrOf rel>abs
+                Com1Hndl
+                Call GetCommState ?win-error
+                CBR_9600   Put: DCB.BaudRate
+                8          Put: DCB.ByteSize
+                NOPARITY   Put: DCB.fParity
+                ONESTOPBIT Put: DCB.StopBits
+
+One really nice thing about the OOP solution, is that it automatically
+uses the correct memory operator for the field specified, eliminating
+possible mistakes by the programmer, who might accidently use a long
+store (!=32bit) on a byte (C!=8bit) field.
+
+January 2rd, 1997 tjz
+Enhancements to OOP.
+    Created a new class word CLONE, to be used in place of the current
+    word CLONE:.  I dislike CLONE: because if requires the existing
+    object name to immediately follow it.  This Is just too confusing.
+    The new syntax for CLONE is I think much clearer. Use the following
+    syntax to create a clone of an object;
+
+       ' ExistingObject Clone NameOfNewObject
+
+    I have commented out the definition of CLONE:.
+
+December 30th, 1996 - 13:55 tjz
+Installed Jim Schneider's 1.241 version assembler into Win32Forth.  He
+had minor corrections to my latest corrections to the assembler.
+
+Per a request from Jim Schneider, I have added a /IMAGE command to the
+wrapper, so that a particular image filename can be specified on the
+commandline.  The wrapper parses the commandline looking for /IMAGE.  If
+it is found, it attempts to load the image filename following /IMAGE
+instead of the image file matching the executables name.  If there is no
+image, or if the image file doesn't exist, then the wrapper tries to
+load the image out of the executables resource file.  If this fails an
+error dialog is displayed and the program terminates.  Added a definition
+for '/IMAGE' to the kernel, that just picks up the word following and
+discards it.
+
+Added additional code to ?DEFEXT, to make it skip any decimal points that
+might occur within a directory path preceeding the filename.
+
+December 19th, 1996 - 13:53 tjz
+Fixed a long standing problem with callbacks.  I was activating
+Win32Forths callback message processing, before I was installing the
+default callback message processor.  That meant, that if an abort would
+occur before the default processor got installed in the file GENERIC.F,
+then Win32Forth would hang.  It was simple to fix, I just moved the
+default callback processof down into WINLIB.F, where it belonged.
+
+At the suggestion of Bill Muench, I have made left bracket '[' and right
+bracket ']' deferred words.  This simplifies the compiler writters task.
+
+Fixed a bug reported by Mark Amerman, floating point numbers were being
+converted twice, and were put on the floating point stack twice.  This
+was a holdover bug from a fix I made to method detection.  I have now
+fixed it again, in a more general way, so it should now be working
+properly.
+
+December 16th, 1996 - 10:25 tjz
+Added a variable LAST-LINK to the kernel, to correct a long standing
+problem with REVEAL.  Until today, REVEAL would use the contents of
+CURRENT to determine which vocabulary to reveal the most recent
+definition into. This caused problems, if you wanted to change the
+CURRENT while compiling, since semicolon would come along, and reveal the
+definition being built, into the wrong vocabulary.  This has been
+corrected, by saving the hash bucket address of where to put the name
+that is being created in LAST-LINK.  Then this saved value is used to
+REVEAL the name into the vocabulary.
+
+December 13th, 1996 - 9:51 tjz
+I removed the detector in _FIND-TEXT-AGAIN for the control key being
+pressed, where it would search backwards.  I found, after long use, that
+this was more of a hindrance than a help.  So, if you use Control+F3, it
+picks up the word under the cursor, and searches forward rather than
+backward.  This makes it possible to use searches in macros, where before
+the backward search was messing things up.
+
+December 10th, 1996 - 16:21 tjz
+Added SOURCE-POSITION to the kernel, so I will have a pointer to  where
+the source file currently being loaded is loading from.  This is useful
+for the creation of index files for an optimizing compiler derivative of
+Tom Almy's ForthCMP compiler, that I'm working on.
+
+December 9th, 1996 - 8:43 tjz
+Added a function to the wrapper called "SetCharWH", that allows certain
+people that are experiencing problems with Win32Forth's cursor
+positioning in the console to adjust the character width that Win32Forth
+will use.  There seems to be a problem with certain countries, where the
+ANS character set doesn't appear return an average character width that
+is correct.  This is not an ideal solution, but it will help some people.
+
+December 6th, 1996 - 17:37 tjz
+Added FFILE-POSITION to the wrapper, and the kernel, so I could determine
+the current input stream file offset when compiling.
+
+November 27th, 1996 - 10:05 tjz
+Modified DIS486.F by adding SHOW-NAME, to allow easier modification of
+the display symbol functionality for the optimizing compiler I am working
+on. This work is base on Tom Almy's ForthCMP.
+
+Make a small correction to the Jim Schneider's assembler as follows;
+
+: [esp]? ( does it have only a base of esp? )
+        ( -- flag )
+        has-base? has-s-i-b? 0= 4 match-r/m? and and
+        a16bit? 0= and ;        \ November 27th, 1996 - 15:57 tjz added
+
+When the assembler was asked to assemble a 16bit indirect instruction
+like this;
+
+        mov     0 [si], ax
+
+It would get confused, and assemble an SIB byte in the middle of the
+instruction when it shouldn't.
+
+November 26th, 1996 - 10:04 tjz
+Changed the default state of flag SYS-WARNING? to FALSE.  Users don't
+need to be warned about using system words in their applications, unless
+they are going to TURNKEY them, and TURNKEY already warns that you must
+be in SYS-WARNING-ON before TURNKEY will be allowed.
+
+November 25th, 1996 - 11:04 tjz
+Modified locals support, to include the ability to add a comment to a
+local variable stack picture for text that comes from the input stream,
+in the following form;
+
+: test  { parm1 parm2 \ parm3 'text_from_input_stream' -- }
+        bl word ...;
+
+Parms one and two are initialized from the stack, parm3 is a local
+variable that is not initialized, and 'text_from_input_stream' is just a
+comment about text that is read from the input stream bo this word.  This
+comment text must start with a tick (').
+
+November 18th, 1996 - 16:20 tjz
+Fixed a minor bug in the support for HTML links within a file.  I made a
+change so that a link does a file push, opening a new copy of the file,
+so that a back hyper link, or a close file takes you back to the previous
+link instead of leaving you with no file open.  This is more consistent
+with the way other hypertext browsers work. HTML support is still quite
+limited, but sufficient for creating limited documentation using HTML.
+
+Modified printing in WinView, to ignore any HTML it encounters when
+WinView is in browse mode.
+
+November 5th, 1996 - 15:30 tjz
+Modified _MSGFIND again, to fix a bug where floating point numbers were
+incorrectly identified as objects.
+
+October 30th, 1996 - 15:04 tjz
+Modified WinView to tell user to use "Save MAC/UNIX file as PC" menu item
+instead of auto converting in memory when hte file being loaded has more
+than 4000 lines.  The time to convert in memory was just too long, and
+conversion during the save was much faster.
+
+Added UNDER+ as it has been described on comp.lang.forth lately. UNDER+
+adds the top stack item to the third stack item.  So moving a string
+address forward one character and reducing its length by one character
+would be done something like this;
+
+        ( a1 n1 )   1 UNDER+ 1-  ( a1+1 n1-1 )
+
+October 28th, 1996 - 9:15 tjz
+Received a bug report and correction from Stephen M. Brault, for the file
+WINLIB.F.  It seems I wasn't doing full error checking on a failed
+library call.  Stephen submitted a simple fix, which has been installed.
+FIXED
+
+October 25th, 1996 - 10:44 tjz
+Bill Muench found a bug.  When "-1" is defined as a constant, entering
+any negative double number starting with "-1.", would result in a
+undefined object error.  Fixed by performing a valid number check in
+_MSGFIND before trying to perform the dotted notation testing.  This
+introduces a limitation, in that no combination of "Object.Message" is
+allowed to be convertable into a valid double number.
+
+October 24th, 1996 - 9:12 tjz
+Found that the "Adjust Forth Dictionaries" menu item and general
+technique doesn't work under Win32s, so I have abandoned the automatic
+rebuild technique, in favor of a small text file that walks the user
+through the process of rebuilding Win32Forth with new dictionary sizes.
+This file is browsed when the menu item is invoked.
+
+October 23rd, 1996 - 8:52 tjz
+Deleted the lines from SEE.F that define and reference the word
+A_SYNONYM. The new method for making synonyms, doesn't need this word
+anymore.
+
+
+October 11th, 1996 - 11:13 tjz
+Split out the WORDS display of Windows constants, to be done by the word
+CONSTANTS.  I found it irritating to have windows constants (often many)
+displayed at the end of a WORDS display.  Now, WORDS just informs that
+the word CONSTANTS should be used to display Windows constants.
+
+October 9th, 1996 - 13:20 tjz
+Removed the auto print feature from WinView.  That is you used to be able
+to press the printer button on the toolbar, and have the document printed
+without prompting if you had already printed at least once during the
+current edit session.  I found this to be unreliable, and so it has been
+removed.  To put it another way, I couldn't fix it, so I took it out.
+
+Added a bunch of additional HTML tags to WinView.  Most of them are
+dummys, but WinView can now handle simple html documents.
+
+October 9th, 1996 - 15:00 tjz
+Found a bug in WinView, where the print button on the toolbar would cause
+a crash the second time it was used.  Posted an updated Win32For.TXT file
+containing the series of things that need to be done to fix the bug,
+rather than post an updated system. 
+
+
+************************************************************************
+************************************************************************
+SEE THE FILE WIN32FOR.PRV FOR NOTES ON CHANGES TO WIN32FORTH FROM
+PREVIOUS VERSIONS.
+************************************************************************
+************************************************************************
+
+One typo corrected March 11th, 2002 - 20:48 jp
