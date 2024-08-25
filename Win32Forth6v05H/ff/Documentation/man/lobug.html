@@ -1,0 +1,108 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong><img src="butlobug.gif"
+width="24" height="22"> Low Level Debugger</strong></font></p>
+
+<hr>
+
+<p>The low level debugger is a single step utility that uses the
+trace bit on 68K/Coldfire CPUs or the T1 interrupt in 8031 CPUs.
+It steps through machine instructions one at a time or many at a
+time, like a simulator. The debugger has its own thread, but you
+have to be careful what the code modifies. This utility is mostly
+useful for debugging compute-intensive algorithms.</p>
+
+<p>The Forth way is to factor out the slow part into words that
+are so simple you don't need a debugger like this. But, this kind
+of thing is a nice learning tool and sometimes you really need
+raw speed. LOBUG.G is the source for the debugger.</p>
+
+<hr>
+
+<table border="1">
+    <tr>
+        <td colspan="2" bgcolor="#FFFF00"><strong>Table TR1. Key
+        usage</strong></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F1</td>
+        <td bgcolor="#FFFFFF">Help screen</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F2</td>
+        <td bgcolor="#FFFFFF">Toggle browse/edit (white =
+        editable)</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F5</td>
+        <td bgcolor="#FFFFFF">Upload from target memory</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">Enter</td>
+        <td bgcolor="#FFFFFF">Accept edited field</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">ESC</td>
+        <td bgcolor="#FFFFFF">Done</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">^C</td>
+        <td bgcolor="#FFFFFF">copy to clipboard</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">[S]tep</td>
+        <td bgcolor="#FFFFFF">Run until PC points to the next
+        line</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">[I]nto</td>
+        <td bgcolor="#FFFFFF">Execute one instruction</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">[G]o</td>
+        <td bgcolor="#FFFFFF">Run until breakpoint (blue).</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">a[N]imate </td>
+        <td bgcolor="#FFFFFF">Does [I]nto until a key is pressed.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">Click</td>
+        <td bgcolor="#FFFFFF">Place breakpoint or set cursor</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">Double click</td>
+        <td bgcolor="#FFFFFF">Place PC or browse tokens</td>
+    </tr>
+</table>
+
+<p><font face="Courier New"><b>TRACE OVER </b></font>brought up this screen:</p>
+
+<p><img src="snaplobug.gif" width="615" height="347"></p>
+<p>It's fairly simple to use, but not very forgiving of mistakes. Here are some
+caveats to avoid crashes:</p>
+<ul>
+  <li>Don't <u>S</u>tep a branch instruction, or the debugger will hang because
+    it's waiting for the PC to reach the instruction immediately following the
+    branch instruction. Use <u>I</u>nto instead. </li>
+  <li>When you <u>S</u>tep a subroutine call, the debugger runs the subroutine
+    at a few percent of full speed. The trace code on the target traces one
+    instruction at a time in a tight loop so that it can run without setting
+    software breakpoints, which is a little hard to do to ROM code.</li>
+  <li>You can use <u>I</u>nto a bunch of times to avoid tripping over a branch,
+    but make sure to use <u>S</u>tep when you get to a subroutine call or you'll
+    have to step all the way through the called subroutine.</li>
+</ul>
+</body>
+</html>

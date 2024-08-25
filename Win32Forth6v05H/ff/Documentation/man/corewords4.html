@@ -1,0 +1,491 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>CORE words: Multitasker, Evaluator, Timers and System</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+<p><b><font color="#BF0000" size="5">CORE words: Multitasker, Evaluator, Timers and System</font></b></p>
+<hr>
+<p><b><font size="4" color="#BF0000">Multitasker</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LOCAL&nbsp;</b></td>
+  <td nowrap><i>( tid n -- a )</i></td>
+  <td nowrap><b>Access another task's data</b></td>
+  <td nowrap>xt = 0x1EC</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Access another task's user variables</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SEM-GET&nbsp;</b></td>
+  <td nowrap><i>( semaphore -- )</i></td>
+  <td nowrap><b>Acquire access to a semaphore</b></td>
+  <td nowrap>xt = 0x1F0</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Get a semaphore, locking out other tasks from using the resource related
+to this semaphore.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>REASSIGN&nbsp;</b></td>
+  <td nowrap><i>( xt tid -- )</i></td>
+  <td nowrap><b>Assign a new xt to a task</b></td>
+  <td nowrap>xt = 0x1EB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TID&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>ID of current task</b></td>
+  <td nowrap>xt = 0x18B</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+TCB structure: sp0 / rp0 / pc / sp / rp / status / link / userdata...
+offsets:       -20  -16   -12   -8   -4     0        4      8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SEM-RELEASE&nbsp;</b></td>
+  <td nowrap><i>( semaphore -- )</i></td>
+  <td nowrap><b>Release a semaphore</b></td>
+  <td nowrap>xt = 0x1F1</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Release a semaphore, allowing other tasks to access the resource related
+to this semaphore</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>STOP&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Stop the current task</b></td>
+  <td nowrap>xt = 0x1EA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SLEEP&nbsp;</b></td>
+  <td nowrap><i>( tid -- )</i></td>
+  <td nowrap><b>Turn off a task</b></td>
+  <td nowrap>xt = 0x1E9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WAKE&nbsp;</b></td>
+  <td nowrap><i>( tid -- )</i></td>
+  <td nowrap><b>Turn on a task</b></td>
+  <td nowrap>xt = 0x1E8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ALSOTASK&nbsp;</b></td>
+  <td nowrap><i>( tid -- )</i></td>
+  <td nowrap><b>add to the task queue</b></td>
+  <td nowrap>xt = 0x1EF</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Places a new task between current and next tasks</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NEWTASK&nbsp;</b></td>
+  <td nowrap><i>( user dstack rstack &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>newtask</b></td>
+  <td nowrap>xt = 0x1EE</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Create a new task. run-time: ( -- tid )
+Three memory areas sizes are in bytes
+TCB structure: sp0  rp0  pc  sp  rp  status  link  userdata
+cell offsets:  -5   -4   -3  -2  -1    0       1     2
+MEM USAGE: TCB USER DSTACK| RSTACK|</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PAUSE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>switch to the next active task</b></td>
+  <td nowrap>xt = 0x18A</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Evaluator</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>REBIND&nbsp;</b></td>
+  <td nowrap><i>( xtsrc xtdest -- )</i></td>
+  <td nowrap><b>bind a new action to a word</b></td>
+  <td nowrap>xt = 0x1A8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BIND[&nbsp;</b></td>
+  <td nowrap><i>( xtsrc xtdest -- | R: -- xt cfa )</i></td>
+  <td nowrap><b>bind a new action to a word</b></td>
+  <td nowrap>xt = 0x1A9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(LIT32)&nbsp;</b></td>
+  <td nowrap><i>( &lt;l&gt; -- )</i></td>
+  <td nowrap><b>compile 32-bit literal</b></td>
+  <td nowrap>xt = 0x1C2</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(LIT16)&nbsp;</b></td>
+  <td nowrap><i>( &lt;w&gt; -- )</i></td>
+  <td nowrap><b>compile signed 16-bit literal</b></td>
+  <td nowrap>xt = 0xD6</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(LIT8)&nbsp;</b></td>
+  <td nowrap><i>( &lt;c&gt; -- )</i></td>
+  <td nowrap><b>compile signed 8-bit literal</b></td>
+  <td nowrap>xt = 0xD5</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVALUATE&nbsp;</b></td>
+  <td nowrap><i>( addr -- ior )</i></td>
+  <td nowrap><b>evaluate a block of input</b></td>
+  <td nowrap>xt = 0x1D7</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+test checksum before loading
+ior: 0 = ok, 1000 = bad checksum, 1001 = bad header,
+other = stack changed</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVAL&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>evaluate the input stream</b></td>
+  <td nowrap>xt = 0x1D6</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EGETCH&nbsp;</b></td>
+  <td nowrap><i>( -- c )</i></td>
+  <td nowrap><b>get next byte from input stream</b></td>
+  <td nowrap>xt = 0x1AF</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LIFTTOKEN&nbsp;</b></td>
+  <td nowrap><i>( -- xt )</i></td>
+  <td nowrap><b>get next token# from input stre</b></td>
+  <td nowrap>xt = 0x1B4</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EGETCH16&nbsp;</b></td>
+  <td nowrap><i>( -- n )</i></td>
+  <td nowrap><b>get the next 16-bit value</b></td>
+  <td nowrap>xt = 0x1B3</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CHAR&nbsp;</b></td>
+  <td nowrap><i>( &lt;char&gt; -- )</i></td>
+  <td nowrap><b>gets char from the input stream</b></td>
+  <td nowrap>xt = 0xFC</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>RELATIVE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>reset base for relative tokens</b></td>
+  <td nowrap>xt = 0x1D5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>]BIND&nbsp;</b></td>
+  <td nowrap><i>( -- | R: xt cfa -- )</i></td>
+  <td nowrap><b>restore old action</b></td>
+  <td nowrap>xt = 0x1AA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;EVAL&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>set start address for evaluator</b></td>
+  <td nowrap>xt = 0x1CF</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVAL=MEM&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set up to evaluate from memory</b></td>
+  <td nowrap>xt = 0x1D8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVAL=CODE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set up to evaluate program mem</b></td>
+  <td nowrap>xt = 0x1D9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>#IF#&nbsp;</b></td>
+  <td nowrap><i>( f -- )</i></td>
+  <td nowrap><b>skip forward if zero</b></td>
+  <td nowrap>xt = 0x1C4</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Used to conditionally evaluate incoming bytecode.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVAL&gt;&nbsp;</b></td>
+  <td nowrap><i>( -- c )</i></td>
+  <td nowrap><b>terminate evaluator input</b></td>
+  <td nowrap>xt = 0x1D0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ABORT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>terminate evaluator input</b></td>
+  <td nowrap>xt = 0x1CD</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>END&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>terminates the evaluator</b></td>
+  <td nowrap>xt = 0xFF</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Timers</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CALTIMER&nbsp;</b></td>
+  <td nowrap><i>( addr msec -- )</i></td>
+  <td nowrap><b>calibrates a short timer</b></td>
+  <td nowrap>xt = 0x1E3</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Run this at startup to calibrate timers</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>COUNTER&lt;&nbsp;</b></td>
+  <td nowrap><i>( d1 d2 -- f )</i></td>
+  <td nowrap><b>compare time values, T if t2&gt;t1</b></td>
+  <td nowrap>xt = 0x1A5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>COUNTER@&nbsp;</b></td>
+  <td nowrap><i>( -- udtime )</i></td>
+  <td nowrap><b>get 32-bit count, double cell</b></td>
+  <td nowrap>xt = 0x193</td>
+ </tr>
+ <tr>
+  <td><i> double</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MS&nbsp;</b></td>
+  <td nowrap><i>( u -- )</i></td>
+  <td nowrap><b>make time delay, milliseconds</b></td>
+  <td nowrap>xt = 0x1E1</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Invokes PAUSE until the desired number of milliseconds
+has elapsed.  For better performance, use TICKS.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TICKS&nbsp;</b></td>
+  <td nowrap><i>( d -- )</i></td>
+  <td nowrap><b>make time delay, timer ticks</b></td>
+  <td nowrap>xt = 0x1E0</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Invokes PAUSE for the double-cell number of timebase ticks.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CTRSCALE&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>msec per tick * 2^cellsize</b></td>
+  <td nowrap>xt = 0x196</td>
+ </tr>
+ <tr>
+  <td><i> constant</i></td>
+  <td width="100%" colspan="3">
+Assumes tick rate = 4096 Hz on 683XX</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>COUNTER!&nbsp;</b></td>
+  <td nowrap><i>( udtime -- )</i></td>
+  <td nowrap><b>set 32-bit timer count</b></td>
+  <td nowrap>xt = 0x194</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PREMATURE?&nbsp;</b></td>
+  <td nowrap><i>( addr -- f )</i></td>
+  <td nowrap><b>tests a timer for timeout</b></td>
+  <td nowrap>xt = 0x1E2</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Compares a variable against the present time,
+returns F and clears it if it has timed out.
+Uses double variable: mark|threshold</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>|COUNTER|&nbsp;</b></td>
+  <td nowrap><i>( d1 -- d2 )</i></td>
+  <td nowrap><b>truncate difference to 32 bits</b></td>
+  <td nowrap>xt = 0x195</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">System-related words in the CORE wordlist&nbsp;</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SYSINIT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Initialize drivers</b></td>
+  <td nowrap>xt = 0x1DF</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DOORPAUSE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>backdoor debugger hook</b></td>
+  <td nowrap>xt = 0x1BC</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MAINEVENT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>called forever in a loop</b></td>
+  <td nowrap>xt = 0x1DB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CPUTYPE&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>cpu code type: 1 = 8051, 3 = Coldfire/68K</b></td>
+  <td nowrap>xt = 0x1AB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNINITIALIZED&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>error handler for DEFERed words</b></td>
+  <td nowrap>xt = 0x197</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BIND@&nbsp;</b></td>
+  <td nowrap><i>( xt -- cfa )</i></td>
+  <td nowrap><b>extract CFA from the binding table</b></td>
+  <td nowrap>xt = 0x18F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NEWBINDINGS&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>initialize binding table from ROM</b></td>
+  <td nowrap>xt = 0x1DD</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NEWVALUES&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>initialize data space table from ROM</b></td>
+  <td nowrap>xt = 0x1DE</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WATCHDOG+&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>raise watchdog timer line</b></td>
+  <td nowrap>xt = 0x180</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WATCHDOG-&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>lower watchdog timer line</b></td>
+  <td nowrap>xt = 0x181</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>'BIND&nbsp;</b></td>
+  <td nowrap><i>( xt -- addr )</i></td>
+  <td nowrap><b>point to a jump in the binding table</b></td>
+  <td nowrap>xt = 0x18E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>_UNINIT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>report call to an uninitialized xt</b></td>
+  <td nowrap>xt = 0x1DC</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>REBOOT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>reset the processor</b></td>
+  <td nowrap>xt = 0x192</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BIND!&nbsp;</b></td>
+  <td nowrap><i>( cfa xt -- )</i></td>
+  <td nowrap><b>store CFA to the binding table</b></td>
+  <td nowrap>xt = 0x190</td>
+ </tr>
+</table>
+
+</body>
+
+</html>

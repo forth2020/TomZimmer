@@ -1,0 +1,266 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="TOF" content="8051">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>8051 processor </title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><b>8051-based TOF
+implementation</b></font></p>
+
+<hr>
+
+<p>The model presented here is fairly sophisticated and flexible:
+</p>
+
+<ul>
+    <li>The data stack may reside in either internal or external
+        memory. </li>
+    <li>For compatibility reasons, cells may be either 16 bits or
+        32 bits wide. </li>
+    <li>Many Forth primitives are coded in assembly for speed. </li>
+    <li>It includes a single stepping machine code debugger that
+        lets you debug code words even while the main program
+        runs at full speed. </li>
+    <li>When performing multiply and divide operations, small
+        operands are treated as special cases that execute much
+        faster than full cell-wide operations. </li>
+    <li>Variables and values are initialized from ROM upon
+        startup.</li>
+</ul>
+
+<p>The 8051 has several address spaces, each operated on by
+different instructions. Since the 8051 can't write to code
+memory, some glue logic is needed to overlap the code and data
+spaces. Figure 1 shows a sample circuit. The jumper block allows
+two possible configurations. The shown configuration makes the
+RAM readable using both the MOVX and MOVC instructions. Moving
+the shorting block saves you a gate but only allows the RAM to be
+read by a MOVC instruction, which means the data stack is in
+internal RAM. Using an external data stack generally slows the
+system by 20% but frees up IRAM.</p>
+
+<p><font color="#BF0000" size="4"><b>Figure 1. Memory spaces of
+the 8051 TOF implementation.</b></font></p>
+
+<table border="1">
+    <tr>
+        <td><img src="8051.gif" width="490" height="287"></td>
+    </tr>
+</table>
+
+<p>Access to program memory always uses MOVC for read. Access to
+data memory tests bit 15 of the address and uses MOVX to read
+from low addresses and MOVC to read from high addresses. This
+allows peripherals to reside on the data bus between 0000 and
+7FFF. The RD line enables I/O devices and the PSEN line enables
+the ROM and RAM. So, the 64K data space covers both SRAM and I/O
+devices.</p>
+
+<p>On the 8051 virtual machine, code and data spaces don&#146;t
+overlap. It was designed this way to enforce separation of these
+spaces during the design of the kernel and to allow access to I/O
+and RAM using the same memory operators.</p>
+
+<p>Accessing internal RAM and SFRs can't be done from high level
+Forth. It's best to write your own code words for this, using <font
+face="Courier"><b>KERNEL.F51</b></font> as an example. IRAM can
+be reached using @R0. SFR access is trickier since the SFR number
+is a hard-coded direct address. The debugger does generic access
+using self-modifying code.</p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong><b>Interrupt Service
+Routines&nbsp;</b></strong></font></p>
+
+<p>The 8051 services interrupts by jumping to locations in ROM
+such as 0003, 000B, etc. At each of these addresses is a LJMP
+instruction pointing into the binding table. The binding table
+directs execution to the desired ISR. </p>
+
+<p><font face="Courier New"><b>0x0003 LJMP %INT0</b></font>
+interrupt vector for EXT0<br>
+<font face="Courier New"><b>0x000B LJMP %INT1</b></font>
+interrupt vector for T0<br>
+<font face="Courier New"><b>0x0013 LJMP %INT2</b></font>
+interrupt vector for EXT1<br>
+<font face="Courier New"><b>0x001B LJMP %INT3</b></font>
+interrupt vector for T1<br>
+<font face="Courier New"><b>0x0023 LJMP %INT4</b></font>
+interrupt vector for UART<br>
+<font face="Courier New"><b>0x002B LJMP %INT5</b></font>
+interrupt vector for T2</p>
+
+<p>If you look at MAIN in END.F51, you&#146;ll see how ISRs are
+linked to interrupt sources:</p>
+
+<p><font face="Courier New"><b>[CFA] b_timebase ['] %INT1 bind!<br>
+</b></font>[CFA] b_timebase gets the address of the ISR code
+called b_timebase.<br>
+['] %INT1 bind! changes the destination of %INT1&#146;s LJMP in
+the binding table.</p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Special builder words</strong></font></p>
+
+<p>The 8051 can ony access SFRs via compiled code. Here are some
+compiling words that move SFRs to/from the stack. These must be
+used within colon definitions.</p>
+
+<table border="1" cellpadding="0" cellspacing="0">
+    <tr>
+        <td><strong>REG@: </strong></td>
+        <td nowrap><em>( &lt;asmlabel&gt; -- ) </em></td>
+        <td>Compiles code to fetch byte from an SFR</td>
+    </tr>
+    <tr>
+        <td><strong></strong>&nbsp;</td>
+        <td nowrap><em>( -- c )</em></td>
+        <td>Pushes an SFR's value onto the stack</td>
+    </tr>
+    <tr>
+        <td><strong>REG!:</strong></td>
+        <td nowrap><em>( &lt;asmlabel&gt; -- )</em></td>
+        <td>Compiles code to store byte to an SFR</td>
+    </tr>
+    <tr>
+        <td><strong></strong>&nbsp;</td>
+        <td nowrap><em>( c -- )</em></td>
+        <td>Stores a value to an SFR</td>
+    </tr>
+</table>
+
+<p class="MsoNormal" style="MARGIN-BOTTOM: 9.6pt">IFCLR and IFSET
+are special versions of IF. They compile efficient bit tests
+using the JB and JNB instructions.<br>
+Sample Usage:<b> [ 3 ] IFCLR SWAP THEN</b> is the same as <b>DUP
+8 AND 0= IF SWAP THEN.</b></p>
+
+<p>When allocating assembler labels, HERE is used to assign their
+values starting from a base address. There are several kinds of
+data types: BIT, IRAM, and Code. Several bytes at IRAM location
+0x20 are left free for use as bit variables. A block of code can
+allocate them using /BIT/. Bytes in IRAM can be allocated using
+/IRAM/. For example:</p>
+
+<table border="1" cellpadding="0" cellspacing="0">
+    <tr>
+        <td><font face="Courier New">/bit/ asmbyte mybit /bit/</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">/iram/ asmbyte mybyte /iram/</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">setb mybit</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">mov a, mybyte</font></td>
+    </tr>
+</table>
+
+<p><font color="#BF0000" size="4"><strong>Example State Machine</strong></font></p>
+
+<p>This state machine (sISR) steps through states using a 16-bit
+pointer in IRAM as the state.</p>
+
+<table border="0" cellpadding="0" cellspacing="0">
+    <tr>
+        <td><font face="Courier New">/iram/</font></td>
+        <td><font face="Courier New">asmbyte myvec</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New"></font>&nbsp;</td>
+        <td><font face="Courier New">asmbyte myvec1</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">/iram/</font></td>
+        <td><font face="Courier New"></font>&nbsp;</td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">code states </font></td>
+        <td><font face="Courier New">vector{ myvec ret c;</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">loco state2 </font></td>
+        <td><font face="Courier New">vector _myvec, states ret c;</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">loco state1 </font></td>
+        <td><font face="Courier New">vector _myvec, state2 ret c;</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New"></font>&nbsp;</td>
+        <td><font face="Courier New">}vector state1</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">code sISR</font></td>
+        <td><font face="Courier New">push myvec1 push myvec reti
+        c;</font></td>
+    </tr>
+</table>
+
+<p><strong>This compiles to:</strong></p>
+
+<table border="0" cellpadding="0" cellspacing="0">
+    <tr>
+        <td><font face="Courier New">1FF8 753C20 </font></td>
+        <td><font face="Courier New">MOV _MYVEC, #20</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">1FFB 753D06 </font></td>
+        <td><font face="Courier New">MOV _MYVEC1, #06</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">1FFE 22 </font></td>
+        <td><font face="Courier New">RET</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">1FFF 753C1F</font></td>
+        <td><font face="Courier New">MOV _MYVEC, #1F</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">2002 753DF8</font></td>
+        <td><font face="Courier New">MOV _MYVEC1, #F8</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">2005 22 </font></td>
+        <td><font face="Courier New">RET</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">2006 753C1F</font></td>
+        <td><font face="Courier New">MOV _MYVEC, #1F</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">2009 753DFF</font></td>
+        <td><font face="Courier New">MOV _MYVEC1, #FF</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">200C 22</font></td>
+        <td><font face="Courier New">RET</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">200D C03D </font></td>
+        <td><font face="Courier New">PUSH _MYVEC1</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">200F C03C</font></td>
+        <td><font face="Courier New">PUSH _MYVEC</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier New">2011 23</font></td>
+        <td><font face="Courier New">RETI</font></td>
+    </tr>
+</table>
+
+<p>&nbsp;</p>
+</body>
+</html>

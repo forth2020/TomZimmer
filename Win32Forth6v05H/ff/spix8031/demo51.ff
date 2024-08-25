@@ -1,0 +1,184 @@
+\ 8031 demonstration program            10/99 by Brad Eckert
+
+\ Use as a template for your hardware.
+
+host decimal
+anew demo_8051_program
+homeorder
+1       constant hardware       \ hardware configuration
+
+4       >addrnibbles            \ debugger addresses span 0000..FFFF
+
+{{ hardware 1 = }} [IF]         \ board 1 = 8031 TOF Evaluation Board
+        14745600 constant xtalfreq      \ crystal frequency in Hz
+        0        constant internalstack \ 0=XRAM, 1=IRAM128, 2=IRAM256
+        0x2464   constant EEPROMpart    \ IIC EEPROM type [2401,2402,..,24128]
+        0        constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.F51
+        2        constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.F51
+        16       >cellbits              \ 16-bit cells [16,32]
+        include begin.f51               \ 8051 basic register assignments
+        asmlabel? P1.1 asmlabel __keyhole
+\ I2C EEPROM pin assignments
+        asmlabel? P1.4 asmlabel __SDA   \ board-specific pin declarations
+        asmlabel? P1.6 asmlabel __SCL
+\ SPIX pin assignments
+        asmlabel? P1.5 asmlabel SS      \ '0' asserts Slave Select
+        asmlabel? P1.0 asmlabel SCK     \ Serial Clock
+        asmlabel? P1.3 asmlabel MOSI    \ Master Out Slave In
+        asmlabel? P1.2 asmlabel MISO    \ Master In Slave Out
+[THEN]
+{{ hardware 2 = }} [IF]         \ your target board
+        *** Your Configuration Here ***
+[THEN]
+
+include kernel.f51              \ CPU specific part of kernel for the 8051
+include kernel.ff               \ Portable part of kernel
+include locals.f51              \ Support for local variables. You can remove
+                                \ if you don't use local variables.
+0x1F2 >token# ( tokens 1E8 to 1F1 are reserved for multitasking )
+include eeprom.ff               \ Basic EEPROM support
+include spix.f51                \ Low level interface to SPIX bus
+include spix.ff                 \ Portable SPIX implementation
+include loader.ff               \ Boot loader for SPIX bus
+
+: at-xy         ( col row -- )  2drop ; c( position cursor at col,row)
+: max-xy        ( -- cols rows ) 0 0 ;  c( maximum cursor coordinate)
+: at-xy?        ( -- col row )   0 0 ;  c( current cursor position)
+
+app definitions
+
+: MyStuff       ( -- )                  c( Main program, called within loop )
+\ Peripherals can extend this to add themselves to the macroloop.
+                HotPlugPoll pause ;     \ test the SPIX chain for hot plugging
+
+\ =============================================================================
+\ Put your application after here. Generic SIP devices expect token assignments
+\ as assigned in the preceeding files and words.
+
+: EEbootup      ( 'src n -- )           c( load boot code from I2C EEPROM)
+\ attempt to load bytecode from a serial boot EEPROM if the device exists
+                EEpoll                  \ make sure boot device exists
+        if      over EE@N 0x07C9 <>
+        else    true
+        then    if      2drop exit      \ make sure it has a valid header
+                then
+                >r eval=ee evaluate
+                r> over
+        if      ." Boot load #" .       \ display error if any
+                ." ERROR=" . cr
+        else    2drop
+        then    ;
+
+\ code premain    ( -- )
+\ c( misc. setup for main program)
+\                 setb ET0                \ enable T0 interrupts
+\                 ret  c;
+
+: StartMain     ( -- )          c( Initialization for MAIN )
+\ Load order:
+\ 1. EEPROMs on the I2C bus: 0, 1, 2, ... 7
+\ 2. EEPROMs on the SPIX bus: 0, 1, ... n
+\ 3. EEPROM 0 on the I2C bus, secondary boot area.
+                x_reset                 \ clear the SPIX bus
+             c[ setb ET0                \ enable T0 interrupts
+             ]c x_svc? dup deadbus ! 0= \ service plug kills hotplug polling
+    if          8 0
+        do      i EEdevice !
+                i CurrentNode !         \ allow MY to address this device
+                primaryboot  i EEbootup \ load from IIC memory bus
+        loop    \ At this point, boot code from internal devices has been loaded.
+                EEdevice off
+                CurrentNode off         \ load nodes starting with node 0
+        begin   CurrentNode @ x_test 0= \ does it look bootable?
+        while   eval_ext                \ yes, read and evaluate.
+        repeat  \ Now, we allow post-load fixes
+                secondaryboot 8 EEbootup
+    then        HPtimer 100 caltimer    \ hotplug polling runs at 10 Hz max.
+                ['] MyStuff 'bind ['] mainevent bind! \ hook us in **
+                ;
+
+\ ** This was a little different than REBIND. We needed an extra level of
+\ indirection so that we could chain things onto MyStuff. Add-on peripherals
+\ extend MyStuff. To see the chain's object code, use TRACE MyStuff.
+
+\ demonstration of some assembler features, use SEE FOO to see the result
+
+: foo   reg@: P1  negate        \ read P1  (8051 only)
+        reg!: P2                \ write P2 (8051 only)
+        [ 6 ] ifclr swap then       \ swap if bit 6 of TOS is set
+        [ 9 ] ifset drop then       \ drop if bit 9 of TOS is set
+        drop ;
+
+: PRIMES        DO  2   BEGIN I OVER /MOD PLUCK >= OVER AND
+                        WHILE DROP 1+
+                        REPEAT
+                NIP IF I (.) type. THEN
+                LOOP ;
+
+: GCD           ( a b -- gcd ) ?DUP IF TUCK MOD RECURSE THEN ;
+
+: d1-           ( d -- d+1 ) -1. d+ ;
+
+: sqrt          ( d -- n )              \ binary search for SQRT(d)
+                -1 1 rshift invert  0 >r   ( d guess | result )
+        begin   dup
+        while   dup r@ + dup um*        ( d guess [r+g]^2 | res )
+                rot >r 2over d- d1- nip 0<  ( d f | res guess )
+                if      r> r> over + >r ( d guess | result )
+                else    r>
+                then    u2/
+        repeat  drop 2drop r> ;
+
+: dist          { x0 y0 x1 y1 -- distance } \ demonstrate locals
+                x0 x1 - abs dup um*
+                y0 y1 - abs dup um* d+ sqrt ;
+
+: test          ( c -- )
+         qcase: [ 1 ] ?[ sqrt ]?        \ quick CASE (8-bit comparisons)
+                [ 3 ] ?[ dist ]?
+                [ 5 ] ?[ dup over rot ]?
+                ;
+
+
+1 [IF]
+pcreate tokencode               c( -> MYPROGRAM )
+
+tokenizing                      \ TOKENIZED CODE
+program myprogram                       c( tokenized program)
+42 constant asterisk
+: star    ( -- )     asterisk emit ;    c( emit an asterisk)
+: stars   ( n -- )   0 do star loop ;   c( emit a row of asterisks)
+end
+building
+[THEN]                  \ type SEE MYPROGRAM to disassemble this
+\ to load: EVAL=CODE TOKENCODE EVALUATE
+
+{{ debugstyle dup 0 = swap 2 = or }}    \ Using UART for debugger?
+[IF]
+{{ cr .( Debugger baudrate = ) decimal }} \ display actual baud rate
+{{ asmlabel? TH1init  negate 255 and 192 *  xtalfreq swap / . }}
+[THEN]
+
+\ State machine demo: SEE STATES to view the resulting code
+static
+/iram/  asmbyte _myvec          \ for demo state machine
+        asmbyte _myvec1
+/iram/
+
+code states     vector{ _myvec  ret c;
+loco state2     vector _myvec, states  ret c;
+loco state1     vector _myvec, state2  ret c;
+                }vector state1
+loco sISR       push _myvec1  push _myvec  ret c;
+
+
+
+
+/iram/  here asmlabel rp051     \ rstack, no asmbyte after this point!
+/iram/
+include end.f51         \ finish up processing, resolve stuff
+
+hsave rom.hex           \ save a ROM image
+tsave rom.hh            \ save header data for later use by tokenizer or debugger
+ndxsave winview.ndx \ build a hyperlink index for this project
+

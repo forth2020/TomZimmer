@@ -1,0 +1,131 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title>CREATE .. DOES&gt; ..</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>CREATE DOES&gt;</strong></font></p>
+
+<hr>
+
+<p>The tokenizer/evaluator handling of DOES&gt; follows the ANS standard.</p>
+
+<p>The builder handling of DOES&gt; is not standard. In the case of the builder,
+the code after DOES&gt; can't execute on the host PC. Defining words can only
+define words that execute on the target. These defining words are defined in
+host mode. When IDOES&gt; is encountered, the interpreter switches to building
+mode and compiles the code to be executed at run time. Semicolon switches back
+to host mode.</p>
+
+<p>IDOES&gt; provides an elegant way to associate code and data. It patches the
+last ICREATE or IPCREATE code by replacing its return instruction with a jump to
+the IDOES&gt; code.</p>
+
+<p><font size="4" color="#C00000"><b>Example 1. Simple data structure in ROM.</b></font></p>
+
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td nowrap><font face="Courier">&lt;builder></font></td>
+    <td nowrap></td>
+    <td nowrap>Place the following definition(s) in BUILDER</td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">: my</font><font face="Courier">def</font></td>
+    <td nowrap><i>        ( n1 n2 &lt;name> -- )</i></td>
+    <td nowrap>Compilation semantics</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><i>                ( -- n1 n2 )</i></td>
+    <td nowrap>Execution semantics</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><font face="Courier">                ipcreate i, i,</font></td>
+    <td nowrap>Create a data structure in program space</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><font face="Courier">                idoes> dup @p swap cell+ @p swap&nbsp;</font></td>
+    <td nowrap>Read double from program space</td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">;</font></td>
+    <td nowrap></td>
+    <td nowrap></td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">&lt;/builder>&nbsp;</font></td>
+    <td nowrap></td>
+    <td nowrap>Switch back to ROM building</td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">100 200</font><font face="Courier">&nbsp;</font></td>
+    <td nowrap><font face="Courier">mydef foo1</font></td>
+    <td nowrap>Switch back to ROM building</td>
+  </tr>
+</table>
+
+<p><font size="4" color="#C00000"><b>Example 2. Voltage reading.</b></font></p>
+
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td nowrap><font face="Courier">&lt;builder></font></td>
+    <td nowrap></td>
+    <td nowrap>Place the following definition(s) in BUILDER</td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">: voltage</font></td>
+    <td nowrap><i>        ( zero span channel &lt;name> -- )&nbsp;</i></td>
+    <td nowrap>Compilation semantics</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><i>                ( -- millivolts )</i></td>
+    <td nowrap>Execution semantics</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><font face="Courier">icreate i, swap i, i,</font></td>
+    <td nowrap>Create a data structure in data space</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><font face="Courier">                idoes> a! @a+ ADC@&nbsp;</font></td>
+    <td nowrap>Read raw ADC data</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><font face="Courier">@a+ -</font></td>
+    <td nowrap>Subtract the zero point</td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><font face="Courier">@a+ m* nip</font></td>
+    <td nowrap>Scale by span</td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">;</font></td>
+    <td nowrap></td>
+    <td nowrap><i>Conveniently ignore calibration issues.</i></td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">&lt;/builder> </font></td>
+    <td nowrap></td>
+    <td nowrap>Switch back to ROM building</td>
+  </tr>
+  <tr>
+    <td nowrap><font face="Courier">-2 20000 0&nbsp;</font></td>
+    <td nowrap><font face="Courier">voltage outside_temp</font></td>
+    <td nowrap>Define a voltage reading word</td>
+  </tr>
+</table>
+</body>
+</html>

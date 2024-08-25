@@ -1,0 +1,1463 @@
+00000  C5E5              RJMP  0xBCC:B_COLD
+00002  FFFF              Unknown:FFFF
+00004  FFFF              Unknown:FFFF
+00006  FFFF              Unknown:FFFF
+00008  FFFF              Unknown:FFFF
+0000A  FFFF              Unknown:FFFF
+0000C  FFFF              Unknown:FFFF
+0000E  FFFF              Unknown:FFFF
+00010  FFFF              Unknown:FFFF
+00012  FFFF              Unknown:FFFF
+00014  FFFF              Unknown:FFFF
+00016  FFFF              Unknown:FFFF
+00018  FFFF              Unknown:FFFF
+0001A  93AA     DUP:     ST    -Y,R26
+0001C  93BA              ST    -Y,R27
+0001E  9508              RET
+00020  91B9     DROP:    LD    R27,Y+
+00022  91A9              LD    R26,Y+
+00024  9508              RET
+00026  2E0A     SWAP:    MOV   R0,R26
+00028  2E1B              MOV   R1,R27
+0002A  91B9              LD    R27,Y+
+0002C  91A9              LD    R26,Y+
+0002E  920A              ST    -Y,R0
+00030  921A              ST    -Y,R1
+00032  9508              RET
+00034  9019     OVER:    LD    R1,Y+
+00036  8008              LD    R0,Y
+00038  9721              SBIW  R28,1
+0003A  93AA              ST    -Y,R26
+0003C  93BA              ST    -Y,R27
+0003E  2DA0              MOV   R26,R0
+00040  2DB1              MOV   R27,R1
+00042  9508              RET
+00044  9019     AND:     LD    R1,Y+
+00046  9009              LD    R0,Y+
+00048  21A0              AND   R26,R0
+0004A  21B1              AND   R27,R1
+0004C  9508              RET
+0004E  9019     OR:      LD    R1,Y+
+00050  9009              LD    R0,Y+
+00052  29A0              OR    R26,R0
+00054  29B1              OR    R27,R1
+00056  9508              RET
+00058  9019     +:       LD    R1,Y+
+0005A  9009              LD    R0,Y+
+0005C  0DA0              ADD   R26,R0
+0005E  1DB1              ADC   R27,R1
+00060  9508              RET
+00062  9019     -:       LD    R1,Y+
+00064  9009              LD    R0,Y+
+00066  1A0A              SUB   R0,R26
+00068  0A1B              SBC   R1,R27
+0006A  2DA0              MOV   R26,R0
+0006C  2DB1              MOV   R27,R1
+0006E  9508              RET
+00070  2BAB     0=:      OR    R26,R27
+00072  E0B0              LDI   R27,0
+00074  F409              BRNE  0x78
+00076  95BA              DEC   R27
+00078  2FAB              MOV   R26,R27
+0007A  9508              RET
+0007C  E0A0     0<:      LDI   R26,0
+0007E  23BB              TST   R27
+00080  F40A              BRPL  0x84
+00082  95AA              DEC   R26
+00084  2FBA              MOV   R27,R26
+00086  9508              RET
+00088  91FF     >R:      POP   R31
+0008A  91EF              POP   R30
+0008C  93AF              PUSH  R26
+0008E  93BF              PUSH  R27
+00090  91B9              LD    R27,Y+
+00092  91A9              LD    R26,Y+
+00094  9409              IJMP
+00096  91FF     R>:      POP   R31
+00098  91EF              POP   R30
+0009A  93AA              ST    -Y,R26
+0009C  93BA              ST    -Y,R27
+0009E  91BF              POP   R27
+000A0  91AF              POP   R26
+000A2  9409              IJMP
+000A4  91AC     C@:      LD    R26,X
+000A6  27BB              CLR   R27
+000A8  9508              RET
+000AA  900D     @:       LD    R0,X+
+000AC  91BC              LD    R27,X
+000AE  2DA0              MOV   R26,R0
+000B0  9508              RET
+000B2  9019     C!:      LD    R1,Y+
+000B4  9009              LD    R0,Y+
+000B6  920C              ST    X,R0
+000B8  91B9              LD    R27,Y+
+000BA  91A9              LD    R26,Y+
+000BC  9508              RET
+000BE  9019     !:       LD    R1,Y+
+000C0  9009              LD    R0,Y+
+000C2  920D              ST    X+,R0
+000C4  921D              ST    X+,R1
+000C6  91B9              LD    R27,Y+
+000C8  91A9              LD    R26,Y+
+000CA  9508              RET
+000CC  2F8A     A!:      MOV   R24,R26
+000CE  2F9B              MOV   R25,R27
+000D0  91B9              LD    R27,Y+
+000D2  91A9              LD    R26,Y+
+000D4  9508              RET
+000D6  93AA     A@:      ST    -Y,R26
+000D8  93BA              ST    -Y,R27
+000DA  2FA8              MOV   R26,R24
+000DC  2FB9              MOV   R27,R25
+000DE  9508              RET
+000E0  93AA     C@A+:    ST    -Y,R26
+000E2  93BA              ST    -Y,R27
+000E4  2FE8              MOV   R30,R24
+000E6  2FF9              MOV   R31,R25
+000E8  27BB              CLR   R27
+000EA  91A1              LD    R26,Z+
+000EC  2F8E              MOV   R24,R30
+000EE  2F9F              MOV   R25,R31
+000F0  9508              RET
+000F2  2FE8     C!A+:    MOV   R30,R24
+000F4  2FF9              MOV   R31,R25
+000F6  93A1              ST    Z+,R26
+000F8  2F8E              MOV   R24,R30
+000FA  2F9F              MOV   R25,R31
+000FC  91B9              LD    R27,Y+
+000FE  91A9              LD    R26,Y+
+00100  9508              RET
+00102  2FEA     C@P:     MOV   R30,R26
+00104  2FFB              MOV   R31,R27
+00106  95C8              LPM
+00108  2DA0              MOV   R26,R0
+0010A  27BB              CLR   R27
+0010C  9508              RET
+0010E  95A0     INVERT:  COM   R26
+00110  95B0              COM   R27
+00112  9508              RET
+00114  93AA     FALSE:   ST    -Y,R26
+00116  93BA              ST    -Y,R27
+00118  E0B0              LDI   R27,0
+0011A  E0A0              LDI   R26,0
+0011C  9508              RET
+0011E  DFFA     TRUE:    RCALL 0x114:FALSE
+00120  EFBF              SER   R27
+00122  EFAF              SER   R26
+00124  9508              RET
+00126  DFF6     0:       RCALL 0x114:FALSE
+00128  9508              RET
+0012A  DFF4     1:       RCALL 0x114:FALSE
+0012C  E0A1              LDI   R26,1
+0012E  9508              RET
+00130  DFF1     2:       RCALL 0x114:FALSE
+00132  E0A2              LDI   R26,2
+00134  9508              RET
+00136  9622     NIP:     ADIW  R28,2
+00138  9508              RET
+0013A  91FF     R@:      POP   R31
+0013C  91EF              POP   R30
+0013E  93AA              ST    -Y,R26
+00140  93BA              ST    -Y,R27
+00142  91BF              POP   R27
+00144  91AF              POP   R26
+00146  93AF              PUSH  R26
+00148  93BF              PUSH  R27
+0014A  9409              IJMP
+0014C  C003     R>DROP:  RJMP  0x154
+0014E  910F              POP   R16
+00150  910F              POP   R16
+00152  9508              RET
+00154  91FF              POP   R31
+00156  91EF              POP   R30
+00158  910F              POP   R16
+0015A  910F              POP   R16
+0015C  9409              IJMP
+0015E  2BAB     0<>:     OR    R26,R27
+00160  E0B0              LDI   R27,0
+00162  F009              BREQ  0x166
+00164  95BA              DEC   R27
+00166  2FAB              MOV   R26,R27
+00168  9508              RET
+0016A  9019     MIN:     LD    R1,Y+
+0016C  9009              LD    R0,Y+
+0016E  15A0              CP    R26,R0
+00170  05B1              CPC   R27,R1
+00172  F014              BRLT  0x178
+00174  2DA0              MOV   R26,R0
+00176  2DB1              MOV   R27,R1
+00178  9508              RET
+0017A  DF5C     2DUP:    RCALL 0x34:OVER
+0017C  CF5B              RJMP  0x34:OVER
+0017E  9622     2DROP:   ADIW  R28,2
+00180  91B9              LD    R27,Y+
+00182  91A9              LD    R26,Y+
+00184  9508              RET
+00186  900D     COUNT:   LD    R0,X+
+00188  93AA              ST    -Y,R26
+0018A  93BA              ST    -Y,R27
+0018C  2DA0              MOV   R26,R0
+0018E  27BB              CLR   R27
+00190  9508              RET
+00192  2FEA     COUNTP:  MOV   R30,R26
+00194  2FFB              MOV   R31,R27
+00196  9611              ADIW  R26,1
+00198  95C8              LPM
+0019A  93AA              ST    -Y,R26
+0019C  93BA              ST    -Y,R27
+0019E  2DA0              MOV   R26,R0
+001A0  27BB              CLR   R27
+001A2  9508              RET
+001A4  2BAB     (%IF):   OR    R26,R27
+001A6  91B9              LD    R27,Y+
+001A8  91A9              LD    R26,Y+
+001AA  F021              BREQ  0x1B4
+001AC  91FF              POP   R31
+001AE  91EF              POP   R30
+001B0  9631              ADIW  R30,1
+001B2  9409              IJMP
+001B4  9508              RET
+001B6  91FF     (%MULTI): POP   R31
+001B8  91EF              POP   R30
+001BA  911F              POP   R17
+001BC  910F              POP   R16
+001BE  5001              SUBI  R16,1
+001C0  4010              SBCI  R17,0
+001C2  930F              PUSH  R16
+001C4  931F              PUSH  R17
+001C6  F00A              BRMI  0x1CA
+001C8  9631              ADIW  R30,1
+001CA  9409              IJMP
+001CC  DFA3     PAD:     RCALL 0x114:FALSE
+001CE  E6A0              LDI   R26,96
+001D0  9508              RET
+001D2  2E0A     BYTE-SPLIT: MOV   R0,R26
+001D4  2411              CLR   R1
+001D6  2FAB              MOV   R26,R27
+001D8  27BB              CLR   R27
+001DA  920A              ST    -Y,R0
+001DC  921A              ST    -Y,R1
+001DE  9508              RET
+001E0  9019     BYTE-JOIN: LD    R1,Y+
+001E2  9009              LD    R0,Y+
+001E4  2FBA              MOV   R27,R26
+001E6  2DA0              MOV   R26,R0
+001E8  9508              RET
+001EA  DF3B     =:       RCALL 0x62:-
+001EC  CF41              RJMP  0x70:0=
+001EE  DF92     REPORT_DESC: RCALL 0x114:FALSE
+001F0  E0B1              LDI   R27,1
+001F2  EFA6              LDI   R26,246
+001F4  9508              RET
+001F6  069BFFA0          db" .. "
+001FA  010901A1          db" ..!."
+001FE  0D050609          db" ...."
+00202  01851365          db" ..e."
+00206  FD550015          db" U}.."
+0020A  00351075          db" 5.u."
+0020E  01952009          db" ... "
+00212  00A10105          db" !..."
+00216  3009C027          db" .0'@"
+0021A  00DA4700          db" Z..G"
+0021E  DAC00000          db" @Z.."
+00222  02813109          db" ...1"
+00226  102700A4          db" '.$."
+0022A  4700A410          db" .G.$"
+0022E  00000281          db" ...."
+00232  09050065          db" ..e."
+00236  00550119          db" U..."
+0023A  04290125          db" ).%."
+0023E  01450495          db" E..."
+00242  01750281          db" u..."
+00246  01950381          db" ...."
+0024A  0D053209          db" ...2"
+0024E  02810275          db" ..u."
+00252  03813809          db" ...8"
+00256  1F251F45          db" %.E."
+0025A  05750281          db" u..."
+0025E  03750381          db" u..."
+00262  85C00902          db" @..."
+00266  A1020600          db" .!.."
+0026A  FFA10309          db" !.."
+0026E  04098015          db" ...."
+00272  7F250035          db" %5."
+00276  FF450875          db" Eu."
+0027A  07950281          db" ...."
+0027E  05090609          db" ...."
+00282  80157F25          db" ..%"
+00286  0035FF45          db" 5.E"
+0028A  08750295          db" u..."
+0028E  0891C0C0          db" ..@@"
+00292  DF40     CONFIG_DESC: RCALL 0x114:FALSE
+00294  E0B2              LDI   R27,2
+00296  E9AA              LDI   R26,154
+00298  9508              RET
+0029A  09222202          db" "..""
+0029E  01000001          db" ...."
+002A2  19800409          db" ...."
+002A6  00000301          db" ...."
+002AA  00000903          db" ...."
+002AE  00210001          db" !..."
+002B2  2201009B          db" .".."
+002B6  05070381          db" ...."
+002BA  0008FF08          db" ..."
+002BE  DF2A     HID_DESC: RCALL 0x114:FALSE
+002C0  E0B2              LDI   R27,2
+002C2  EAAD              LDI   R26,173
+002C4  9508              RET
+002C6  DF26     INTERFACE_DESC: RCALL 0x114:FALSE
+002C8  E0B2              LDI   R27,2
+002CA  EAA4              LDI   R26,164
+002CC  9508              RET
+002CE  DF22     STAND_DEV_DESC: RCALL 0x114:FALSE
+002D0  E0B2              LDI   R27,2
+002D2  EDA6              LDI   R26,214
+002D4  9508              RET
+002D6  12121001          db" ...."
+002DA  00010000          db" ...."
+002DE  8C080007          db" ...."
+002E2  00040101          db" ...."
+002E6  0002FF01          db" ..."
+002EA  DF14     STRING00: RCALL 0x114:FALSE
+002EC  E0B2              LDI   R27,2
+002EE  EFA2              LDI   R26,242
+002F0  9508              RET
+002F2  03040409          db" ...."
+002F6  DF0E     STRING01: RCALL 0x114:FALSE
+002F8  E0B2              LDI   R27,2
+002FA  EFAE              LDI   R26,254
+002FC  9508              RET
+002FE  031A0047          db" ..G."
+00302  00540043          db" T.C."
+00306  004F002F          db" O./."
+0030A  00430061          db" C.a."
+0030E  006C0063          db" l.c."
+00312  006F006D          db" o.m."
+00316  0070              db" p."
+00318  DEFD     STRING02: RCALL 0x114:FALSE
+0031A  E0B3              LDI   R27,3
+0031C  E2A0              LDI   R26,32
+0031E  9508              RET
+00320  03140044          db" ..D."
+00324  00690067          db" i.g."
+00328  00690074          db" i.t."
+0032C  0069007A          db" i.z."
+00330  00650072          db" e.r."
+00334  DEEF     STRING03: RCALL 0x114:FALSE
+00336  E0B3              LDI   R27,3
+00338  E3AC              LDI   R26,60
+0033A  9508              RET
+0033C  03060054          db" ..T."
+00340  0041              db" A."
+00342  2FBA              MOV   R27,R26
+00344  E00A              LDI   R16,10
+00346  950A              DEC   R16
+00348  F7F1              BRNE  0x346
+0034A  0000              NOP
+0034C  0000              NOP
+0034E  95BA              DEC   R27
+00350  F7C9              BRNE  0x344
+00352  9508              RET
+00354  DEDF     BLIP:    RCALL 0x114:FALSE
+00356  E0B1              LDI   R27,1
+00358  DEDD              RCALL 0x114:FALSE
+0035A  E0A8              LDI   R26,8
+0035C  94F8     BEEP:    CLI
+0035E  91F9              LD    R31,Y+
+00360  91E9              LD    R30,Y+
+00362  23AA              TST   R26
+00364  F009              BREQ  0x368
+00366  98AD              CBI   PORTC,5
+00368  DFEC              RCALL 0x342
+0036A  9AAD              SBI   PORTC,5
+0036C  DFEA              RCALL 0x342
+0036E  9731              SBIW  R30,1
+00370  F7C1              BRNE  0x362
+00372  CE56              RJMP  0x20:DROP
+00374  98AC     GRN+:    CBI   PORTC,4
+00376  9508              RET
+00378  9AAC     GRN-:    SBI   PORTC,4
+0037A  9508              RET
+0037C  95A8     T_EMIT:  WDR
+0037E  9B5D              SBIS  USR,5
+00380  CFFD              RJMP  0x37C:T_EMIT
+00382  B9AC              OUT   PDSLEEP,R26
+00384  CE4D              RJMP  0x20:DROP
+00386  E60F     SEND_STOP: LDI   R16,111
+00388  BB0A              OUT   DDRA,R16
+0038A  9ADA              SBI   PORTA,2
+0038C  0000              NOP
+0038E  E607              LDI   R16,103
+00390  BB0A              OUT   DDRA,R16
+00392  9508              RET
+00394  E60F     SEND_START: LDI   R16,111
+00396  BB0A              OUT   DDRA,R16
+00398  0000              NOP
+0039A  98DA              CBI   PORTA,2
+0039C  9508              RET
+0039E  E018     SEND_BYTE: LDI   R17,8
+003A0  0FAA              LSL   R26
+003A2  F418              BRCC  0x3AA
+003A4  E607              LDI   R16,103
+003A6  BB0A              OUT   DDRA,R16
+003A8  C002              RJMP  0x3AE
+003AA  E60F              LDI   R16,111
+003AC  BB0A              OUT   DDRA,R16
+003AE  0000              NOP
+003B0  9ADA              SBI   PORTA,2
+003B2  0000              NOP
+003B4  98DA              CBI   PORTA,2
+003B6  951A              DEC   R17
+003B8  F799              BRNE  0x3A0
+003BA  E607              LDI   R16,103
+003BC  BB0A              OUT   DDRA,R16
+003BE  0000              NOP
+003C0  9ADA              SBI   PORTA,2
+003C2  0000              NOP
+003C4  98DA              CBI   PORTA,2
+003C6  CE2C              RJMP  0x20:DROP
+003C8  E018     RECV_BYTE: LDI   R17,8
+003CA  9ADA              SBI   PORTA,2
+003CC  0FAA              LSL   R26
+003CE  99CB              SBIC  PINA,3
+003D0  60A1              ORI   R26,1
+003D2  98DA              CBI   PORTA,2
+003D4  951A              DEC   R17
+003D6  F7C9              BRNE  0x3CA
+003D8  23BB              TST   R27
+003DA  F019              BREQ  0x3E2
+003DC  E607              LDI   R16,103
+003DE  BB0A              OUT   DDRA,R16
+003E0  C002              RJMP  0x3E6
+003E2  E60F              LDI   R16,111
+003E4  BB0A              OUT   DDRA,R16
+003E6  0000              NOP
+003E8  0000              NOP
+003EA  9ADA              SBI   PORTA,2
+003EC  0000              NOP
+003EE  98DA              CBI   PORTA,2
+003F0  0000              NOP
+003F2  E607              LDI   R16,103
+003F4  BB0A              OUT   DDRA,R16
+003F6  27BB              CLR   R27
+003F8  9508              RET
+003FA  DE8C     REMAINING: RCALL 0x114:FALSE
+003FC  E7A0              LDI   R26,112
+003FE  9508              RET
+00400  DE89     REMPTR:  RCALL 0x114:FALSE
+00402  E7A2              LDI   R26,114
+00404  9508              RET
+00406  DE86     OUTPUT:  RCALL 0x114:FALSE
+00408  E7A4              LDI   R26,116
+0040A  9508              RET
+0040C  DE83     INPUT:   RCALL 0x114:FALSE
+0040E  E7AE              LDI   R26,126
+00410  9508              RET
+00412  DE80     USTATUS: RCALL 0x114:FALSE
+00414  E8A8              LDI   R26,136
+00416  9508              RET
+00418  DE7D     IDLE_TIME: RCALL 0x114:FALSE
+0041A  E8A9              LDI   R26,137
+0041C  9508              RET
+0041E  DE7A     RW:      RCALL 0x114:FALSE
+00420  EFA0              LDI   R26,240
+00422  9508              RET
+00424  DFF6     S_ON:    RCALL 0x412:USTATUS
+00426  DE3E              RCALL 0xA4:C@
+00428  DE12              RCALL 0x4E:OR
+0042A  DFF3              RCALL 0x412:USTATUS
+0042C  CE42              RJMP  0xB2:C!
+0042E  DE6F     S_OFF:   RCALL 0x10E:INVERT
+00430  DFF0              RCALL 0x412:USTATUS
+00432  DE38              RCALL 0xA4:C@
+00434  DE07              RCALL 0x44:AND
+00436  DFED              RCALL 0x412:USTATUS
+00438  CE3C              RJMP  0xB2:C!
+0043A  DFEB     S_ON?:   RCALL 0x412:USTATUS
+0043C  DE33              RCALL 0xA4:C@
+0043E  DE02              RCALL 0x44:AND
+00440  CE8E              RJMP  0x15E:0<>
+00442  5AA0     GETVAL:  SUBI  R26,160
+00444  4FBF              SBCI  R27,255
+00446  CE2E              RJMP  0xA4:C@
+00448  DE73     BMREQTYP: RCALL 0x130:2
+0044A  CFFB              RJMP  0x442:GETVAL
+0044C  DE63     BMREQ:   RCALL 0x114:FALSE
+0044E  E0A3              LDI   R26,3
+00450  CFF8              RJMP  0x442:GETVAL
+00452  DE60     WVALUE:  RCALL 0x114:FALSE
+00454  E0A4              LDI   R26,4
+00456  CFF5              RJMP  0x442:GETVAL
+00458  DE5D     WVALUE+1: RCALL 0x114:FALSE
+0045A  E0A5              LDI   R26,5
+0045C  CFF2              RJMP  0x442:GETVAL
+0045E  DE5A     WINDEX:  RCALL 0x114:FALSE
+00460  E0A6              LDI   R26,6
+00462  CFEF              RJMP  0x442:GETVAL
+00464  DE57     WLENGTH: RCALL 0x114:FALSE
+00466  E0A8              LDI   R26,8
+00468  DFEC              RCALL 0x442:GETVAL
+0046A  DE54              RCALL 0x114:FALSE
+0046C  E0A9              LDI   R26,9
+0046E  DFE9              RCALL 0x442:GETVAL
+00470  CEB7              RJMP  0x1E0:BYTE-JOIN
+00472  DF90     START_H11: RCALL 0x394:SEND_START
+00474  CF94              RJMP  0x39E:SEND_BYTE
+00476  DE4E     WRITE_COMMAND: RCALL 0x114:FALSE
+00478  E3A6              LDI   R26,54
+0047A  DFFB              RCALL 0x472:START_H11
+0047C  DF90              RCALL 0x39E:SEND_BYTE
+0047E  CF83              RJMP  0x386:SEND_STOP
+00480  DFFA     START_READ: RCALL 0x476:WRITE_COMMAND
+00482  DE48              RCALL 0x114:FALSE
+00484  E3A5              LDI   R26,53
+00486  CFF5              RJMP  0x472:START_H11
+00488  DFF6     START_WRITE: RCALL 0x476:WRITE_COMMAND
+0048A  DE44              RCALL 0x114:FALSE
+0048C  E3A4              LDI   R26,52
+0048E  CFF1              RJMP  0x472:START_H11
+00490  DEA0     SEND_LE: RCALL 0x1D2:BYTE-SPLIT
+00492  DDC9              RCALL 0x26:SWAP
+00494  DF84              RCALL 0x39E:SEND_BYTE
+00496  CF83              RJMP  0x39E:SEND_BYTE
+00498  DFF3     READ_ONE: RCALL 0x480:START_READ
+0049A  DE41              RCALL 0x11E:TRUE
+0049C  DF95              RCALL 0x3C8:RECV_BYTE
+0049E  CF73              RJMP  0x386:SEND_STOP
+004A0  DFF3     WRITE_ONE: RCALL 0x488:START_WRITE
+004A2  DF7D              RCALL 0x39E:SEND_BYTE
+004A4  CF70              RJMP  0x386:SEND_STOP
+004A6  DFEC     READ_TWO: RCALL 0x480:START_READ
+004A8  DE35              RCALL 0x114:FALSE
+004AA  DF8E              RCALL 0x3C8:RECV_BYTE
+004AC  DE38              RCALL 0x11E:TRUE
+004AE  DF8C              RCALL 0x3C8:RECV_BYTE
+004B0  DF6A              RCALL 0x386:SEND_STOP
+004B2  CE96              RJMP  0x1E0:BYTE-JOIN
+004B4  DFE9     WRITE_TWO: RCALL 0x488:START_WRITE
+004B6  DFEC              RCALL 0x490:SEND_LE
+004B8  CF66              RJMP  0x386:SEND_STOP
+004BA  DE2C     SET_ADDRESS: RCALL 0x114:FALSE
+004BC  EDA1              LDI   R26,209
+004BE  CFF0              RJMP  0x4A0:WRITE_ONE
+004C0  DE29     VALIDATE: RCALL 0x114:FALSE
+004C2  EFAA              LDI   R26,250
+004C4  CFD8              RJMP  0x476:WRITE_COMMAND
+004C6  DE26     EPT0_IN: RCALL 0x114:FALSE
+004C8  E0A3              LDI   R26,3
+004CA  CFE6              RJMP  0x498:READ_ONE
+004CC  64A0     CLR_INT: ORI   R26,64
+004CE  DFE4              RCALL 0x498:READ_ONE
+004D0  CDA7              RJMP  0x20:DROP
+004D2  DE2B     NO_SUPPORT: RCALL 0x12A:1
+004D4  DE1F              RCALL 0x114:FALSE
+004D6  E4A3              LDI   R26,67
+004D8  CFE3              RJMP  0x4A0:WRITE_ONE
+004DA  DFCD     EPT_ACK: RCALL 0x476:WRITE_COMMAND
+004DC  DE1B              RCALL 0x114:FALSE
+004DE  EFA1              LDI   R26,241
+004E0  CFCA              RJMP  0x476:WRITE_COMMAND
+004E2  DE18     SEND_[:  RCALL 0x114:FALSE
+004E4  E0A3              LDI   R26,3
+004E6  DFC7              RCALL 0x476:WRITE_COMMAND
+004E8  DF9A              RCALL 0x41E:RW
+004EA  DFCE              RCALL 0x488:START_WRITE
+004EC  DE1C              RCALL 0x126:0
+004EE  DF57              RCALL 0x39E:SEND_BYTE
+004F0  CF56              RJMP  0x39E:SEND_BYTE
+004F2  DF49     ]_SEND:  RCALL 0x386:SEND_STOP
+004F4  CFE5              RJMP  0x4C0:VALIDATE
+004F6  DFF5     SEND_NONE: RCALL 0x4E2:SEND_[
+004F8  DF52              RCALL 0x39E:SEND_BYTE
+004FA  CFFB              RJMP  0x4F2:]_SEND
+004FC  DE16     SEND_ONE: RCALL 0x12A:1
+004FE  CFFB              RJMP  0x4F6:SEND_NONE
+00500  DE17     SEND_TWO: RCALL 0x130:2
+00502  DFEF              RCALL 0x4E2:SEND_[
+00504  DFC5              RCALL 0x490:SEND_LE
+00506  CFF5              RJMP  0x4F2:]_SEND
+00508  DF8A     READ_H11: RCALL 0x41E:RW
+0050A  DFBA              RCALL 0x480:START_READ
+0050C  DDBD              RCALL 0x88:>R
+0050E  DDDE              RCALL 0xCC:A!
+00510  DE52              RCALL 0x1B6:(%MULTI)
+00512  C005              RJMP  0x51E
+00514  DE12              RCALL 0x13A:R@
+00516  DDAC              RCALL 0x70:0=
+00518  DF57              RCALL 0x3C8:RECV_BYTE
+0051A  DDEB              RCALL 0xF2:C!A+
+0051C  CFF9              RJMP  0x510
+0051E  DE16              RCALL 0x14C:R>DROP
+00520  CF32              RJMP  0x386:SEND_STOP
+00522  DF7D     WRITE_H11: RCALL 0x41E:RW
+00524  DFB1              RCALL 0x488:START_WRITE
+00526  DDB0              RCALL 0x88:>R
+00528  DDD1              RCALL 0xCC:A!
+0052A  DE45              RCALL 0x1B6:(%MULTI)
+0052C  C003              RJMP  0x534
+0052E  DDD8              RCALL 0xE0:C@A+
+00530  DF36              RCALL 0x39E:SEND_BYTE
+00532  CFFB              RJMP  0x52A
+00534  DE0B              RCALL 0x14C:R>DROP
+00536  DF27              RCALL 0x386:SEND_STOP
+00538  CFC3              RJMP  0x4C0:VALIDATE
+0053A  DF62     SEND_MORE: RCALL 0x400:REMPTR
+0053C  DDB6              RCALL 0xAA:@
+0053E  DF5D              RCALL 0x3FA:REMAINING
+00540  DDB4              RCALL 0xAA:@
+00542  DD6B              RCALL 0x1A:DUP
+00544  9718              SBIW  R26,8
+00546  DD69              RCALL 0x1A:DUP
+00548  DD99              RCALL 0x7C:0<
+0054A  DE2C              RCALL 0x1A4:(%IF)
+0054C  C003              RJMP  0x554
+0054E  DD68              RCALL 0x20:DROP
+00550  DDEA              RCALL 0x126:0
+00552  C004              RJMP  0x55C
+00554  DDF0              RCALL 0x136:NIP
+00556  DDDE              RCALL 0x114:FALSE
+00558  E0A8              LDI   R26,8
+0055A  DD65              RCALL 0x26:SWAP
+0055C  DF4E              RCALL 0x3FA:REMAINING
+0055E  DDAF              RCALL 0xBE:!
+00560  DE0C              RCALL 0x17A:2DUP
+00562  DD7A              RCALL 0x58:+
+00564  DF4D              RCALL 0x400:REMPTR
+00566  DDAB              RCALL 0xBE:!
+00568  DD8F              RCALL 0x88:>R
+0056A  E090              LDI   R25,0
+0056C  E680              LDI   R24,96
+0056E  DDDB              RCALL 0x126:0
+00570  DDC0              RCALL 0xF2:C!A+
+00572  DDE3              RCALL 0x13A:R@
+00574  DDBE              RCALL 0xF2:C!A+
+00576  DE1F              RCALL 0x1B6:(%MULTI)
+00578  C003              RJMP  0x580
+0057A  DE0B              RCALL 0x192:COUNTP
+0057C  DDBA              RCALL 0xF2:C!A+
+0057E  CFFB              RJMP  0x576
+00580  DDE5              RCALL 0x14C:R>DROP
+00582  DD4E              RCALL 0x20:DROP
+00584  DE23              RCALL 0x1CC:PAD
+00586  DDA7              RCALL 0xD6:A@
+00588  56A0              SUBI  R26,96
+0058A  40B0              SBCI  R27,0
+0058C  DDC3              RCALL 0x114:FALSE
+0058E  E0A3              LDI   R26,3
+00590  DF72              RCALL 0x476:WRITE_COMMAND
+00592  CFC7              RJMP  0x522:WRITE_H11
+00594  DF32     SEND_PTR: RCALL 0x3FA:REMAINING
+00596  DD93              RCALL 0xBE:!
+00598  DF33              RCALL 0x400:REMPTR
+0059A  CD91              RJMP  0xBE:!
+0059C  DFFB     SEND_TO_HOST: RCALL 0x594:SEND_PTR
+0059E  CFCD              RJMP  0x53A:SEND_MORE
+005A0  60BB     D11_MODE: ORI   R27,11
+005A2  DDB8              RCALL 0x114:FALSE
+005A4  EFA3              LDI   R26,243
+005A6  CF86              RJMP  0x4B4:WRITE_TWO
+005A8  DDBE     IN_OFF:  RCALL 0x126:0
+005AA  DF30              RCALL 0x40C:INPUT
+005AC  CD82              RJMP  0xB2:C!
+005AE  DDBB     INITIAL_D11: RCALL 0x126:0
+005B0  DDBA              RCALL 0x126:0
+005B2  DFF0              RCALL 0x594:SEND_PTR
+005B4  DDBA              RCALL 0x12A:1
+005B6  DF2D              RCALL 0x412:USTATUS
+005B8  DD7C              RCALL 0xB2:C!
+005BA  DFF6              RCALL 0x5A8:IN_OFF
+005BC  DDAB              RCALL 0x114:FALSE
+005BE  E8AE              LDI   R26,142
+005C0  CFEF              RJMP  0x5A0:D11_MODE
+005C2  DDB1     RESTART_USB_DEVICE: RCALL 0x126:0
+005C4  DDA7              RCALL 0x114:FALSE
+005C6  EDA0              LDI   R26,208
+005C8  DF6B              RCALL 0x4A0:WRITE_ONE
+005CA  DDA4              RCALL 0x114:FALSE
+005CC  E8A0              LDI   R26,128
+005CE  DF75              RCALL 0x4BA:SET_ADDRESS
+005D0  DDAF              RCALL 0x130:2
+005D2  DDA0              RCALL 0x114:FALSE
+005D4  EDA8              LDI   R26,216
+005D6  DF64              RCALL 0x4A0:WRITE_ONE
+005D8  CFEA              RJMP  0x5AE:INITIAL_D11
+005DA  DF36     GET_STATUS: RCALL 0x448:BMREQTYP
+005DC  70B0              ANDI  R27,0
+005DE  70A3              ANDI  R26,3
+005E0  2F0A              MOV   R16,R26
+005E2  DD1E              RCALL 0x20:DROP
+005E4  3000              CPI   R16,0
+005E6  F429              BRNE  0x5F2
+005E8  DF14              RCALL 0x412:USTATUS
+005EA  DD5C              RCALL 0xA4:C@
+005EC  70B0              ANDI  R27,0
+005EE  70A3              ANDI  R26,3
+005F0  CF87              RJMP  0x500:SEND_TWO
+005F2  3001              CPI   R16,1
+005F4  F411              BRNE  0x5FA
+005F6  DD97              RCALL 0x126:0
+005F8  CF83              RJMP  0x500:SEND_TWO
+005FA  3002              CPI   R16,2
+005FC  F4C9              BRNE  0x630
+005FE  DF2F              RCALL 0x45E:WINDEX
+00600  2F0A              MOV   R16,R26
+00602  DD0E              RCALL 0x20:DROP
+00604  3000              CPI   R16,0
+00606  F411              BRNE  0x60C
+00608  DD8E              RCALL 0x126:0
+0060A  CF7A              RJMP  0x500:SEND_TWO
+0060C  3800              CPI   R16,128
+0060E  F431              BRNE  0x61C
+00610  DD81              RCALL 0x114:FALSE
+00612  E0A4              LDI   R26,4
+00614  DF12              RCALL 0x43A:S_ON?
+00616  70B0              ANDI  R27,0
+00618  70A1              ANDI  R26,1
+0061A  CF72              RJMP  0x500:SEND_TWO
+0061C  3801              CPI   R16,129
+0061E  F431              BRNE  0x62C
+00620  DD79              RCALL 0x114:FALSE
+00622  E0A8              LDI   R26,8
+00624  DF0A              RCALL 0x43A:S_ON?
+00626  70B0              ANDI  R27,0
+00628  70A1              ANDI  R26,1
+0062A  CF6A              RJMP  0x500:SEND_TWO
+0062C  DDA8              RCALL 0x17E:2DROP
+0062E  CF51              RJMP  0x4D2:NO_SUPPORT
+00630  DDA6              RCALL 0x17E:2DROP
+00632  CF4F              RJMP  0x4D2:NO_SUPPORT
+00634  DD78     SEND_ZERO: RCALL 0x126:0
+00636  DD77              RCALL 0x126:0
+00638  CF5E              RJMP  0x4F6:SEND_NONE
+0063A  DF06     CLEAR_FEATURE: RCALL 0x448:BMREQTYP
+0063C  2F0A              MOV   R16,R26
+0063E  DCF0              RCALL 0x20:DROP
+00640  3000              CPI   R16,0
+00642  F431              BRNE  0x650
+00644  DD75              RCALL 0x130:2
+00646  DEF3              RCALL 0x42E:S_OFF
+00648  DD65              RCALL 0x114:FALSE
+0064A  E8AE              LDI   R26,142
+0064C  DFA9              RCALL 0x5A0:D11_MODE
+0064E  CFF2              RJMP  0x634:SEND_ZERO
+00650  3002              CPI   R16,2
+00652  F499              BRNE  0x67A
+00654  DF04              RCALL 0x45E:WINDEX
+00656  2F0A              MOV   R16,R26
+00658  DCE3              RCALL 0x20:DROP
+0065A  3000              CPI   R16,0
+0065C  F409              BRNE  0x660
+0065E  CFEA              RJMP  0x634:SEND_ZERO
+00660  3800              CPI   R16,128
+00662  F421              BRNE  0x66C
+00664  DD57              RCALL 0x114:FALSE
+00666  E0A4              LDI   R26,4
+00668  DEE2              RCALL 0x42E:S_OFF
+0066A  CFE4              RJMP  0x634:SEND_ZERO
+0066C  3801              CPI   R16,129
+0066E  F421              BRNE  0x678
+00670  DD51              RCALL 0x114:FALSE
+00672  E0A8              LDI   R26,8
+00674  DEDC              RCALL 0x42E:S_OFF
+00676  CFDE              RJMP  0x634:SEND_ZERO
+00678  CF2C              RJMP  0x4D2:NO_SUPPORT
+0067A  CF2B              RJMP  0x4D2:NO_SUPPORT
+0067C  DEE5     SET_FEATURE: RCALL 0x448:BMREQTYP
+0067E  2F0A              MOV   R16,R26
+00680  DCCF              RCALL 0x20:DROP
+00682  3000              CPI   R16,0
+00684  F431              BRNE  0x692
+00686  DD54              RCALL 0x130:2
+00688  DECD              RCALL 0x424:S_ON
+0068A  DD44              RCALL 0x114:FALSE
+0068C  E8AF              LDI   R26,143
+0068E  DF88              RCALL 0x5A0:D11_MODE
+00690  CFD1              RJMP  0x634:SEND_ZERO
+00692  3002              CPI   R16,2
+00694  F499              BRNE  0x6BC
+00696  DEE3              RCALL 0x45E:WINDEX
+00698  2F0A              MOV   R16,R26
+0069A  DCC2              RCALL 0x20:DROP
+0069C  3000              CPI   R16,0
+0069E  F409              BRNE  0x6A2
+006A0  CFC9              RJMP  0x634:SEND_ZERO
+006A2  3800              CPI   R16,128
+006A4  F421              BRNE  0x6AE
+006A6  DD36              RCALL 0x114:FALSE
+006A8  E0A4              LDI   R26,4
+006AA  DEBC              RCALL 0x424:S_ON
+006AC  CFC3              RJMP  0x634:SEND_ZERO
+006AE  3801              CPI   R16,129
+006B0  F421              BRNE  0x6BA
+006B2  DD30              RCALL 0x114:FALSE
+006B4  E0A8              LDI   R26,8
+006B6  DEB6              RCALL 0x424:S_ON
+006B8  CFBD              RJMP  0x634:SEND_ZERO
+006BA  CF0B              RJMP  0x4D2:NO_SUPPORT
+006BC  CF0A              RJMP  0x4D2:NO_SUPPORT
+006BE  DEC9     SET_ADDRESS: RCALL 0x452:WVALUE
+006C0  68A0              ORI   R26,128
+006C2  DFB8              RCALL 0x634:SEND_ZERO
+006C4  DF00              RCALL 0x4C6:EPT0_IN
+006C6  70B0              ANDI  R27,0
+006C8  70A1              ANDI  R26,1
+006CA  DCD2              RCALL 0x70:0=
+006CC  DD6B              RCALL 0x1A4:(%IF)
+006CE  CFFA              RJMP  0x6C4
+006D0  CEF4              RJMP  0x4BA:SET_ADDRESS
+006D2  DEC8     SEND_DES: RCALL 0x464:WLENGTH
+006D4  DD4A              RCALL 0x16A:MIN
+006D6  CF62              RJMP  0x59C:SEND_TO_HOST
+006D8  DD5C     SEND_DES$: RCALL 0x192:COUNTP
+006DA  CFFB              RJMP  0x6D2:SEND_DES
+006DC  DC9E     SEND_DESX: RCALL 0x1A:DUP
+006DE  DD11              RCALL 0x102:C@P
+006E0  CFF8              RJMP  0x6D2:SEND_DES
+006E2  DEBA     GET_DESCRIPTOR: RCALL 0x458:WVALUE+1
+006E4  2F0A              MOV   R16,R26
+006E6  DC9C              RCALL 0x20:DROP
+006E8  3001              CPI   R16,1
+006EA  F431              BRNE  0x6F8
+006EC  DEB2              RCALL 0x452:WVALUE
+006EE  DD5A              RCALL 0x1A4:(%IF)
+006F0  C001              RJMP  0x6F4
+006F2  CEEF              RJMP  0x4D2:NO_SUPPORT
+006F4  DDEC              RCALL 0x2CE:STAND_DEV_DESC
+006F6  CFF0              RJMP  0x6D8:SEND_DES$
+006F8  3002              CPI   R16,2
+006FA  F431              BRNE  0x708
+006FC  DEAA              RCALL 0x452:WVALUE
+006FE  DD52              RCALL 0x1A4:(%IF)
+00700  C001              RJMP  0x704
+00702  CEE7              RJMP  0x4D2:NO_SUPPORT
+00704  DDC6              RCALL 0x292:CONFIG_DESC
+00706  CFE8              RJMP  0x6D8:SEND_DES$
+00708  3003              CPI   R16,3
+0070A  F4A1              BRNE  0x734
+0070C  DEA2              RCALL 0x452:WVALUE
+0070E  2F0A              MOV   R16,R26
+00710  DC87              RCALL 0x20:DROP
+00712  3000              CPI   R16,0
+00714  F411              BRNE  0x71A
+00716  DDE9              RCALL 0x2EA:STRING00
+00718  CFE1              RJMP  0x6DC:SEND_DESX
+0071A  3001              CPI   R16,1
+0071C  F411              BRNE  0x722
+0071E  DDEB              RCALL 0x2F6:STRING01
+00720  CFDD              RJMP  0x6DC:SEND_DESX
+00722  3002              CPI   R16,2
+00724  F411              BRNE  0x72A
+00726  DDF8              RCALL 0x318:STRING02
+00728  CFD9              RJMP  0x6DC:SEND_DESX
+0072A  3003              CPI   R16,3
+0072C  F411              BRNE  0x732
+0072E  DE02              RCALL 0x334:STRING03
+00730  CFD5              RJMP  0x6DC:SEND_DESX
+00732  CECF              RJMP  0x4D2:NO_SUPPORT
+00734  3201              CPI   R16,33
+00736  F411              BRNE  0x73C
+00738  DDC2              RCALL 0x2BE:HID_DESC
+0073A  CFD0              RJMP  0x6DC:SEND_DESX
+0073C  3202              CPI   R16,34
+0073E  F411              BRNE  0x744
+00740  DD56              RCALL 0x1EE:REPORT_DESC
+00742  CFCA              RJMP  0x6D8:SEND_DES$
+00744  CEC6              RJMP  0x4D2:NO_SUPPORT
+00746  DCE6     GET_CONFIG: RCALL 0x114:FALSE
+00748  E4A0              LDI   R26,64
+0074A  DE77              RCALL 0x43A:S_ON?
+0074C  70B0              ANDI  R27,0
+0074E  70A1              ANDI  R26,1
+00750  CED5              RJMP  0x4FC:SEND_ONE
+00752  DE7F     SET_CONFIG: RCALL 0x452:WVALUE
+00754  2F0A              MOV   R16,R26
+00756  DC64              RCALL 0x20:DROP
+00758  3000              CPI   R16,0
+0075A  F421              BRNE  0x764
+0075C  DCDB              RCALL 0x114:FALSE
+0075E  E4A0              LDI   R26,64
+00760  DE66              RCALL 0x42E:S_OFF
+00762  CF68              RJMP  0x634:SEND_ZERO
+00764  3001              CPI   R16,1
+00766  F441              BRNE  0x778
+00768  DCD5              RCALL 0x114:FALSE
+0076A  E4A0              LDI   R26,64
+0076C  DE5B              RCALL 0x424:S_ON
+0076E  DCE0              RCALL 0x130:2
+00770  DCD1              RCALL 0x114:FALSE
+00772  EDA8              LDI   R26,216
+00774  DE95              RCALL 0x4A0:WRITE_ONE
+00776  CF5E              RJMP  0x634:SEND_ZERO
+00778  CEAC              RJMP  0x4D2:NO_SUPPORT
+0077A  DCD5     GET_INTERFACE: RCALL 0x126:0
+0077C  CEBF              RJMP  0x4FC:SEND_ONE
+0077E  DE64     DECODE_REQ: RCALL 0x448:BMREQTYP
+00780  70B0              ANDI  R27,0
+00782  76A0              ANDI  R26,96
+00784  DD0F              RCALL 0x1A4:(%IF)
+00786  C01A              RJMP  0x7BC
+00788  DE61              RCALL 0x44C:BMREQ
+0078A  2F0A              MOV   R16,R26
+0078C  DC49              RCALL 0x20:DROP
+0078E  3001              CPI   R16,1
+00790  F419              BRNE  0x798
+00792  DCC0              RCALL 0x114:FALSE
+00794  E1A8              LDI   R26,24
+00796  CEB2              RJMP  0x4FC:SEND_ONE
+00798  3009              CPI   R16,9
+0079A  F421              BRNE  0x7A4
+0079C  DCC6              RCALL 0x12A:1
+0079E  DE36              RCALL 0x40C:INPUT
+007A0  DC88              RCALL 0xB2:C!
+007A2  CF48              RJMP  0x634:SEND_ZERO
+007A4  3002              CPI   R16,2
+007A6  F419              BRNE  0x7AE
+007A8  DE37              RCALL 0x418:IDLE_TIME
+007AA  DC7C              RCALL 0xA4:C@
+007AC  CEA7              RJMP  0x4FC:SEND_ONE
+007AE  300A              CPI   R16,10
+007B0  F421              BRNE  0x7BA
+007B2  DE52              RCALL 0x458:WVALUE+1
+007B4  DE31              RCALL 0x418:IDLE_TIME
+007B6  DC7D              RCALL 0xB2:C!
+007B8  CF3D              RJMP  0x634:SEND_ZERO
+007BA  C01E              RJMP  0x7F8
+007BC  DE47              RCALL 0x44C:BMREQ
+007BE  2F0A              MOV   R16,R26
+007C0  DC2F              RCALL 0x20:DROP
+007C2  3000              CPI   R16,0
+007C4  F409              BRNE  0x7C8
+007C6  CF09              RJMP  0x5DA:GET_STATUS
+007C8  3001              CPI   R16,1
+007CA  F409              BRNE  0x7CE
+007CC  CF36              RJMP  0x63A:CLEAR_FEATURE
+007CE  3003              CPI   R16,3
+007D0  F409              BRNE  0x7D4
+007D2  CF54              RJMP  0x67C:SET_FEATURE
+007D4  3005              CPI   R16,5
+007D6  F409              BRNE  0x7DA
+007D8  CF72              RJMP  0x6BE:SET_ADDRESS
+007DA  3006              CPI   R16,6
+007DC  F409              BRNE  0x7E0
+007DE  CF81              RJMP  0x6E2:GET_DESCRIPTOR
+007E0  3008              CPI   R16,8
+007E2  F409              BRNE  0x7E6
+007E4  CFB0              RJMP  0x746:GET_CONFIG
+007E6  3009              CPI   R16,9
+007E8  F409              BRNE  0x7EC
+007EA  CFB3              RJMP  0x752:SET_CONFIG
+007EC  300A              CPI   R16,10
+007EE  F409              BRNE  0x7F2
+007F0  CFC4              RJMP  0x77A:GET_INTERFACE
+007F2  300B              CPI   R16,11
+007F4  F409              BRNE  0x7F8
+007F6  CF1E              RJMP  0x634:SEND_ZERO
+007F8  CE6C              RJMP  0x4D2:NO_SUPPORT
+007FA  DC9A     GETPACKET: RCALL 0x130:2
+007FC  DE6E              RCALL 0x4DA:EPT_ACK
+007FE  DC8A              RCALL 0x114:FALSE
+00800  E0AA              LDI   R26,10
+00802  DE82              RCALL 0x508:READ_H11
+00804  DC87              RCALL 0x114:FALSE
+00806  EFA2              LDI   R26,242
+00808  CE36              RJMP  0x476:WRITE_COMMAND
+0080A  DC84     USB_POLL: RCALL 0x114:FALSE
+0080C  EFA4              LDI   R26,244
+0080E  DE4B              RCALL 0x4A6:READ_TWO
+00810  FFA2              SBRS  R26,2
+00812  C01B              RJMP  0x84A
+00814  DC8D              RCALL 0x130:2
+00816  DE5A              RCALL 0x4CC:CLR_INT
+00818  DDF9              RCALL 0x40C:INPUT
+0081A  DC44              RCALL 0xA4:C@
+0081C  DC86              RCALL 0x12A:1
+0081E  DCE5              RCALL 0x1EA:=
+00820  DCC1              RCALL 0x1A4:(%IF)
+00822  C007              RJMP  0x832
+00824  DDF3              RCALL 0x40C:INPUT
+00826  DFE9              RCALL 0x7FA:GETPACKET
+00828  DC83              RCALL 0x130:2
+0082A  DDF0              RCALL 0x40C:INPUT
+0082C  DC42              RCALL 0xB2:C!
+0082E  DF02              RCALL 0x634:SEND_ZERO
+00830  CBF7              RJMP  0x20:DROP
+00832  DC70              RCALL 0x114:FALSE
+00834  E8A2              LDI   R26,130
+00836  DE30              RCALL 0x498:READ_ONE
+00838  FFA2              SBRS  R26,2
+0083A  C006              RJMP  0x848
+0083C  DC6B              RCALL 0x114:FALSE
+0083E  E0A3              LDI   R26,3
+00840  DE4C              RCALL 0x4DA:EPT_ACK
+00842  DCC4              RCALL 0x1CC:PAD
+00844  DFDA              RCALL 0x7FA:GETPACKET
+00846  DF9B              RCALL 0x77E:DECODE_REQ
+00848  CC9A              RJMP  0x17E:2DROP
+0084A  FFA3              SBRS  R26,3
+0084C  C00C              RJMP  0x866
+0084E  DC62              RCALL 0x114:FALSE
+00850  E0A3              LDI   R26,3
+00852  DE3C              RCALL 0x4CC:CLR_INT
+00854  DE38              RCALL 0x4C6:EPT0_IN
+00856  FDA0              SBRC  R26,0
+00858  C005              RJMP  0x864
+0085A  DDCF              RCALL 0x3FA:REMAINING
+0085C  DC26              RCALL 0xAA:@
+0085E  DCA2              RCALL 0x1A4:(%IF)
+00860  C001              RJMP  0x864
+00862  DE6B              RCALL 0x53A:SEND_MORE
+00864  CC8C              RJMP  0x17E:2DROP
+00866  FFA4              SBRS  R26,4
+00868  C017              RJMP  0x898
+0086A  DC54              RCALL 0x114:FALSE
+0086C  E0A4              LDI   R26,4
+0086E  DE2E              RCALL 0x4CC:CLR_INT
+00870  DC51              RCALL 0x114:FALSE
+00872  E0A4              LDI   R26,4
+00874  DE11              RCALL 0x498:READ_ONE
+00876  FDA5              SBRC  R26,5
+00878  C00E              RJMP  0x896
+0087A  DC4C              RCALL 0x114:FALSE
+0087C  E8A0              LDI   R26,128
+0087E  DDDD              RCALL 0x43A:S_ON?
+00880  DC91              RCALL 0x1A4:(%IF)
+00882  C009              RJMP  0x896
+00884  DDC0              RCALL 0x406:OUTPUT
+00886  DDBF              RCALL 0x406:OUTPUT
+00888  9611              ADIW  R26,1
+0088A  DC0C              RCALL 0xA4:C@
+0088C  9612              ADIW  R26,2
+0088E  DE49              RCALL 0x522:WRITE_H11
+00890  DC41              RCALL 0x114:FALSE
+00892  E8A0              LDI   R26,128
+00894  DDCC              RCALL 0x42E:S_OFF
+00896  CC73              RJMP  0x17E:2DROP
+00898  FFB6              SBRS  R27,6
+0089A  C001              RJMP  0x89E
+0089C  DE92              RCALL 0x5C2:RESTART_USB_DEVICE
+0089E  CBC0              RJMP  0x20:DROP
+008A0  DBC2     AT:      RCALL 0x26:SWAP
+008A2  E090              LDI   R25,0
+008A4  E784              LDI   R24,116
+008A6  DC3F              RCALL 0x126:0
+008A8  DC24              RCALL 0xF2:C!A+
+008AA  DC34              RCALL 0x114:FALSE
+008AC  E0A7              LDI   R26,7
+008AE  DC21              RCALL 0xF2:C!A+
+008B0  DC3C              RCALL 0x12A:1
+008B2  DC1F              RCALL 0xF2:C!A+
+008B4  DC8E              RCALL 0x1D2:BYTE-SPLIT
+008B6  DBB7              RCALL 0x26:SWAP
+008B8  DC1C              RCALL 0xF2:C!A+
+008BA  DC1B              RCALL 0xF2:C!A+
+008BC  DC8A              RCALL 0x1D2:BYTE-SPLIT
+008BE  DBB3              RCALL 0x26:SWAP
+008C0  DC18              RCALL 0xF2:C!A+
+008C2  DC17              RCALL 0xF2:C!A+
+008C4  DC27              RCALL 0x114:FALSE
+008C6  E2A0              LDI   R26,32
+008C8  DC14              RCALL 0xF2:C!A+
+008CA  DC24              RCALL 0x114:FALSE
+008CC  E1A0              LDI   R26,16
+008CE  DC11              RCALL 0xF2:C!A+
+008D0  DC21              RCALL 0x114:FALSE
+008D2  E8A0              LDI   R26,128
+008D4  CDA7              RJMP  0x424:S_ON
+008D6  DC1E     TALLY:   RCALL 0x114:FALSE
+008D8  E8AA              LDI   R26,138
+008DA  9508              RET
+008DC  2F0A     GETPOINT: MOV   R16,R26
+008DE  DBA0              RCALL 0x20:DROP
+008E0  3000              CPI   R16,0
+008E2  F439              BRNE  0x8F2
+008E4  DC17              RCALL 0x114:FALSE
+008E6  E1BF              LDI   R27,31
+008E8  E4A0              LDI   R26,64
+008EA  DC14              RCALL 0x114:FALSE
+008EC  E1BF              LDI   R27,31
+008EE  E4A0              LDI   R26,64
+008F0  9508              RET
+008F2  3100              CPI   R16,16
+008F4  F439              BRNE  0x904
+008F6  DC0E              RCALL 0x114:FALSE
+008F8  EBBB              LDI   R27,187
+008FA  E8A0              LDI   R26,128
+008FC  DC0B              RCALL 0x114:FALSE
+008FE  E2B7              LDI   R27,39
+00900  E1A0              LDI   R26,16
+00902  9508              RET
+00904  3200              CPI   R16,32
+00906  F439              BRNE  0x916
+00908  DC05              RCALL 0x114:FALSE
+0090A  EDB6              LDI   R27,214
+0090C  EDA8              LDI   R26,216
+0090E  DC02              RCALL 0x114:FALSE
+00910  E7B5              LDI   R27,117
+00912  E3A0              LDI   R26,48
+00914  9508              RET
+00916  DBFE              RCALL 0x114:FALSE
+00918  E1B7              LDI   R27,23
+0091A  E7A0              LDI   R26,112
+0091C  DBFB              RCALL 0x114:FALSE
+0091E  E8B0              LDI   R27,128
+00920  EEA8              LDI   R26,232
+00922  9508              RET
+00924  E090     Q:       LDI   R25,0
+00926  E784              LDI   R24,116
+00928  DBFE              RCALL 0x126:0
+0092A  DBE3              RCALL 0xF2:C!A+
+0092C  DC01              RCALL 0x130:2
+0092E  DBE1              RCALL 0xF2:C!A+
+00930  DC50              RCALL 0x1D2:BYTE-SPLIT
+00932  DB79              RCALL 0x26:SWAP
+00934  DBDE              RCALL 0xF2:C!A+
+00936  DBDD              RCALL 0xF2:C!A+
+00938  DBED              RCALL 0x114:FALSE
+0093A  E8A0              LDI   R26,128
+0093C  CD73              RJMP  0x424:S_ON
+0093E  DD66     ROCKNROLL: RCALL 0x40C:INPUT
+00940  DBB1              RCALL 0xA4:C@
+00942  DBF6              RCALL 0x130:2
+00944  DC52              RCALL 0x1EA:=
+00946  DC2E              RCALL 0x1A4:(%IF)
+00948  C01D              RJMP  0x984
+0094A  DBE4              RCALL 0x114:FALSE
+0094C  E0B1              LDI   R27,1
+0094E  EFA4              LDI   R26,244
+00950  DBE1              RCALL 0x114:FALSE
+00952  E1A0              LDI   R26,16
+00954  DD03              RCALL 0x35C:BEEP
+00956  DE28              RCALL 0x5A8:IN_OFF
+00958  DD59              RCALL 0x40C:INPUT
+0095A  9612              ADIW  R26,2
+0095C  DBA3              RCALL 0xA4:C@
+0095E  70B0              ANDI  R27,0
+00960  70A1              ANDI  R26,1
+00962  DC20              RCALL 0x1A4:(%IF)
+00964  C002              RJMP  0x96A
+00966  DD06              RCALL 0x374:GRN+
+00968  C001              RJMP  0x96C
+0096A  DD06              RCALL 0x378:GRN-
+0096C  E090              LDI   R25,0
+0096E  E784              LDI   R24,116
+00970  DBDA              RCALL 0x126:0
+00972  DBBF              RCALL 0xF2:C!A+
+00974  DBCF              RCALL 0x114:FALSE
+00976  E0A8              LDI   R26,8
+00978  DBBC              RCALL 0xF2:C!A+
+0097A  DBDA              RCALL 0x130:2
+0097C  DBBA              RCALL 0xF2:C!A+
+0097E  DBCA              RCALL 0x114:FALSE
+00980  E8A0              LDI   R26,128
+00982  DD50              RCALL 0x424:S_ON
+00984  9508              RET
+00986  DFA7     FPOLL:   RCALL 0x8D6:TALLY
+00988  DB90              RCALL 0xAA:@
+0098A  9611              ADIW  R26,1
+0098C  DB46              RCALL 0x1A:DUP
+0098E  DFA3              RCALL 0x8D6:TALLY
+00990  DB96              RCALL 0xBE:!
+00992  70BF              ANDI  R27,15
+00994  DB6D              RCALL 0x70:0=
+00996  DC06              RCALL 0x1A4:(%IF)
+00998  C008              RJMP  0x9AA
+0099A  DF9D              RCALL 0x8D6:TALLY
+0099C  DB86              RCALL 0xAA:@
+0099E  73B0              ANDI  R27,48
+009A0  70A0              ANDI  R26,0
+009A2  DC17              RCALL 0x1D2:BYTE-SPLIT
+009A4  DBC8              RCALL 0x136:NIP
+009A6  DF9A              RCALL 0x8DC:GETPOINT
+009A8  DF7B              RCALL 0x8A0:AT
+009AA  9508              RET
+009AC  E205     B_ACK:   LDI   R16,37
+009AE  9508              RET
+009B0  E502     B_NACK:  LDI   R16,82
+009B2  9508              RET
+009B4  EF0F     B_FF:    SER   R16
+009B6  9508              RET
+009B8  051040FC B_ENV$:  db" ..|@"
+009BC  04073D00          db" ...="
+009C0  00090000          db" ...."
+009C4  01000808          db" ...."
+009C8  00000080          db" ...."
+009CC  00003000          db" ...0"
+009D0  00000080          db" ...."
+009D4  00000002          db" ...."
+009D8  2711     B_[Z]++: CLR   R17
+009DA  9408              SEC
+009DC  8120              LD    R18,Z
+009DE  1F21              ADC   R18,R17
+009E0  9321              ST    Z+,R18
+009E2  8120              LD    R18,Z
+009E4  1F21              ADC   R18,R17
+009E6  9321              ST    Z+,R18
+009E8  9508              RET
+009EA  E8EE     B_A++:   LDI   R30,142
+009EC  E0F0              LDI   R31,0
+009EE  CFF4              RJMP  0x9D8:B_[Z]++
+009F0  E8EC     B_P++:   LDI   R30,140
+009F2  E0F0              LDI   R31,0
+009F4  CFF1              RJMP  0x9D8:B_[Z]++
+009F6  E8EC     B_PIS:   LDI   R30,140
+009F8  E0F0              LDI   R31,0
+009FA  9101              LD    R16,Z+
+009FC  9111              LD    R17,Z+
+009FE  9508              RET
+00A00  DFFA     B_ENV@:  RCALL 0x9F6:B_PIS
+00A02  EBE8              LDI   R30,184
+00A04  E0F9              LDI   R31,9
+00A06  0FE0              ADD   R30,R16
+00A08  1FF1              ADC   R31,R17
+00A0A  95C8              LPM
+00A0C  2D00              MOV   R16,R0
+00A0E  CFF0              RJMP  0x9F0:B_P++
+00A10  9100008C B_SETA:  LDS   R16,140
+00A14  9300008E          STS   142,R16
+00A18  9100008D          LDS   R16,141
+00A1C  9300008F          STS   143,R16
+00A20  CFC5              RJMP  0x9AC:B_ACK
+00A22  9100008C B_P?:    LDS   R16,140
+00A26  9110008D          LDS   R17,141
+00A2A  9310008C          STS   140,R17
+00A2E  2711              CLR   R17
+00A30  9310008D          STS   141,R17
+00A34  9508              RET
+00A36  91E0008E B_Z=A:   LDS   R30,142
+00A3A  91F0008F          LDS   R31,143
+00A3E  9508              RET
+00A40  DFFA     B_P@:    RCALL 0xA36:B_Z=A
+00A42  920F              PUSH  R0
+00A44  95C8              LPM
+00A46  2D00              MOV   R16,R0
+00A48  900F              POP   R0
+00A4A  CFCF              RJMP  0x9EA:B_A++
+00A4C  DFF4     B_D@:    RCALL 0xA36:B_Z=A
+00A4E  8100              LD    R16,Z
+00A50  CFCC              RJMP  0x9EA:B_A++
+00A52  CFAC     B_PUTP:  RJMP  0x9AC:B_ACK
+00A54  DFF0     B_PUTD:  RCALL 0xA36:B_Z=A
+00A56  E8AC              LDI   R26,140
+00A58  E0B0              LDI   R27,0
+00A5A  910C              LD    R16,X
+00A5C  8300              ST    Z,R16
+00A5E  CFA6              RJMP  0x9AC:B_ACK
+00A60  EFC6     B_CLEAR: LDI   R28,246
+00A62  E0D0              LDI   R29,0
+00A64  EC06              LDI   R16,198
+00A66  E010              LDI   R17,0
+00A68  91FF              POP   R31
+00A6A  91EF              POP   R30
+00A6C  91BF              POP   R27
+00A6E  91AF              POP   R26
+00A70  913F              POP   R19
+00A72  912F              POP   R18
+00A74  BF0D              OUT   SPL,R16
+00A76  BF1E              OUT   SPH,R17
+00A78  932F              PUSH  R18
+00A7A  933F              PUSH  R19
+00A7C  93AF              PUSH  R26
+00A7E  93BF              PUSH  R27
+00A80  DF95              RCALL 0x9AC:B_ACK
+00A82  9409              IJMP
+00A84  9320008C B_P=18:  STS   140,R18
+00A88  9330008D          STS   141,R19
+00A8C  CF8F              RJMP  0x9AC:B_ACK
+00A8E  E8EC     B_DEPTH: LDI   R30,140
+00A90  E0F0              LDI   R31,0
+00A92  B72D              IN    R18,SPL
+00A94  EF06              LDI   R16,246
+00A96  1B0C              SUB   R16,R28
+00A98  9505              ASR   R16
+00A9A  9301              ST    Z+,R16
+00A9C  EC06              LDI   R16,198
+00A9E  1B02              SUB   R16,R18
+00AA0  9505              ASR   R16
+00AA2  5003              SUBI  R16,3
+00AA4  9301              ST    Z+,R16
+00AA6  CF82              RJMP  0x9AC:B_ACK
+00AA8  DFA6     B_PUSHD: RCALL 0x9F6:B_PIS
+00AAA  930A              ST    -Y,R16
+00AAC  931A              ST    -Y,R17
+00AAE  CF7E              RJMP  0x9AC:B_ACK
+00AB0  E8EC     B_POPD:  LDI   R30,140
+00AB2  E0F0              LDI   R31,0
+00AB4  9119              LD    R17,Y+
+00AB6  9109              LD    R16,Y+
+00AB8  9301              ST    Z+,R16
+00ABA  9311              ST    Z+,R17
+00ABC  CF77              RJMP  0x9AC:B_ACK
+00ABE  DF9B     B_PICKD: RCALL 0x9F6:B_PIS
+00AC0  0F00              LSL   R16
+00AC2  0F0C              ADD   R16,R28
+00AC4  1F1D              ADC   R17,R29
+00AC6  2FE0              MOV   R30,R16
+00AC8  2FF1              MOV   R31,R17
+00ACA  9131              LD    R19,Z+
+00ACC  8120              LD    R18,Z
+00ACE  CFDA              RJMP  0xA84:B_P=18
+00AD0  DF92     B_PICKR: RCALL 0x9F6:B_PIS
+00AD2  0F00              LSL   R16
+00AD4  5F09              SUBI  R16,249
+00AD6  B7ED              IN    R30,SPL
+00AD8  B7FE              IN    R31,SPH
+00ADA  0FE0              ADD   R30,R16
+00ADC  1FF1              ADC   R31,R17
+00ADE  9131              LD    R19,Z+
+00AE0  8120              LD    R18,Z
+00AE2  CFD0              RJMP  0xA84:B_P=18
+00AE4  E9E0     B_CALL:  LDI   R30,144
+00AE6  E0F0              LDI   R31,0
+00AE8  E026              LDI   R18,6
+00AEA  910F              POP   R16
+00AEC  9301              ST    Z+,R16
+00AEE  952A              DEC   R18
+00AF0  F7E1              BRNE  0xAEA
+00AF2  E8AC              LDI   R26,140
+00AF4  E0B0              LDI   R27,0
+00AF6  91ED              LD    R30,X+
+00AF8  91FD              LD    R31,X+
+00AFA  95F6              LSR   R31
+00AFC  95E7              ROR   R30
+00AFE  91B9              LD    R27,Y+
+00B00  91A9              LD    R26,Y+
+00B02  9509              ICALL
+00B04  93AA              ST    -Y,R26
+00B06  93BA              ST    -Y,R27
+00B08  E9E6              LDI   R30,150
+00B0A  E0F0              LDI   R31,0
+00B0C  E026              LDI   R18,6
+00B0E  9102              LD    R16,-Z
+00B10  930F              PUSH  R16
+00B12  952A              DEC   R18
+00B14  F7E1              BRNE  0xB0E
+00B16  CF4A              RJMP  0x9AC:B_ACK
+00B18  99E1     B_WAITEE: SBIC  EECR,1
+00B1A  CFFE              RJMP  0xB18:B_WAITEE
+00B1C  CF8C              RJMP  0xA36:B_Z=A
+00B1E  DFFC     B_GETE:  RCALL 0xB18:B_WAITEE
+00B20  BBEE              OUT   EEARL,R30
+00B22  BBFF              OUT   EEARH,R31
+00B24  9AE0              SBI   EECR,0
+00B26  B30D              IN    R16,EEDR
+00B28  CF60              RJMP  0x9EA:B_A++
+00B2A  DFF6     B_PUTE:  RCALL 0xB18:B_WAITEE
+00B2C  BBEE              OUT   EEARL,R30
+00B2E  BBFF              OUT   EEARH,R31
+00B30  DF62              RCALL 0x9F6:B_PIS
+00B32  BB0D              OUT   EEDR,R16
+00B34  94F8              CLI
+00B36  9AE2              SBI   EECR,2
+00B38  9AE1              SBI   EECR,1
+00B3A  9478              SEI
+00B3C  CF56              RJMP  0x9EA:B_A++
+00B3E  CF3A     B_TABLE: RJMP  0x9B4:B_FF
+00B40  CF39              RJMP  0x9B4:B_FF
+00B42  CF36              RJMP  0x9B0:B_NACK
+00B44  CF37              RJMP  0x9B4:B_FF
+00B46  CFC4              RJMP  0xAD0:B_PICKR
+00B48  CFBA              RJMP  0xABE:B_PICKD
+00B4A  CFB2              RJMP  0xAB0:B_POPD
+00B4C  CFAD              RJMP  0xAA8:B_PUSHD
+00B4E  CF2E              RJMP  0x9AC:B_ACK
+00B50  CFEC              RJMP  0xB2A:B_PUTE
+00B52  CF5E              RJMP  0xA10:B_SETA
+00B54  CFE4              RJMP  0xB1E:B_GETE
+00B56  CFE3              RJMP  0xB1E:B_GETE
+00B58  CF5B              RJMP  0xA10:B_SETA
+00B5A  CF7C              RJMP  0xA54:B_PUTD
+00B5C  CF7A              RJMP  0xA52:B_PUTP
+00B5E  CF7A              RJMP  0xA54:B_PUTD
+00B60  CF75              RJMP  0xA4C:B_D@
+00B62  CF6E              RJMP  0xA40:B_P@
+00B64  CF73              RJMP  0xA4C:B_D@
+00B66  CF4C              RJMP  0xA00:B_ENV@
+00B68  CFBD              RJMP  0xAE4:B_CALL
+00B6A  CF52              RJMP  0xA10:B_SETA
+00B6C  CF21              RJMP  0x9B0:B_NACK
+00B6E  CF20              RJMP  0x9B0:B_NACK
+00B70  CF1F              RJMP  0x9B0:B_NACK
+00B72  CF1E              RJMP  0x9B0:B_NACK
+00B74  CF1D              RJMP  0x9B0:B_NACK
+00B76  CF74              RJMP  0xA60:B_CLEAR
+00B78  CF8A              RJMP  0xA8E:B_DEPTH
+00B7A  CF53              RJMP  0xA22:B_P?
+00B7C  CF1B     B_XTBL:  RJMP  0x9B4:B_FF
+00B7E  2F10     B_EXEC:  MOV   R17,R16
+00B80  9512              SWAP  R17
+00B82  701F              ANDI  R17,15
+00B84  501C              SUBI  R17,12
+00B86  F408              BRCC  0xB8A
+00B88  CF13              RJMP  0x9B0:B_NACK
+00B8A  F489              BRNE  0xBAE
+00B8C  E8EC              LDI   R30,140
+00B8E  E0F0              LDI   R31,0
+00B90  E012              LDI   R17,2
+00B92  700F              ANDI  R16,15
+00B94  8120              LD    R18,Z
+00B96  9522              SWAP  R18
+00B98  7F20              ANDI  R18,240
+00B9A  2B20              OR    R18,R16
+00B9C  8100              LD    R16,Z
+00B9E  9321              ST    Z+,R18
+00BA0  9502              SWAP  R16
+00BA2  951A              DEC   R17
+00BA4  F7B1              BRNE  0xB92
+00BA6  E8EC              LDI   R30,140
+00BA8  E0F0              LDI   R31,0
+00BAA  8100              LD    R16,Z
+00BAC  9508              RET
+00BAE  951A              DEC   R17
+00BB0  F409              BRNE  0xBB4
+00BB2  CEFE              RJMP  0x9B0:B_NACK
+00BB4  2F10              MOV   R17,R16
+00BB6  711F              ANDI  R17,31
+00BB8  EBEE              LDI   R30,190
+00BBA  E0F5              LDI   R31,5
+00BBC  1BE1              SUB   R30,R17
+00BBE  40F0              SBCI  R31,0
+00BC0  93AF              PUSH  R26
+00BC2  93BF              PUSH  R27
+00BC4  9509              ICALL
+00BC6  91BF              POP   R27
+00BC8  91AF              POP   R26
+00BCA  9508              RET
+00BCC  EFC6     B_COLD:  LDI   R28,246
+00BCE  E0D0              LDI   R29,0
+00BD0  EC06              LDI   R16,198
+00BD2  E010              LDI   R17,0
+00BD4  BF0D              OUT   SPL,R16
+00BD6  E400              LDI   R16,64
+00BD8  BB0B              OUT   PORTA,R16
+00BDA  E002              LDI   R16,2
+00BDC  BB08              OUT   PORTB,R16
+00BDE  E304              LDI   R16,52
+00BE0  BB05              OUT   PORTC,R16
+00BE2  EF04              LDI   R16,244
+00BE4  BB02              OUT   PORTD,R16
+00BE6  E607              LDI   R16,103
+00BE8  BB0A              OUT   DDRA,R16
+00BEA  E40F              LDI   R16,79
+00BEC  BB07              OUT   DDRB,R16
+00BEE  EF0F              SER   R16
+00BF0  BB04              OUT   DDRC,R16
+00BF2  E008              LDI   R16,8
+00BF4  BB01              OUT   DDRD,R16
+00BF6  BF1E              OUT   SPH,R17
+00BF8  E00C              LDI   R16,12
+00BFA  B909              OUT   UBRR,R16
+00BFC  E108              LDI   R16,24
+00BFE  B90A              OUT   START_WIDTH,R16
+00C00  DCD6              RCALL 0x5AE:INITIAL_D11
+00C02  DBA8              RCALL 0x354:BLIP
+00C04  DE02              RCALL 0x80A:USB_POLL
+00C06  9984              SBIC  PIND,4
+00C08  DEBE              RCALL 0x986:FPOLL
+00C0A  DE99              RCALL 0x93E:ROCKNROLL
+00C0C  9B5F              SBIS  USR,7
+00C0E  CFFA              RJMP  0xC04
+00C10  B10C              IN    R16,PDSLEEP
+00C12  DFB5              RCALL 0xB7E:B_EXEC
+00C14  B90C              OUT   PDSLEEP,R16
+00C16  CFF6              RJMP  0xC04
+00C18  FFFF              Unknown:FFFF

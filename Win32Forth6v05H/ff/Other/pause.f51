@@ -1,0 +1,93 @@
+\ A multitasking PAUSE for the 8051, not tested. I'm saving this in case I use it 
+\ sometime, but I'd want to change the DOOR debugger to has its own tasks. 
+\ I'll wait until there's a need.  BNE
+
+\XS 01  \ external stacks: multitasking is possible
+\IS 00  \ internal stacks: forget about multitasking
+[IF]
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offsets (16):   -4    -2    0    2    4    6       8      0A...
+\ offsets (32):   -8    -4    0    4    8    0C      10     14...
+\ TP register points to ------^              ^---link points to status of next task
+\ TID of a task points to its status --------^
+
+\ For the 8051, we need space for return stack data:
+\ | TID | USER ... | RSTACK ... | ... DSTACK |
+
+\ Constraints:
+\ The DSTACK must not cross a 256-byte boundary
+
+/iram/  asmbyte _tph    \ Task pointer (TP)
+        asmbyte _tpl
+        asmbyte _rp0    \ Base of return stack.
+/iram/
+
+\ _RP0 is set up at run time. I could have used a constant here, but it would
+\ have been awkward due to load order constraints. Besides, add-on code might
+\ need to move the return stack in order to make way for IRAM usage.
+
+code PAUSE      ( -- )                  c( switch to the next active task)
+                call DUP
+                mov a, #-2  add  a, _tpl  mov dpl, a
+                mov a, #-1  addc a, _tph  mov dph, a
+                clr a  movc a, @a+dptr  inc dptr  mov r4, a     \ R4R5 = RP0
+                clr a  movc a, @a+dptr  inc dptr  mov r5, a
+\32             inc dptr  inc dptr
+                pop acc  movx @dptr, a  inc dptr        \ save PC
+                pop acc  movx @dptr, a  inc dptr
+                mov a, sp  clr a  subb a, _rp0
+        if_nz   call swapdptr  mov B, a                 \ move return stack from
+                for     mov a, dpl
+                        if_z    dec dph
+                        then    dec dpl
+                        pop acc  movx @dptr, a          \ IRAM to XRAM
+                next B  call swapdptr
+        then
+\32             inc dptr  inc dptr
+                mov a, P2  movx @dptr, a  inc dptr      \ save data stack
+                mov a, r0  movx @dptr, a  inc dptr
+\32             inc dptr  inc dptr
+                mov a, r4  movx @dptr, a  inc dptr      \ save return stack
+                mov a, r5  movx @dptr, a  inc dptr
+                inc dptr inc dptr \32 inc dptr inc dptr \ skip status
+        begin   clr a  movc a, @a+dptr  inc dptr  mov r7, a
+                clr a  movc a, @a+dptr  mov dpl, a  mov dph, r7
+                clr a  movc a, @a+dptr  inc dptr  inc dptr \32 inc dptr inc dptr
+        until_b acc.7
+\16             mov a, #-9
+\32             mov a, #-11
+                add  a, dpl  mov dpl, a  mov a, dph
+                addc a, #-1  mov dph, a                 \ -> rp0(low)
+                clr a      movc a, @a+dptr  push acc
+\16             mov a, #1  movc a, @a+dptr  mov r6, a   \ R6R7 = new PC
+\16             mov a, #2  movc a, @a+dptr  mov r7, a
+\16             mov a, #3  movc a, @a+dptr  mov P2, a   \ restore data stack
+\16             mov a, #4  movc a, @a+dptr  mov R0, a
+\16             mov a, #5  movc a, @a+dptr  mov R4, a   \ R4R5 = current RP
+\16             mov a, #6  movc a, @a+dptr  mov dpl, a
+\32             mov a, #3  movc a, @a+dptr  mov r6, a   \ R6R7 = new PC
+\32             mov a, #4  movc a, @a+dptr  mov r7, a
+\32             mov a, #7  movc a, @a+dptr  mov P2, a   \ restore data stack
+\32             mov a, #8  movc a, @a+dptr  mov R0, a
+\32             mov a, #0B movc a, @a+dptr  mov R4, a   \ R4dpl = current RP
+\32             mov a, #0C movc a, @a+dptr  mov dpl, a
+                \ acc = current RP, subtract RP0 to get # of bytes to restore
+                pop B  clr c  subb a, B                 \ # of bytes to restore
+        if_nz   mov dph, r4  mov B, a
+                for     clr a  movc a, @a+dptr  push acc
+                        inc dptr
+                next B
+        then    push reg7  push reg6                    \ load new PC
+                goto DROP c;
+
+code TID        ( -- addr )                     c( ID of current task )
+                call DUP                 \16 mov a, #6
+\32             clr a  mov r2, a  mov r3, a  mov a, #0C
+                add  a, _tpl  mov dpl, a  clr a
+                addc a, _tph  mov dph, a  ret c;
+
+code TID!       ( tid -- )                      c( set task pointer)
+\16             mov a, #-6
+\32             mov a, #-0C
+                add  a, dpl  mov _tpl, a  mov a, #-1
+                addc a, dph  mov _tph, a  ret c;

@@ -1,0 +1,195 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Home Vocabulary:
+Hosting Words</strong></font></p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>File load/edit</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>FLOAD</strong></td>
+        <td valign="top" nowrap><em>( &lt;filename&gt; -- )</em></td>
+        <td width="100%">Loads a Forth source file.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>INCLUDE</strong></td>
+        <td valign="top" nowrap><em>( &lt;filename&gt; -- )</em></td>
+        <td width="100%">Includes a Forth source file. Same as
+        FLOAD.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>NEEDS</strong></td>
+        <td valign="top" nowrap><em>( &lt;filename&gt; -- )</em></td>
+        <td width="100%">FLOADs a file if it hasn't been loaded
+        yet.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>OK</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">FLOADs the current file (named in the
+        title bar).</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>BROWSE</strong></td>
+        <td valign="top" nowrap><em>or </em><strong>B</strong><em>
+        ( &lt;filename&gt; -- )</em></td>
+        <td width="100%">Opens WinView with a file in Browse
+        mode.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>EDIT</strong></td>
+        <td valign="top" nowrap><em>or </em><strong>E</strong><em>
+        ( &lt;filename&gt; -- )</em></td>
+        <td width="100%">Opens WinView with a file in Edit mode.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Mode Selection</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><a href="hostint.html"><strong>HOST</strong></a></td>
+        <td valign="top" nowrap><em>or F7 or <img
+        src="buthost.gif" width="24" height="22"> ( -- )</em></td>
+        <td width="100%">Enters the host's Forth mode.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><a href="buildint.html"><strong>BUILDING</strong></a></td>
+        <td valign="top" nowrap><em>or </em><strong>BI</strong><em>
+        or <img src="butbuild.gif" width="24" height="22"> ( -- )</em></td>
+        <td width="100%">Enters the ROM builder mode.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><a href="tokenint.html"><strong>TOKENIZING</strong></a><strong>
+        </strong></td>
+        <td valign="top" nowrap><em>or </em><strong>TI</strong><em>
+        ( -- )</em></td>
+        <td width="100%">Enters the tokenizer mode.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><a href="testint.html"><strong>TESTING</strong></a></td>
+        <td valign="top" nowrap><em>or </em><strong>TE</strong><em>
+        ( -- )</em></td>
+        <td width="100%">Enters testing mode. For interactive
+        testing of target words.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><a href="forthint.html"><strong>FORTHING</strong></a></td>
+        <td valign="top" nowrap><em>or </em><strong>FI</strong><em>
+        or <img src="buttar.gif" width="24" height="22"> ( -- )</em></td>
+        <td width="100%">Enters the interactive Forth mode.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Search Order</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>ONLY</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Clears the search order so it only
+        contains the HOME wordlist.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ALSO</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Duplicates the top of the search order.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>PREVIOUS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Drops the top vocabulary in the search
+        order.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>DEFINITIONS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Makes the top vocabulary of the search
+        order the current vocabulary.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>VOCABULARY</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Creates a word that replaces the top of
+        the search order with its own vocabulary.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>HOMEORDER</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Makes the HOME wordlist the only one in
+        the search order and directs host definitions to the HOME
+        wordlist.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ORDER</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Displays the current search order on the
+        console.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>UNDERALSO</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Duplicates the second wordlist in the
+        search order.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>UNDERDEFS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Makes the second wordlist of the search
+        order the current wordlist.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>UNDERPREVIOUS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Removes the second wordlist in the
+        search order.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>WORDS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Displays all words in the vocabulary at
+        the top of the search order.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>(WORDS)</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Lists words at the very top of the
+        search order. For example: when in BUILDING mode, you can
+        use (WORDS) to list the builder lexicon.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>HOME</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Places the HOME wordlist at the top of
+        the search order.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>FORTH</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Places the FORTH wordlist at the top of
+        the search order. Rarely used.</td>
+    </tr>
+</table>
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+</body>
+</html>

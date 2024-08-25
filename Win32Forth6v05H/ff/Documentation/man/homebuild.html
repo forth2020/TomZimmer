@@ -1,0 +1,547 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Home Vocabulary:
+Building words</strong></font></p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Target CPU
+characteristics</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>CHARBITS</strong></td>
+        <td valign="top" nowrap><em>( -- x )</em></td>
+        <td width="100%">Target's bits per character.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>&gt;CHARBITS</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Sets the target's bits per character.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CELLBITS</strong></td>
+        <td valign="top" nowrap><em>( -- x )</em></td>
+        <td width="100%">Target's bits per cell.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>&gt;CELLBITS</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Sets the target's bits per cell.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ADDRNIBBLES</strong></td>
+        <td valign="top" nowrap><em>( -- x )</em></td>
+        <td width="100%">Target's debugger address width in
+        nibbles.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>&gt;ADDRNIBBLES</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Sets the target's debugger address width
+        in nibbles.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CPUTYPE</strong></td>
+        <td valign="top" nowrap><em>( -- x )</em></td>
+        <td width="100%">Returns the CPU type being compiled for.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CELL</strong></td>
+        <td valign="top" nowrap><em>( -- n )</em></td>
+        <td width="100%">Cell size in address units on the
+        target.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CELLS</strong></td>
+        <td valign="top" nowrap><em>( n1 -- n2 )</em></td>
+        <td width="100%">Multiplies n1 by the target's cell
+        address units.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CALIGNMENT</strong></td>
+        <td valign="top" nowrap><em>( -- n )</em></td>
+        <td width="100%">Alignment value for code space.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>DALIGNMENT</strong></td>
+        <td valign="top" nowrap><em>( -- n )</em></td>
+        <td width="100%">Alignment value for data space.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ALIGNMENT</strong></td>
+        <td valign="top" nowrap><em>( -- n )</em></td>
+        <td width="100%">Gets the larger alignment value of code
+        and data space.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>BRANCHBYTES</strong></td>
+        <td valign="top" nowrap><em>( -- n )</em></td>
+        <td width="100%">Gets # of bytes of a control structure
+        branch, set by the target-specific builder file.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>MAXUINT</strong></td>
+        <td valign="top" nowrap><em>( -- u )</em></td>
+        <td width="100%">Maximum unsigned integer available on
+        target.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>SF</strong></td>
+        <td valign="top" nowrap><em>( &lt;frac#&gt; -- n )</em></td>
+        <td width="100%">Gets a signed fraction between -1.0 and
+        +1.0 from the input stream and converts it to integer for
+        the target's cell width. Example: on a 16-bit target, SF
+        0.5 maps to 16384.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>UF</strong></td>
+        <td valign="top" nowrap><em>( &lt;frac#&gt; -- u )</em></td>
+        <td width="100%">Gets a signed fraction between 0 and
+        +1.0 from the input stream and converts it to integer for
+        the target's cell width. Example: on a 16-bit target, UF
+        0.5 maps to 32768.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>UF1.0</strong></td>
+        <td valign="top" nowrap><em>( -- d )</em></td>
+        <td width="100%">Returns double cell value: 2^cellsize.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ROM-BOUNDS</strong></td>
+        <td valign="top" nowrap><em>( addr-lo addr-hi -- )</em></td>
+        <td width="100%">Sets boundaries for ROM image.
+        Boundaries include endpoints.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ROM-BOUNDS?</strong></td>
+        <td valign="top" nowrap><em>( -- addr-lo addr-hi )</em></td>
+        <td width="100%">Gets boundaries for ROM image.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CODE-BOUNDS</strong></td>
+        <td valign="top" nowrap><em>( addr-lo addr-hi -- )</em></td>
+        <td width="100%">Sets boundaries for code space.
+        Boundaries include endpoints.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CODE-BOUNDS?</strong></td>
+        <td valign="top" nowrap><em>( -- addr-lo addr-hi )</em></td>
+        <td width="100%">Gets boundaries for code space.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>DATA-BOUNDS</strong></td>
+        <td valign="top" nowrap><em>( addr-lo addr-hi -- ) </em></td>
+        <td width="100%">Sets boundaries for data space.
+        Boundaries include endpoints.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>DATA-BOUNDS?</strong></td>
+        <td valign="top" nowrap><em>( -- addr-lo addr-hi )</em></td>
+        <td width="100%">Gets boundaries for data space.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>TAR? </strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Display comprehensive target
+        information.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Token number
+manipulation</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>TOKEN#</strong></td>
+        <td valign="top" nowrap><em>( -- x )</em></td>
+        <td width="100%">Gets the current token number.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>&gt;TOKEN#</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Store to TOKEN#. Same as {{ TO TOKEN#
+        }}.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>LOW-TOKENS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Selects the low set of token values.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>MAIN-TOKENS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Selects the main set of token values.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>TEMP-TOKENS </strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Selects the temporary set of token
+        values.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>MAKEDEFINING</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- ) </em></td>
+        <td width="100%">Places a new defining word in the
+        TOKENIZER wordlist.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>ROM image manipulation</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>HERE</strong></td>
+        <td valign="top" nowrap><em>( -- t-addr )</em></td>
+        <td width="100%">Points to the next free byte addressed
+        by HERE. See RAM and ROM, which affect HERE.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ORG</strong></td>
+        <td valign="top" nowrap><em>( t-addr -- )</em></td>
+        <td width="100%">Sets new start address. Opposite of
+        HERE.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>STATIC</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Sets compiler and tester to ignore
+        (bypass) the binding table.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>DYNAMIC</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Sets compiler and tester to use the
+        binding table.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>HEX[</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Compiles data into program space. Lays
+        down incoming blank-delimited hex numbers until an
+        unrecognizable number or end of line is encountered.
+        Usage: hex[ 0AB 07F ... 0FC ]</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>BOUNDS&gt;NA</strong></td>
+        <td valign="top" colspan="2" nowrap><em>( addr-hi addr-lo
+        -- #cells addr )</em></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2">Converts address bounds to base address
+        and cell count. Used by debugger attribute table.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CHECKSUM</strong></td>
+        <td valign="top" colspan="2" nowrap><em>( t-addr length
+        -- checksum )</em></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2">Computes the checksum of a block of image
+        data.</td>
+    </tr>
+</table>
+
+<p>The following words support pin scrambling on the ROM. This
+allows you to reorder the address or data lines to simpilfy the
+PCB layout. It sounds radical, but think about it. If you're
+trying to keep the routing on one layer (keeping the other as
+ground plane), this can help. SCRAMBLE reorders the image data to
+compensate for reordered pins. You could get the same effect by
+building a custom EPROM programming socket.</p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td nowrap><strong>SCRAM-A </strong></td>
+        <td nowrap><em>( cpu-pin rom-pin -- )</em></td>
+        <td width="100%">Re-map an address bus pin.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>SCRAM-D</strong></td>
+        <td nowrap><em>( cpu-pin rom-pin -- )</em></td>
+        <td width="100%">Re-map a data bus pin. </td>
+    </tr>
+    <tr>
+        <td nowrap><strong>SCRAM-INIT</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Clear the ROM scramble table.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>.SCRAM</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Displays the ROM scramble table.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>SCRAMBLE</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Scramble ROM image for byte-wide ROM</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>SCRAMBLE16</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Scramble ROM image for 16-bit-wide ROM</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>SCRAMBLE32</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Scramble ROM image for 32-bit-wide ROM</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>ROM image display and
+I/O</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td width="128"><strong>SEE</strong></td>
+        <td width="100%"><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Disassembles &lt;name&gt;. If
+        &lt;name&gt; is tokenized code, the bytecode viewer is
+        used. Otherwise, the disassembler is used. Hit ESC to
+        quit early.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>VIEW</strong></td>
+        <td width="100%"><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">View/browse the source code of
+        &lt;name&gt;.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>INCLUDE-BINARY </strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Appends raw binary data to the ROM
+        image.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>HLOAD</strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Loads an Intel HEX file into the ROM
+        image. </td>
+    </tr>
+    <tr>
+        <td width="128"><strong>BSAVE</strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Saves the ROM image (up to HERE) in
+        binary format.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>HSAVE</strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Saves the ROM image (up to HERE) in
+        Intel HEX format.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>SSAVE</strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Saves the ROM image (up to HERE) in
+        Motorola S format.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>DSAVE</strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Saves the ROM image as an assembly
+        listing using the disassembler.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>TSAVE</strong></td>
+        <td width="100%"><em>( &lt;filename&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Saves the token list as an FLOADable
+        file.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>.STATUS</strong></td>
+        <td width="100%"><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Displays ROM image information.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>$DIS</strong></td>
+        <td width="100%"><em>( t-addr -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Starts disassembly at an arbitrary
+        address. Disassembly will proceed until the address of a
+        known word is reached or the ESC key is pressed.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>$HLOAD</strong></td>
+        <td width="100%"><em>( $filename -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Loads an Intel HEX file into the ROM
+        image. $filename is a counted string.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>~BOOT0</strong></td>
+        <td width="100%"><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Downloads the tokenized program in the
+        image to the target board's primary boot area.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>~BOOT1</strong></td>
+        <td width="100%"><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Downloads the tokenized program in the
+        image to the target board's secondary boot area.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>.FILES</strong></td>
+        <td width="100%"><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Lists all filenames included in a build.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>.VOCS</strong></td>
+        <td width="100%"><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Lists all created vocabularies.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Assembler</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td width="128"><strong>ASMLABEL</strong></td>
+        <td width="100%"><em>( x &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Defines an assembler label whose value
+        is x.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>ASMLABEL?</strong></td>
+        <td width="100%"><em>( &lt;name&gt; -- x )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Returns the value of an existing
+        assembler label.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>.ASMLABELS</strong></td>
+        <td width="100%"><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Lists all assember labels. These are
+        usually port labels and local code routines.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>&gt;@@0</strong></td>
+        <td width="100%"><em>( x -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Stores value to local assembler label
+        @@0.</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>The same goes for <strong>&gt;@@1 </strong>to<strong>
+        &gt;@@9</strong></td>
+    </tr>
+    <tr>
+        <td width="128"><strong>ASMBYTE</strong></td>
+        <td width="100%"><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Defines an assembler label and allots
+        one byte for it. Use HERE and ORG to set start addresses,
+        etc.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>ASMWORD</strong></td>
+        <td width="100%"><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Defines an assembler label and allots
+        two bytes for it.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>ASMLONG</strong></td>
+        <td width="100%"><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Defines an assembler label and allots
+        four bytes for it.</td>
+    </tr>
+    <tr>
+        <td width="128"><strong>ASMARRAY</strong></td>
+        <td width="100%"><em>( #bytes &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td width="128">&nbsp;</td>
+        <td width="100%">Defines an assembler label and allots
+        #bytes bytes for it.</td>
+    </tr>
+</table>
+
+<p>&nbsp;</p>
+</body>
+</html>

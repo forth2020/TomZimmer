@@ -1,0 +1,123 @@
+\ Interface between generic expansion bus and hardware
+
+\ pin labels needed: cc, sck, mosi, miso
+
+\ Timing rules:
+\ 1. Minimum high/low time of 2 usec on any line.
+\ 2. When clocking data, allow a setup/hold time of 1 usec. This is to
+\    compensate for differences in wire delays caused by uneven wire
+\    capacitance.
+
+ram align
+        asmbyte spi_node
+        asmbyte spi_port
+rom
+
+SYSTEM DEFINITIONS main-tokens  \ ----------------------------------------
+
+code X_NODE     ( node# -- )            c( selects a new node)
+                move.b tos,spi_node  S>T next c;
+
+code X_PORT     ( port# -- )            c( selects a port within a node)
+                move.b tos,spi_port  S>T next c;
+
+code X_TRANSFER ( addr len -- )         c( xfer current port to/from memory)
+\ Shift an active SS to the desired node, then transfer the data.
+\ First, we assume all SS lines are inactive. As long as this is the case, it's
+\ safe to clock the port-select counter. Upon entry, the port# is indeterminate.
+                MOSI=1  nop
+                SCK=0   nop
+                MOSI=0  nop
+                move.b spi_port,D1              \ SCK  X--___--
+                MOSI=1  nop                     \ MOSI XX--_---
+                SCK=1   nop
+        begin   tst.b D1
+        while_ne subq.l #1,D1
+                SCK=0   nop                     \ clock the row counter
+                MOSI=0  nop                     \ SCK  -__--
+                SCK=1   nop                     \ MOSI --__-
+                MOSI=1 SS=1
+        repeat
+\ Now that the port selector is set up, prepare to clock a '0' bit to the /SS
+\ line of the selected node.
+                MOSI=0  nop                     \ MOSI XX-_--____
+                SS=0                            \ SS   --------__
+                move.b spi_node,D1              \ select node 0
+\ If node is nonzero, raise SCK to clear the column clock and pulse MOSI
+\ ss   -________----------- waveform for 2 x_node
+\ sck  ---____----____-----
+\ mosi _____----____----___
+\      _____--______--_____ column clock inside PLD, falling edge clocks column
+\ ss'  -------________----- wire delay gives SS to next module some setup time
+\ ss"  ---------------_____
+        begin    tst.b D1
+        while_ne SCK=0  subq.l #1,D1    \ propagate SS to the right node
+                 MOSI=1 nop nop
+                 SCK=1  nop nop
+                 MOSI=0  SS=1
+        repeat
+\ At this point, the SS line for spi_node has been activated.
+\ SPI clocking:
+\ sck  --____----____----____      note: don't change mosi while sck=0
+\ mosi 0000001111111122222222  <-- SPI device latches this at rising edge
+\ miso 0011111111222222223333  <-- SPI device provides next bit at falling edge
+                movea.l (s)+,a0                 \ TOS = length, A0 = address
+        begin   tst.b tos
+        while_ne subq.l #1,tos  moveq #8,D1
+                move.b (a0),d2                  \ _____________________________
+                begin   move.l d2,d3            \ MOSI should change mid-clk
+                        C=MISO  addx.l d2,d2    \ get incoming bit
+                        tst.b d3
+                        if_mi MOSI=1 else MOSI=0 then
+                        SCK=0           \ request next incoming bit
+                        nop nop nop
+                        nop nop nop
+                        SCK=1                   \ clock output bit
+                        subq.l #1,D1
+                until_eq                        \ ____________________________
+\ miso -@------------@--------------
+\ mosi -----!------------!----------            \ bus activity
+\ sck  -------______-------______---
+\             ^request next bit from slave (setup = 7 cycles)
+\                   ^latch the outgoing bit into the slave (setup = 10 cycles)
+\ Note: MOSI gets 5 usec setup time, which is a 250m round trip through cable.
+\ The speed of light limits the longest possible extension cable to about 200m.
+                C=MISO  addx.l d2,d2
+                not.l d2                        \ MOSI is inverted so CPL input
+                move.b d2,(a0)+
+        repeat  MOSI=0  nop  SS=1 nop           \ inactivate SS     
+                SCK=0   nop nop
+                MOSI=1  nop nop nop nop nop     \ SCK  X--___--
+                MOSI=0  nop nop                 \ MOSI XX__-___
+                SCK=1  S>T next c;
+
+: X_RESET       ( -- )  0 X_NODE 0 X_PORT       c( clears the bus logic)
+                pad 0 X_TRANSFER ;              \ clear the bus
+
+\ USAGE:
+\       X_RESET is called at startup.
+
+\       A word accessing a port in a device selects its node# as determined
+\       at startup using X_NODE. Then it uses X_PORT to select the port. It
+\       must use X_PORT after any X_NODE change.
+
+\       X_TRANSFER serves to both read and write to a port.
+
+{{ hex }}
+
+code X_SVC?     ( -- f )                c( looks for service plug)
+\ A service plug disables bootup. On the SPIX bus, short
+\ pins 5 & 6 together to indicate a service plug.
+                SCK=1
+                moveq #55,d2  moveq #8,d1
+        begin   C=MISO  addx.l d2,d2
+                btst.l #8,d2 if_ne SCK=1 else SCK=0 then
+                nop nop nop nop subq.l #1,d1
+        until_eq SCK=1
+                eori.l #55AA,d2
+        if_eq   goto true
+        then    goto false
+                c;
+
+{{ decimal }}
+

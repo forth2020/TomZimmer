@@ -1,0 +1,35 @@
+Brad's terminal emulator                10/10/01
+
+TERM is a DOS program for sending and logging raw data. It compiles
+with TCOM.
+
+Available COM ports are 1 and 2.
+
+Command line options are blank delimited and can appear in any order.
+A number between 1 and 2 changes the COM port. Default port is 1.
+Any other number is assumed to be a baud rate. Default is 9600 bps.
+A non-number is considered to be a filename. Defaule filename is DEFAULT.DAT.
+
+You can pick non-standard baud rates. TERM will pick the closest actual
+baud rate and display it.
+
+PgUp uploads the file. You can press ESC to abort the upload.
+The status bar for files longer than 2Mbytes won't be accurate, but
+the file will be sent.
+
+PgDn captures data to the file. If the file already exists, data will
+be appended to it.
+
+For PgUp and PgDn, you won't be prompted for anything. They use the
+filename from the command line.
+
+In the terminal mode, pressing any key other than the assigned
+function keys will send a character. Press F1 to see help and status as well
+as function key usage.
+
+Incoming characters are displayed in several different modes: ASCII
+and HEX, with HEX having an option to add text breaks when the MSB of
+the character is set. In ASCII mode, CR is ignored and LF causes a new
+line.
+
+

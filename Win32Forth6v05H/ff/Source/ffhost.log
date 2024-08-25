@@ -1,0 +1,70 @@
+2000.05.12 16:32:48 Server opened
+2000.05.12 16:32:49 My IP address is 209.36.34.214
+2000.05.12 16:37:45 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.12 16:38:05 Logoff command received
+2000.05.12 16:38:05 209.36.34.214 Client Disconnected
+2000.05.12 16:39:27 Connection to 209.36.34.212 = CCSCTNTWP903147
+2000.05.12 16:41:44 209.36.34.212 Client Disconnected
+2000.05.12 16:41:58 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.12 16:42:45 209.36.34.214 Client Disconnected
+2000.05.12 16:42:45 Server closed
+2000.05.12 16:42:50 Server opened
+2000.05.12 16:42:50 My IP address is 209.36.34.214
+2000.05.16 10:32:02 Server opened
+2000.05.16 10:32:02 My IP address is 209.36.34.214
+2000.05.16 10:32:29 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 10:32:44 209.36.34.214 Client Disconnected. 
+2000.05.16 10:32:44 Server closed
+2000.05.16 10:43:06 Server opened
+2000.05.16 10:43:06 My IP address is 209.36.34.214
+2000.05.16 10:43:24 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 10:43:34 209.36.34.214 Client Disconnected. 
+2000.05.16 10:59:38 Server opened
+2000.05.16 10:59:38 My IP address is 209.36.34.214
+2000.05.16 10:59:57 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 11:00:33 209.36.34.214 Client Disconnected. Error 1
+2000.05.16 11:08:39 Server opened
+2000.05.16 11:08:40 My IP address is 209.36.34.214
+2000.05.16 11:08:57 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 11:19:41 Logoff command received
+2000.05.16 11:19:41 209.36.34.214 Client Disconnected. 
+2000.05.16 11:20:59 Server opened
+2000.05.16 11:20:59 My IP address is 209.36.34.214
+2000.05.16 11:21:16 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 11:21:26 Hardware reset
+2000.05.16 11:22:47 Logoff command received
+2000.05.16 11:22:47 209.36.34.214 Client Disconnected. 
+2000.05.16 11:23:16 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 11:24:01 209.36.34.214 Client Disconnected. Error 1
+2000.05.16 17:12:29 Server opened
+2000.05.16 17:12:30 My IP address is 209.36.34.214
+2000.05.16 17:13:14 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 17:14:09 Watchdog reset failure, Disconnected.
+2000.05.16 17:22:01 Server opened
+2000.05.16 17:22:01 My IP address is 209.36.34.214
+2000.05.16 17:22:25 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 17:23:18 Target board timed out, Resetting.
+2000.05.16 17:23:19 Reset failure, Disconnected.
+2000.05.16 17:28:13 Server opened
+2000.05.16 17:28:14 My IP address is 209.36.34.214
+2000.05.16 17:28:29 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.16 17:29:00 Target board timed out, Resetting.
+2000.05.16 17:29:12 209.36.34.214 Client Disconnected. 
+2000.05.18 09:21:48 Server opened
+2000.05.18 09:21:49 My IP address is 209.36.34.214
+2000.05.18 09:22:06 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.18 09:23:15 Target board timed out, Resetting.
+2000.05.18 09:24:16 Logoff command received
+2000.05.18 09:24:16 209.36.34.214 Client Disconnected. 
+2000.05.18 09:24:32 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.18 09:25:11 Server opened
+2000.05.18 09:25:12 My IP address is 209.36.34.214
+2000.05.18 09:25:30 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.18 09:25:33 Logoff command received
+2000.05.18 09:25:33 209.36.34.214 Client Disconnected. 
+2000.05.18 09:25:42 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.18 09:26:00 Logoff command received
+2000.05.18 09:26:00 209.36.34.214 Client Disconnected. 
+2000.05.18 09:26:30 Connection to 209.36.34.214 = A89658NTW903005
+2000.05.18 09:26:43 209.36.34.214 Client Disconnected. 
+2000.05.18 09:26:43 Server closed

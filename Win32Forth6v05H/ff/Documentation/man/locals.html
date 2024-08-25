@@ -1,0 +1,98 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Local Variables</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>Local Variables</strong></font></p>
+
+<hr>
+
+<p>The ANS standard provides for simple local variable support.
+At the beginning of a subroutine, parameters may be moved to the
+return stack. Locals are variables that reside on the return
+stack. They act like VALUEs in that you use TO to store to them.
+At the end of the subroutine, the return stack is cleaned up.
+Locals are basically a functional replacement for return stack
+manipulation.</p>
+
+<p>The proposed ANS syntax is <strong>LOCAL| arga argb |</strong>
+where arga is the value on the top of the data stack and argb is
+next on the stack. This is backwards from the stack picture
+comment ( argb arga -- ? ). </p>
+
+<p>Firmware Studio (as well as many other Forths) use a modified
+version whose syntax is: <br>
+<strong>{ argb arga \ argc -- }</strong></p>
+
+<p>Here, <strong>{</strong> behaves like <strong>LOCAL|</strong>
+except that it reverses the stack order and allows comments. So,
+it looks like a stack picture. The example shown above is handled
+as follows:</p>
+
+<ol>
+    <li> Uninitialized storage is allocated for argc on the
+        return stack. Marked by \ .</li>
+    <li> Arga and Argb are removed from the data stack and placed
+        on the return stack.</li>
+    <li> Everything between -- and } is treated as a comment.</li>
+</ol>
+
+<p>It is assumed that the CPU will use stack-relative addressing
+to access locals. R@, R&gt;, R&gt; and other return stack
+manipulators may throw off the indexing. For example:</p>
+
+<p><font face="Courier"><strong>: bad+ { a b \ -- } a &gt;r b
+r&gt; + ;</strong></font></p>
+
+<p>The <font face="Courier">&gt;R</font> in this case throws off
+the indexing of <font face="Courier"><strong>b</strong></font>.</p>
+
+<p>The compiler compensates inside of DO..LOOP structures so that
+locals may be used inside of DO loops.</p>
+
+<p>Locals support for various CPUs are handled via four defered
+words:</p>
+
+<p>For 8051, AVR and 68K CPUs, locals need the files LOCALS.F51,
+LOCALS.FAR and LOCALS.FCF, respectively. They contain run-time
+code for the above-named words. For the 8051 and 68K, they also
+contain support for locals in tokenized code.</p>
+
+<p>Firmware Studio and Win32forth support both syntaxes. The <strong>{
+}</strong> syntax is easily implemented and fairly common, so you
+should be safe using it. In other words, your code won't be
+locked into a particular Forth. </p>
+
+<p>On the 68K builder, TOF has a word to allocate an array of
+cells on the data stack.<br>
+n {CELLS} ( #cells -- )<br>
+This is an immediate word that compiles code to return a base
+address. For example:<br>
+</p>
+
+<table border="0">
+    <tr>
+        <td><font face="Courier">: FOO </font></td>
+        <td><font face="Courier">{ \ mydata -- }</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier"></font>&nbsp;</td>
+        <td><font face="Courier">[ 16 ] {cells} to mydata</font></td>
+    </tr>
+    <tr>
+        <td><font face="Courier"></font>&nbsp;</td>
+        <td><font face="Courier">;</font></td>
+    </tr>
+</table>
+
+<p>&nbsp;</p>
+</body>
+</html>

@@ -1,0 +1,712 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>CORE words: Dictionary, Compiling and Defining </title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+<p><b><font color="#BF0000" size="5">CORE words: Dictionary, Compiling and</font></b><b><font color="#BF0000" size="5">&nbsp;Defining</font></b></p>
+<hr>
+<p><b><font size="4" color="#BF0000">Dictionary</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>HERE&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>address of next free char in the dictionary</b></td>
+  <td nowrap>xt = 0xB2</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PALIGN&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>align dp with word boundary</b></td>
+  <td nowrap>xt = 0x1A3</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ALIGN&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>align dp with word boundary</b></td>
+  <td nowrap>xt = 0xB4</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PALIGNED&nbsp;</b></td>
+  <td nowrap><i>( addr -- addr )</i></td>
+  <td nowrap><b>align tos with word boundary</b></td>
+  <td nowrap>xt = 0x1A2</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ALIGNED&nbsp;</b></td>
+  <td nowrap><i>( addr -- addr )</i></td>
+  <td nowrap><b>align tos with word boundary</b></td>
+  <td nowrap>xt = 0xB3</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ALLOT&nbsp;</b></td>
+  <td nowrap><i>( n -- )</i></td>
+  <td nowrap><b>allot n chars in dictionary</b></td>
+  <td nowrap>xt = 0xB1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>W,&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>append 16-bit to dictionary</b></td>
+  <td nowrap>xt = 0x45</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>,&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>append cell to dictionary</b></td>
+  <td nowrap>xt = 0x46</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C,&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>append char to dictionary</b></td>
+  <td nowrap>xt = 0x44</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ORG&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>change dictionary pointer</b></td>
+  <td nowrap>xt = 0x1AC</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EMPTY&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>empty the user dictionary</b></td>
+  <td nowrap>xt = 0x1DA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNUSED&nbsp;</b></td>
+  <td nowrap><i>( -- n )</i></td>
+  <td nowrap><b>number of unused data bytes</b></td>
+  <td nowrap>xt = 0x1B0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ROM&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set to compile to code space</b></td>
+  <td nowrap>xt = 0x1AE</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>RAM&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set to compile to data space</b></td>
+  <td nowrap>xt = 0x1AD</td>
+ </tr>
+</table>
+<p><font color="#BF0000" size="4"><b>Compiling</b></font></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>STATE&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>T if compile, F if interpret</b></td>
+  <td nowrap>xt = 0x1BA</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;BODY&nbsp;</b></td>
+  <td nowrap><i>( xt -- pfa )</i></td>
+  <td nowrap><b>address of data field of an xt</b></td>
+  <td nowrap>xt = 0xBF</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Assumes that xt is a CREATEd item that starts with code for a
+literal, extracts the literal from the machine code. See ,LIT</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EXIT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>compile an exit</b></td>
+  <td nowrap>xt = 0xFD</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(COMPILE)&nbsp;</b></td>
+  <td nowrap><i>( xt -- )</i></td>
+  <td nowrap><b>compile call to xt's address</b></td>
+  <td nowrap>xt = 0x1B1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LOOP&nbsp;</b></td>
+  <td nowrap><i>( addr1 addr2 -- )</i></td>
+  <td nowrap><b>compile code for</b></td>
+  <td nowrap>xt = 0xF1</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>+LOOP&nbsp;</b></td>
+  <td nowrap><i>( addr1 addr2 -- )</i></td>
+  <td nowrap><b>compile code for +LOOP</b></td>
+  <td nowrap>xt = 0xF2</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>?DO&nbsp;</b></td>
+  <td nowrap><i>( -- addr1 addr2 )</i></td>
+  <td nowrap><b>compile code for ?DO</b></td>
+  <td nowrap>xt = 0xF0</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>AGAIN&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>compile code for AGAIN</b></td>
+  <td nowrap>xt = 0xEC</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>AHEAD&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>compile code for AHEAD</b></td>
+  <td nowrap>xt = 0xE5</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BEGIN&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>compile code for BEGIN</b></td>
+  <td nowrap>xt = 0xEA</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CASE&nbsp;</b></td>
+  <td nowrap><i>( -- 0 )</i></td>
+  <td nowrap><b>compile code for CASE</b></td>
+  <td nowrap>xt = 0xF3</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DO&nbsp;</b></td>
+  <td nowrap><i>( -- addr1 addr2 )</i></td>
+  <td nowrap><b>compile code for DO</b></td>
+  <td nowrap>xt = 0xEF</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ELSE&nbsp;</b></td>
+  <td nowrap><i>( addr -- addr' )</i></td>
+  <td nowrap><b>compile code for ELSE</b></td>
+  <td nowrap>xt = 0xE9</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ENDCASE&nbsp;</b></td>
+  <td nowrap><i>( ... -- )</i></td>
+  <td nowrap><b>compile code for ENDCASE</b></td>
+  <td nowrap>xt = 0xF6</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ENDIF&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>compile code for ENDIF</b></td>
+  <td nowrap>xt = 0xE8</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ENDOF&nbsp;</b></td>
+  <td nowrap><i>( a -- a' )</i></td>
+  <td nowrap><b>compile code for ENDOF</b></td>
+  <td nowrap>xt = 0xF5</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>IF&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>compile code for IF</b></td>
+  <td nowrap>xt = 0xE6</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MULTI&nbsp;</b></td>
+  <td nowrap><i>( -- addr1 addr2 )</i></td>
+  <td nowrap><b>compile code for MULTI</b></td>
+  <td nowrap>xt = 0xBC</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3">
+MULTI ... REPEAT is equivalent to
+BEGIN R@ 0&lt; 0= WHILE R&gt; 1- &gt;R ... REPEAT</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>OF&nbsp;</b></td>
+  <td nowrap><i>( ... -- ... a )</i></td>
+  <td nowrap><b>compile code for OF</b></td>
+  <td nowrap>xt = 0xF4</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>REPEAT&nbsp;</b></td>
+  <td nowrap><i>( addr addr -- )</i></td>
+  <td nowrap><b>compile code for REPEAT</b></td>
+  <td nowrap>xt = 0xEE</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>THEN&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>compile code for THEN</b></td>
+  <td nowrap>xt = 0xE7</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNTIL&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>compile code for UNTIL</b></td>
+  <td nowrap>xt = 0xEB</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WHILE&nbsp;</b></td>
+  <td nowrap><i>( addr -- addr' )</i></td>
+  <td nowrap><b>compile code for WHILE</b></td>
+  <td nowrap>xt = 0xED</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LITERAL&nbsp;</b></td>
+  <td nowrap><i>( n -- )</i></td>
+  <td nowrap><b>compile code for a literal</b></td>
+  <td nowrap>xt = 0xD7</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>,LIT&nbsp;</b></td>
+  <td nowrap><i>( n -- )</i></td>
+  <td nowrap><b>compile code for a literal</b></td>
+  <td nowrap>xt = 0x1B2</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>POSTPONE&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile next token in stream</b></td>
+  <td nowrap>xt = 0x1D4</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>RECURSE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>compile static call to this word</b></td>
+  <td nowrap>xt = 0xE4</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>RETRY&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>compile static jump to this word</b></td>
+  <td nowrap>xt = 0x1C3</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3">
+Wil Baden invented RETRY, which jumps back to the beginning of a word.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>COMPILE,&nbsp;</b></td>
+  <td nowrap><i>( xt -- )</i></td>
+  <td nowrap><b>compile xt into the definition</b></td>
+  <td nowrap>xt = 0x1D3</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Compiles a call into the binding table except when:
+1. The word is inlineable (it's macro bit is set)
+2. The XT is the same as that of the definition being built.
+   To avoid accidental recursion, we bypass the binding table
+   with a direct call.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>[COMPILE]&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compiles code to compile a word</b></td>
+  <td nowrap>xt = 0x1D2</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3">
+The created code compiles a call to xt at run time.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNLOOP&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>discard loop parameters</b></td>
+  <td nowrap>xt = 0x81</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+loop-sys: ... leave-addr limit I RA --&gt; ...</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LEAVE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>discard loop parameters, leave</b></td>
+  <td nowrap>xt = 0x82</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+loop-sys: ... leave-addr limit I RA --&gt; ...</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>]&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>enter compiling state</b></td>
+  <td nowrap>xt = 0xD9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>[&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>enter interpretive state</b></td>
+  <td nowrap>xt = 0xD8</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>?EXIT&nbsp;</b></td>
+  <td nowrap><i>( f -- )</i></td>
+  <td nowrap><b>exit definition if true</b></td>
+  <td nowrap>xt = 0x83</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>I&nbsp;</b></td>
+  <td nowrap><i>( -- n|u )</i></td>
+  <td nowrap><b>innermost loop index</b></td>
+  <td nowrap>xt = 0x84</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>J&nbsp;</b></td>
+  <td nowrap><i>( -- n|u )</i></td>
+  <td nowrap><b>next innermost loop index</b></td>
+  <td nowrap>xt = 0x85</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DOES&gt;&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>patch last create, point to code</b></td>
+  <td nowrap>xt = 0xBE</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Also stop defining the definition</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TO&nbsp;</b></td>
+  <td nowrap><i>( n &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>prefix store to a VALUE</b></td>
+  <td nowrap>xt = 0x1CE</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3">
+compile: ( &lt;xt&gt; -- )  *** STATE SMART ***</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CALL-ONLY&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set CALL-ONLY bit of header</b></td>
+  <td nowrap>xt = 0x1CB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>IMMEDIATE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set IMMEDIATE bit of header</b></td>
+  <td nowrap>xt = 0x1CA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MACRO&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>set MACRO bit of header</b></td>
+  <td nowrap>xt = 0x1CC</td>
+ </tr>
+</table>
+<p><b><font color="#BF0000" size="4">Defining</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CONSTANT&nbsp;</b></td>
+  <td nowrap><i>( x &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for a constant</b></td>
+  <td nowrap>xt = 0xDA</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- x )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>VALUE&nbsp;</b></td>
+  <td nowrap><i>( x &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for a value</b></td>
+  <td nowrap>xt = 0xE0</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- x )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>STRING&nbsp;</b></td>
+  <td nowrap><i>( x &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for array of bytes</b></td>
+  <td nowrap>xt = 0xDD</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- addr len )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ARRAY&nbsp;</b></td>
+  <td nowrap><i>( x &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for array of bytes</b></td>
+  <td nowrap>xt = 0xDC</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- addr )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>VARIABLE&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for cell variable</b></td>
+  <td nowrap>xt = 0xDE</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- addr )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CREATE&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for data structure</b></td>
+  <td nowrap>xt = 0xBD</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Sets up to place (comma) data into data space</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2CONSTANT&nbsp;</b></td>
+  <td nowrap><i>( d &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for double constant</b></td>
+  <td nowrap>xt = 0xDB</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- d )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2VARIABLE&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for double variable</b></td>
+  <td nowrap>xt = 0xDF</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+&lt;xt&gt; returns ( -- addr )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>USER&nbsp;</b></td>
+  <td nowrap><i>( n &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>compile code for user variable</b></td>
+  <td nowrap>xt = 0x1ED</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+run-time:     ( -- addr )</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>[']&nbsp;</b></td>
+  <td nowrap><i>( n -- )</i></td>
+  <td nowrap><b>compiles XT as a literal</b></td>
+  <td nowrap>xt = 0xFB</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CODE&nbsp;</b></td>
+  <td nowrap><i>( &lt;c&gt;&lt;xt&gt;&lt;length16&gt;&lt;data&gt; -- )</i></td>
+  <td nowrap><b>create a header for raw code</b></td>
+  <td nowrap>xt = 0xFE</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+creates a header with no code attached to it, if the CPU type matches</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MARKER&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>create a marker that resets HERE</b></td>
+  <td nowrap>xt = 0x1D1</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Compile code to reset 'here to previous value</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>;&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>end a colon definition</b></td>
+  <td nowrap>xt = 0xE2</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3">
+Also link this definition into the binding table.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>'&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>gets xt from the input stream</b></td>
+  <td nowrap>xt = 0xFA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>:&nbsp;</b></td>
+  <td nowrap><i>( &lt;xt&gt; -- )</i></td>
+  <td nowrap><b>start a colon definition</b></td>
+  <td nowrap>xt = 0xE1</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Object code for the definition is compiled into the dictionary.
+Semicolon binds this definition to the XT's table entry.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>:NONAME&nbsp;</b></td>
+  <td nowrap><i>( -- cfa )</i></td>
+  <td nowrap><b>start a headerless definition</b></td>
+  <td nowrap>xt = 0xE3</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+** Warning **: This returns a static address, not an xt.
+Not ANS compilant: you must use EXECUTECFA to execute the cfa.</td>
+ </tr>
+</table>
+
+</body>
+
+</html>

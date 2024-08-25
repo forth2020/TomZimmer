@@ -1,0 +1,913 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>AVR</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p class="MsoNormal"><b><font size="6" color="#BF0000">Forth for <font face="Arial Black">AVR</font>
+microcontrollers</font></b></p>
+<hr>
+<p class="MsoNormal"><a href="http://www.atmel.com">Atmel</a>'s AVR family of microcontrollers is Forth-friendly,
+having been designed for another popular stack-based language: 'C'.<span style="mso-spacerun: yes">&nbsp;
+</span><a href="http://www.tinyboot.com/fs.html">Firmware Studio</a> serves as a good development tool for AVR code whether it's Forth or assembly.<span style="mso-spacerun: yes">&nbsp;</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt">You can compile code with
+Firmware Studio and download it using Atmel's AVRisp utility. Then, you may
+interactively test code from Firmware Studio's console.<span style="mso-spacerun: yes">&nbsp;
+</span>If you need to, AVRstudio (free from Atmel) lets you simulate execution
+of a hex file.<span style="mso-spacerun: yes">&nbsp; </span>If you don’t have
+a programming dongle or the one you have is crap (my Atmel-supplied dongle
+didn’t work at 3.3V) then use Firmware Studio's built-in AVR programmer (see
+below).</p>
+<p class="MsoNormal" style="margin-bottom:9.6pt">
+Firmware Studio produces subroutine threaded code and contains some
+optimizations to reduce some Forth sequences to machine code.</p>
+<hr>
+<p class="MsoNormal"><b><font color="#BF0000" size="4">Application example: USB mouse interface.</font></b></p>
+<p class="MsoNormal">This example illustrates the relationship between Forth
+source and compiled machine code. The code shown is for illustration (I don't
+support it), although I've used it successfully in a couple of applications.</p>
+<p class="MsoNormal">To develop my USB code, I started with DEMOAVR.FF supplied
+with Firmware Studio and added USB code to it. I used the “Token Browser”
+window to see which words were dead code and then stripped KERNEL.FAR down to
+about 35 words. Firmware Studio compiles subroutine threaded code.<span style="mso-spacerun: yes">&nbsp;
+</span>Words that are very short are simply inlined.<span style="mso-spacerun: yes">&nbsp;
+</span>Some words preceded by literals are optimized.<span style="mso-spacerun: yes">&nbsp;
+</span>+, -, AND, OR, @, C@, ! and C! are optimized when used in conjunction
+with literals, constants and variables.<span style="mso-spacerun: yes">&nbsp; </span>&nbsp;<o:p>
+&nbsp;</p>
+<p class="MsoNormal">I used some special defining words to slim down the USB code.
+These defining words have <a href="anstof.txt">ANS Forth equivalents</a>, which
+allowed me to test the code under a PC-hosted ANS Forth. My mouse thingy
+compiled to about 3K bytes:</p>
+<table border="1" cellspacing="0" cellpadding="0">
+  <tr>
+    <td>ROM contents</td>
+    <td>Size</td>
+  </tr>
+  <tr>
+    <td>Forth kernel (35 words)</td>
+    <td>0.5K</td>
+  </tr>
+  <tr>
+    <td>Interface to PDIUSBD11&nbsp;</td>
+    <td>1.5K</td>
+  </tr>
+  <tr>
+    <td>Descriptor and misc.</td>
+    <td>1.0K</td>
+  </tr>
+</table>
+<p class="MsoNormal">I used the DSAVE directive in Firmware Studio to save the
+ROM image in disassembled format. You can see the correspondence between Forth
+source and ROM machine code. Compare the <a href="usbmouss.txt" target="_blank">USB source</a>
+to the demo’s <a href="usbmouso.txt" target="_blank">ROM contents</a>.&nbsp;</p>
+
+<hr>
+
+<p><b><font color="#BF0000" size="4">Download Cable</font></b></p>
+
+<p>AVR downloading and debugging cable. Works well at 3.3V and 5V. The
+      socket connector is wired for Atmel's evaluation boards. If you use a
+      ribbon cable for this, you might as well connect the extra ground pins to
+      the DB25's ground pins (any of 18 thru 25) for a little better noise
+      immunity. Note that some evaluation boards have LEDs loading down the
+PortB lines, so you'll have to pull the shorting blocks for PB5 thru PB7.</p>
+<table border="1" bgcolor="#FFFFFF">
+  <tr>
+    <td><img border="0" src="avrcable.gif" width="272" height="213"></td>
+    <td><img border="0" src="tartopc.gif" width="272" height="213"></td>
+  </tr>
+</table>
+<p>In order to use the download cable, you have to download and install <a href="http://www.driverlinx.com/">DriverLinx
+Port I/O</a>  (<i>downloads</i> section) from <a href="http://www.sstnet.com/">Scientific Software Tools</a>.
+It's freeware - Thanks, SST.</p>
+<p>After installing this driver, Firmware Studio will be able to program AVR
+micros by twiddling lines on your PC's parallel port. Also, the debugger
+connection can talk through this same cable so that you free up the UART. <b>LOADFLASH</b>
+programs the ROM image into flash using this cable.</p>
+
+<hr>
+<p class="MsoBodyText"><b><font color="#BF0000" size="4">Register Usage</font></b></p>
+<p class="MsoBodyText">Forth uses the registers listed in the following table.<span style="mso-spacerun: yes">&nbsp;
+</span>The other registers are available for your application.<span style="mso-spacerun: yes">&nbsp;
+</span>You are free to use the scratchpad registers, but be aware that they may
+be changed by calls to Forth subroutines.</p>
+<table border="1" cellspacing="0" cellpadding="0">
+  <tr>
+    <td bgcolor="#FFFF00"><b>Reg</b></td>
+    <td bgcolor="#FFFF00"><b>Aliases</b></td>
+    <td bgcolor="#FFFF00"><b>Usage</b></td>
+    <td bgcolor="#FFFF00"><b>Reg</b></td>
+    <td bgcolor="#FFFF00"><b>Aliases</b></td>
+    <td bgcolor="#FFFF00"><b>Usage</b></td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R0</td>
+    <td bgcolor="#FFFFFF">WL, W</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+    <td bgcolor="#FFFF00">R16</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R1</td>
+    <td bgcolor="#FFFFFF">WH</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+    <td bgcolor="#FFFF00">R17</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R2</td>
+    <td bgcolor="#FFFFFF">UL, U</td>
+    <td bgcolor="#FFFFFF">User pointer,</td>
+    <td bgcolor="#FFFF00">R18</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R3</td>
+    <td bgcolor="#FFFFFF">UH</td>
+    <td bgcolor="#FFFFFF">for multitasking&nbsp;</td>
+    <td bgcolor="#FFFF00">R19</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R4</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R20</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R5</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R21</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R6</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R22</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R7</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R23</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R8</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R24</td>
+    <td bgcolor="#FFFFFF">AL, A</td>
+    <td bgcolor="#FFFFFF">'A' pointer</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R9</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R25</td>
+    <td bgcolor="#FFFFFF">AH</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R10</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R26</td>
+    <td bgcolor="#FFFFFF">XL,X,TOSL</td>
+    <td bgcolor="#FFFFFF">Top of data stack</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R11</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R27</td>
+    <td bgcolor="#FFFFFF">XH,TOSH</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R12</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R28</td>
+    <td bgcolor="#FFFFFF">YL, Y</td>
+    <td bgcolor="#FFFFFF">Data stack pointer&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R13</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R28</td>
+    <td bgcolor="#FFFFFF">YH</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R14</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R30</td>
+    <td bgcolor="#FFFFFF">ZL, Z</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+  </tr>
+  <tr>
+    <td bgcolor="#FFFF00">R15</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+    <td bgcolor="#FFFF00">R31</td>
+    <td bgcolor="#FFFFFF">ZH</td>
+    <td bgcolor="#FFFFFF">scratchpad</td>
+  </tr>
+</table>
+<hr>
+<p class="MsoNormal" style="line-height: 12.0pt"><b><font color="#BF0000" size="5">May
+the Forth be with you.</font></b></p>
+<hr>
+<p class="MsoNormal" style="margin-bottom:9.6pt;mso-hyphenate:none;tab-stops:
+-.5in">The demo file DEMOAVR.FF gets you going quickly. FLOAD it and it
+generates DA.HEX. To program with Firmware Studio's cable, select <b><u>A</u>VR
+SPI Connection</b> from the <b><u>T</u>arget</b> menu and then type <b>LOADFLASH</b>
+to program the AVR. Note that you can put <b>commo=avr loadflash</b> at the end
+of DEMOAVR.FF to automatically load the flash after a successful compile. If you
+want to use Atmel's programmer, use AVRISP to load DA.HEX into the AVR and
+connect the target board's UART port&nbsp; to the PC's RS232 port using a
+straight through serial cable.</p>
+<hr>
+<p class="MsoNormal" style="margin-bottom:9.6pt;mso-hyphenate:none;tab-stops:
+-.5in"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">The builder
+compiles subroutine threaded code.<span style="mso-spacerun: yes">&nbsp; </span>Words
+that are very short are simply inlined.<span style="mso-spacerun:
+yes">&nbsp; </span>Some words preceded by literals are optimized.<span style="mso-spacerun: yes">&nbsp;
+</span>+, -, AND, OR, @, C@, ! and C! are optimized when used in conjunction
+with literals.<span style="mso-spacerun: yes">&nbsp; </span>Note that variables
+and constants are considered literals.<span style="mso-spacerun: yes">&nbsp;&nbsp;</span></span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt;mso-hyphenate:none;tab-stops:
+-.5in"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">For example, the
+definition<span style="mso-spacerun: yes">&nbsp; </span></span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">: HEX 16 base ! ;</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"><span style="mso-spacerun:
+yes">&nbsp; </span>compiles to something like this:</span></p>
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="50%"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">0057</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">8</b><b style="mso-bidi-font-weight:normal">
+      E00</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">0
+      HEX:&nbsp;</b></span></td>
+    <td width="50%"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">LDI</b><b style="mso-bidi-font-weight: normal; mso-spacerun: yes; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">
+      </b><b style="mso-bidi-font-weight:normal">R16,</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">0</b></span></td>
+  </tr>
+  <tr>
+    <td width="50%"><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">0057A 93000101<span style="mso-spacerun: yes"></span></span></b></td>
+    <td width="50%"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">STS</b><b style="mso-bidi-font-weight: normal; mso-spacerun: yes; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">
+      </b><b style="mso-bidi-font-weight:normal">101,R16</b></span></td>
+  </tr>
+  <tr>
+    <td width="50%"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">0057E
+      E</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">1</b><b style="mso-bidi-font-weight:normal">0</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">0</b></span></td>
+    <td width="50%"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">LDI</b><b style="mso-bidi-font-weight: normal; mso-spacerun: yes; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">
+      </b><b style="mso-bidi-font-weight:normal">R16,1</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">6</b></span></td>
+  </tr>
+  <tr>
+    <td width="50%"><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">00580 93000100<span style="mso-spacerun: yes"></span></span></b></td>
+    <td width="50%"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">STS</b><b style="mso-bidi-font-weight: normal; mso-spacerun: yes; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">
+      </b><b style="mso-bidi-font-weight:normal">100,R16</b></span></td>
+  </tr>
+  <tr>
+    <td width="50%"><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">00584 9508<span style="mso-spacerun:
+yes"></span></span></b></td>
+    <td width="50%"><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">RET</span></b></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="margin-bottom:9.6pt;mso-hyphenate:none;tab-stops:
+-.5in"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">There’s a flag
+in BLDAVR.G that enables speed optimization. Literals are inlined for speed.<span style="mso-spacerun: yes">&nbsp;
+</span>They require 4 instructions and execute in 6 cycles.<span style="mso-spacerun: yes">&nbsp;
+</span>With optimization turned off, literals are encoded using 2 or 3
+instructions depending on the value.<span style="mso-spacerun: yes">&nbsp; </span><o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Cooperative multitasking relies on the use of PAUSE.<span style="mso-spacerun: yes">
+</span>PAUSE takes a lap around the task queue, so you should PAUSE whenever
+you’re waiting for I/O.<span style="mso-spacerun: yes"> </span>Context
+switching is fairly quick.<span style="mso-spacerun: yes"> </span>With an 8 MHz
+xtal, PAUSE takes about 4us to do a context switch and 1.5us to skip over each
+sleeping task -- not bad for an 8-bit micro.<span style="mso-spacerun: yes">&nbsp;
+</span>The AVR demo demonstrates multitasking.<span style="mso-spacerun: yes">&nbsp;
+</span><o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Every task must have a PAUSE or a word that calls
+PAUSE in it, or it will hang the system.<span style="mso-spacerun: yes"> </span>When
+tasks are I/O bound, cooperative multitasking provides a very efficient way to
+use CPU time.<span style="mso-spacerun: yes"> </span>A sleeping task takes very
+little CPU time, so you should SLEEP a task when it’s doing nothing.<span style="mso-spacerun: yes">
+</span>Ideally you’d use an ISR to wake a task when it needs to do something.<span style="mso-spacerun: yes">
+</span>Use an ISR to do the time-critical part of a task, then wake up a task to
+finish the job and do clean up.<span style="mso-spacerun: yes">&nbsp; </span><o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">IFCLR and IFSET are special versions of IF.<span style="mso-spacerun: yes">&nbsp;
+</span>They compile efficient bit tests using the SBRS and SBRC instructions.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Sample Usage:<span style="mso-spacerun: yes">&nbsp; </span></span><b style="mso-bidi-font-weight:normal"><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:
+&quot;Times New Roman&quot;">[ 3 ] IFCLR SWAP THEN</span></b><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"> is the same as </span><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">DUP 8
+AND 0= IF SWAP THEN.<o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">A compact CASE-like structure is similar.<span style="mso-spacerun: yes">&nbsp;
+</span>The restrictions are: Only the low byte of </span><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">c</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+is used and each case must be short enough to be covered by a short branch.
+Also, there is nothing following the QCASE structure.<span style="mso-spacerun: yes">&nbsp;
+</span></span><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">]?</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+compiles an exit.</span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"> For example:<o:p>
+</o:p>
+</span></p>
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">: test</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">( c -- )</span></b></td>
+  </tr>
+  <tr>
+    <td>
+      <p align="right"><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">qcase:&nbsp;&nbsp;</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">[ 1 ] ?[ sqrt ]?</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">[ 3 ] ?[ dist ]?</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">[ 5 ] ?[ dup over rot ]?</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">;</span></b></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">This is equivalent to the ANS Forth CASE structure:</span></p>
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">: test</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">( c -- )</span></b></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>
+      <p align="right"><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">case&nbsp;&nbsp;</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">1 of sqrt&nbsp;</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">endof</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">3 of dist&nbsp;</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">endof</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">5 of dup over rot&nbsp;</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">endof</span></b></td>
+  </tr>
+  <tr>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">endcase&nbsp;</span></b></td>
+    <td><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;
+font-family:&quot;Courier New&quot;">;</span></b></td>
+    <td></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">DEMOAVR.FF</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+builds a hyperlink index for the Winview editor.<span style="mso-spacerun: yes">&nbsp;
+</span>As you expand the system, you can end up with a huge number of keywords.<span style="mso-spacerun: yes">&nbsp;
+</span>In Winview, if you’re not sure how a word is supposed to behave, place
+the cursor on it and hit F9.<span style="mso-spacerun: yes">&nbsp; </span>The
+source code for the word will pop up.<span style="mso-spacerun: yes">&nbsp; </span>In
+the Firmware Studio console, you can </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">VIEW
+FOO</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"> to
+browse the source or </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">SEE FOO</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+to disassemble the ROM image of the word </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">FOO</span></b><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt">.<span style="mso-spacerun: yes">&nbsp;&nbsp;</span></span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="mso-spacerun: yes; font-size: 12.0pt; mso-bidi-font-size: 10.0pt">Browse
+Firmware Studio's help file for more information.</span><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt"><o:p>
+</o:p>
+</span></p>
+<hr>
+<p class="MsoNormal" style="line-height: 12.0pt"><b><font color="#BF0000" size="5">Assembler</font></b></p>
+<hr>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">The assembler uses Atmel's instruction syntax.<span style="mso-spacerun: yes">&nbsp;
+</span>An instruction consists of an instruction name and an operand list.<span style="mso-spacerun: yes">&nbsp;
+</span>The operand list mustn't contain spaces.<span style="mso-spacerun: yes">&nbsp;
+</span>You can put multiple instructions on the same line.<span style="mso-spacerun: yes">&nbsp;
+</span>Subroutines start with </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">CODE</span></b><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt"> and end with </span><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">C;</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+or </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">END-CODE</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">.<span style="mso-spacerun:
+yes">&nbsp; </span>Browse KERNEL.FAR for lots of examples.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Inline assembly can be placed in Forth <b>:</b> </span><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">definitions
+by enclosing it within </span><b style="mso-bidi-font-weight:normal"><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:
+&quot;Times New Roman&quot;">C[</span></b><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt"> and </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">]C</span></b><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt">.<span style="mso-spacerun: yes">&nbsp; </span><o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">R20 to R23 are free for your use, and they make good
+state machine pointers.<span style="mso-spacerun: yes">&nbsp; </span>Consider
+the following example of a simple state machine.<span style="mso-spacerun: yes">&nbsp;
+</span>The </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">VECTOR</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+macro compiles two </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">LDI</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+instructions to load register pair R21:R20.<span style="mso-spacerun: yes">&nbsp;
+</span>Each call to DOSTATE changes state.<span style="mso-spacerun: yes">&nbsp;
+</span></span></p>
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">code
+      state3</span></b></td>
+    <td><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">ldi
+      R16,1</b><b style="mso-bidi-font-weight: normal; font-size: 11.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">
+      </b></span><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-spacerun: yes"></span>out
+      PortB,R16</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">vector{</b><b style="mso-bidi-font-weight: normal; font-size: 11.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman"><sp
+an style="font-size: 11.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman; mso-bidi-font-weight: normal">
+      </span></b></span><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">ret c;</span></b></td>
+  </tr>
+  <tr>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">code
+      state2</span></b></td>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">ldi
+      R16,2<span style="mso-spacerun: yes"> </span>out PortB,R16</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">vector<span style="mso-spacerun: yes">
+      </span>R20,state3<span style="mso-spacerun: yes"> </span>ret c;</span></b></td>
+  </tr>
+  <tr>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">code
+      state1<span style="mso-tab-count:1"></span></span></b></td>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">ldi
+      R16,4<span style="mso-spacerun: yes"> </span>out PortB,R16</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">vector<span style="mso-spacerun: yes">
+      </span>R20,state2<span style="mso-spacerun: yes"> </span>ret c;</span></b></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">}vector R20,state1</span></b></td>
+  </tr>
+  <tr>
+    <td><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">code
+      dostate</b><b style="mso-bidi-font-weight: normal; font-size: 11.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">&nbsp;</b></span></td>
+    <td><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">mov
+      ZL,R20<span style="mso-spacerun: yes"> </span>mov ZH,R21<span style="mso-spacerun: yes">
+      </span>ijmp c;</span></b></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="line-height:13.0pt;mso-line-height-rule:exactly"><span style="mso-tab-count: 1; mso-bidi-font-size: 10.0pt; mso-bidi-font-family: Times New Roman; mso-bidi-font-weight: normal"><b style="mso-bidi-font-weight: normal; mso-tab-co
+unt: 1; mso-bidi-font-size: 10.0pt; mso-bidi-font-family: Times New Roman"><font color="#BF0000" size="3">The
+assembler has a number of extra instructions:</font></b></span></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+  <tr>
+    <td valign="top" nowrap><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"><b>CYCLE_DELAY&nbsp; </b></span></td>
+    <td nowrap valign="top"><i>( n -- )</i></td>
+    <td width="100%"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Lays down code to produce exact time delays of 0 to
+      770 cycles.<span style="mso-spacerun: yes">&nbsp; </span>For example,<span style="mso-spacerun: yes">&nbsp;
+      </span></span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">49
+      CYCLE_DELAY</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+      compiles code to waste 49 clock cycles.<span style="mso-spacerun: yes">&nbsp;
+      </span>R16 is cleared.</span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"><b>LDI_R16[</b></span></td>
+    <td nowrap valign="top"><i>( &lt;asmlabels&gt; ] -- ) </i></td>
+    <td width="100%"><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">C</span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">ompiles an LDI R16,N instruction using a list of bit
+      positions.<span style="mso-spacerun: yes">&nbsp; </span>It's useful for
+      defining initialization code for ports.<span style="mso-spacerun:
+yes">&nbsp; </span>A list of bit labels is delimited by a bracket.<span style="mso-spacerun: yes">&nbsp;
+      </span>For example, if RXEN is 4 and TXEN is 3,<span style="mso-spacerun: yes">&nbsp;
+      </span></span><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">LDI_R16[
+      RXEN TXEN ]</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+      sets bits 4 and 3 to form </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">LDI
+      R16,0x18</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">.</span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"><b>LDIW </b></span></td>
+    <td nowrap valign="top"><i>( &lt;label&gt; -- )</i></td>
+    <td width="100%"><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">C</span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">ompiles two LDI instructions to load a register pair
+      with a 16-bit constant.</span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"><b>LDIP </b></span></td>
+    <td nowrap valign="top"><i>( &lt;label&gt; -- )</i></td>
+    <td width="100%"><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">Same
+      as </span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">LDIW but divides the label data by 2 to serve as a
+      program address.</span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"><b>JSR</b></span></td>
+    <td nowrap valign="top"><i>( &lt;label&gt; -- )</i></td>
+    <td width="100%"><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">C</span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">ompiles an RCALL if possible, otherwise it compiles
+      CALL.<span style="mso-spacerun: yes"></span></span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt"><b>GOTO</b></span></td>
+    <td nowrap valign="top"><i>( &lt;label&gt; -- )</i></td>
+    <td width="100%"><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">C</span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">ompiles an RJMP if possible, otherwise it compiles
+      JMP.<span style="mso-spacerun: yes"></span></span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><b>REGISTER:</b></td>
+    <td nowrap valign="top"><i>( n &lt;name&gt; -- )</i></td>
+    <td width="100%"><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">D</span><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">efines
+      a new register name.<span style="mso-spacerun: yes">&nbsp; </span>For
+      example, </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">23
+      register: flags</span></b><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt"> creates an alias for R23 called flags.</span></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><b>JUMP[</b></td>
+    <td nowrap valign="top"><i>( &lt;reg&gt; &lt;labels&gt; -- )</i></td>
+    <td width="100%">C<span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">ompiles
+      code for a jump table that uses R16 as the index.<span style="mso-spacerun: yes">&nbsp;
+      </span>Any register may be used.<span style="mso-spacerun: yes">&nbsp; </span>This
+      must be a one-liner.<br>
+      </span>Example: <b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">JUMP[
+      R16 label1 label2 … labelN ]JUMP</span></b></td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap><b>LPM</b></td>
+    <td nowrap valign="top"><i>( &lt;param&gt; -- )</i></td>
+    <td width="100%">
+      <p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">The LPM and SPM instructions need a parameter list,
+      even though they may be implicit.<span style="mso-spacerun: yes">&nbsp; </span>Just
+      use a | character in this case.<span style="mso-spacerun: yes">&nbsp; </span>Example:<span style="mso-spacerun: yes">&nbsp;
+      </span></span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">LPM
+      |</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"> .</span></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><font color="#BF0000" size="3"><b><span style="mso-bidi-font-weight: normal; mso-tab-count: 1; mso-bidi-font-size: 10.0pt; mso-bidi-font-family: Times New Roman">Operands</span></b></font></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">An immediate operand can an assembly-label, number,
+local label, code-address, or ASCII character in that order. For example, if you
+define a Forth word called ‘0’, rcall 0 calls address 0x0000 because it
+found ‘0’ as a number before it found it in the code address list. When in
+doubt, try it and SEE the result.<span style="mso-spacerun: yes"> </span>ASCII
+characters are characters between two tick marks.<span style="mso-spacerun: yes">&nbsp;
+</span>For example, </span><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">LDI
+R16,’A’</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">.</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Local labels are @@0 thru @@9 (see below).</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Local assembly labels @@0 thru @@9 are available for
+compile-time calculations by the Forth interpreter.<span style="mso-spacerun: yes">
+</span></span><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Words between brackets {{, }} are assumed to be in
+the home vocabulary and not target words. Example:</span><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"><o:p>
+</o:p>
+</span></p>
+<table border="0" cellspacing="0" cellpadding="0">
+  <tr>
+    <td><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight:normal">{{
+      asmlabel? PortA 1+ &gt;@@0 }}</b><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">&nbsp;</b></span></td>
+    <td><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">S</span><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">ets
+      the value of local label @@0</span></td>
+  </tr>
+  <tr>
+    <td><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">ldi
+      R16,@@0</span></b></td>
+    <td><span style="font-size: 12.0pt; mso-bidi-font-size: 10.0pt">Uses
+      the l</span><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">ocal
+      label @@0</span></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"><o:p></span><font color="#BF0000" size="3"><span style="mso-bidi-font-weight: normal; mso-tab-count: 1; mso-bidi-font-size: 10.0pt; mso-bidi-font-family: Times New Roman"><b>Control
+Structures</b></span></font></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt">Branches are compiled using control structures.<span style="mso-spacerun: yes">&nbsp;
+</span>You can extend the compiler BLDAVR.G to support local address labels, but
+I've found control structures sufficient for defining any kind of branching I
+need to do.<span style="mso-spacerun: yes">&nbsp; </span>They are also more
+readable. <o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">FOR
+… NEXT Rn</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"><span style="mso-spacerun:
+yes">&nbsp; </span>compiles code to do something 1 to 256 times.<span style="mso-spacerun: yes">&nbsp;
+</span>The NEXT lays down code to decrement Rn and branch back if not zero.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">IF_Z
+&lt;code…&gt; THEN</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"><span style="mso-spacerun:
+yes">&nbsp; </span>compiles a </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">BRNE</span></b><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt"> past the &lt;code&gt; instructions.<span style="mso-spacerun: yes">&nbsp;
+</span>So, the code only executes if the Z flag is set.<span style="mso-spacerun: yes">&nbsp;
+</span>IF_NZ, IF_C, IF_NC, etc. are similar.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">IF_Z
+&lt;code1…&gt; ELSE &lt;code2…&gt; THEN</span></b><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt"><span style="mso-spacerun: yes">&nbsp; </span>is similar.<span style="mso-spacerun: yes">&nbsp;
+</span>If the Z flag is set, &lt;code1&gt; executes.<span style="mso-spacerun: yes">&nbsp;
+</span>Otherwise, &lt;code2&gt; executes.<span style="mso-spacerun: yes">&nbsp; </span><o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">NEVER</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+is a version of IF that branches around code.<span style="mso-spacerun: yes">&nbsp;
+</span></span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">NEVER
+THEN</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"> and </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">NEVER
+ELSE THEN</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+are useful when they are preceded by a conditional skip instruction.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">BEGIN
+&lt;code…&gt; AGAIN </span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">compiles
+a forever loop.<span style="mso-spacerun: yes">&nbsp; </span>A skip is useful
+before the </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">AGAIN</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">BEGIN
+&lt;code…&gt; UNTIL_Z </span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">compiles
+a loop ending in a </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;">BRNE</span></b><span style="font-size:
+12.0pt;mso-bidi-font-size:10.0pt"> instruction.<span style="mso-spacerun:
+yes">&nbsp; </span>UNTIL_NZ, UNTIL_C, UNTIL_NC, etc. are similar.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">BEGIN
+&lt;code1…&gt; WHILE_Z &lt;code2…&gt; REPEAT</span></b><span style="font-size:12.0pt;
+mso-bidi-font-size:10.0pt"> is good for doing something zero or more times.<span style="mso-spacerun: yes">&nbsp;
+</span></span><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">WHILE_Z
+</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">compiles a </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">BRNE</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+past &lt;code2&gt; and </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">REPEAT</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+compiles a branch to the beginning of &lt;code1&gt;.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">NOWAY</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+is a version of </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">WHILE</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+that compiles an unconditional jump.<span style="mso-spacerun: yes">&nbsp; </span>Put
+a skip in front of it.<span style="mso-spacerun: yes">&nbsp; </span><o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">CONTINUE</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+can be placed between </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">WHILE</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+and </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">REPEAT</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+to branch back to </span><b style="mso-bidi-font-weight:normal"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">BEGIN</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><b style="mso-bidi-font-weight:
+normal"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:
+&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;">MULTI
+Rn &lt;code…&gt; REPEAT</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+is good for doing something zero or more times. Similar to a </span><b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">FOR</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+loop but used to do something 0 to 128 times. MULTI lays down DEC Rn and BRPL.<o:p>
+</o:p>
+</span></p>
+<p style="mso-hyphenate:auto;tab-stops:.5in"><span style="font-size:12.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><b style="mso-bidi-font-weight: normal; font-size: 12.0pt; mso-bidi-font-size: 10.0pt; font-family: Courier New; mso-bidi-font-family: Times New Roman">CASE
+R16 # OF .. E</b><b style="mso-bidi-font-weight:normal">NDCASE</b></span><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt"><span style="mso-spacerun:
+yes">&nbsp; </span>compiles a CASE structure consisting of CPI R16,#
+instructions and branches. Registers are restricted to R16 to R31. <o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="line-height:12.0pt;mso-line-height-rule:exactly;
+mso-pagination:widow-orphan lines-together;page-break-after:avoid"><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">Example
+of case usage. Note that
+</span><b>|<span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">endof</span></b><span style="font-size:12.0pt;mso-bidi-font-size:10.0pt">
+assumes the last instruction was a jump so it omits
+its own jump.<o:p>
+</o:p>
+</span></p>
+<table border="0" cellpadding="0">
+  <tr>
+    <td nowrap><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">case
+      R16&nbsp; </span></b></td>
+    <td nowrap><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">10
+      of rcall ten<span style="mso-spacerun: yes"> </span></span></b></td>
+    <td><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">endof<span style="mso-spacerun: yes">
+      </span></span></b></td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">11
+      of rcall eleven </span></b></td>
+    <td><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">endof<span style="mso-spacerun: yes">
+      </span></span></b></td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">12
+      of rjmp twelve</span></b></td>
+    <td><b>|<span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">endof<span style="mso-spacerun: yes">
+      </span></span></b></td>
+  </tr>
+  <tr>
+    <td nowrap></td>
+    <td nowrap><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">rcall
+      otherwise</span></b></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td nowrap><b><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;">endcase<o:p>
+      </o:p>
+      </span></b></td>
+    <td nowrap></td>
+    <td></td>
+  </tr>
+</table>
+<p class="MsoNormal" style="margin-bottom:9.6pt"><span style="layout-grid-mode:both">Browse
+BLDAVR.G to see the assembler and builder source.<span style="mso-spacerun: yes">&nbsp;
+</span>You can add you own directives and see how the existing ones work.<o:p>
+</o:p>
+</span></p>
+<p class="MsoNormal" style="line-height:13.0pt;mso-line-height-rule:exactly"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-tab-count:1"><b style="mso-bidi-font-weight:normal">&nbsp;&nbsp;&nbsp;&nbsp;
+</b></span><b style="mso-bidi-font-weight:normal"><span style="mso-spacerun: yes">&nbsp;
+</span><o:p>
+</o:p>
+</b></span></p>
+<p class="MsoNormal" style="margin-left:1.0in;text-indent:.5in;line-height:13.0pt;
+mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-spacerun:
+yes">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span><o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="line-height:13.0pt;mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-tab-count:1">&nbsp;&nbsp;&nbsp;&nbsp;
+</span><o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="margin-left:1.0in;text-indent:.5in;line-height:13.0pt;
+mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="line-height:13.0pt;mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-tab-count:1">&nbsp;&nbsp;&nbsp;&nbsp;
+</span><o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="margin-left:1.0in;text-indent:.5in;line-height:13.0pt;
+mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="margin-left:1.0in;text-indent:.5in;line-height:13.0pt;
+mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:10.0pt;font-family:&quot;Courier New&quot;;
+mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-spacerun: yes">&nbsp;
+</span><o:p>
+</o:p>
+</span></b></p>
+<p class="MsoNormal" style="line-height:13.0pt;mso-line-height-rule:exactly"><b style="mso-bidi-font-weight:normal"><span style="font-size:11.0pt;mso-bidi-font-size:
+10.0pt;font-family:&quot;Courier New&quot;;mso-bidi-font-family:&quot;Times New Roman&quot;"><span style="mso-tab-count:1">&nbsp;&nbsp;&nbsp;&nbsp;
+</span><o:p>
+</o:p>
+</span></b></p>
+
+</body>
+
+</html>

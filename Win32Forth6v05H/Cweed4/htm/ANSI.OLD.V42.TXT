@@ -1,0 +1,1017 @@
+File ANSI.TXT
+
+    This file is meant to satisfy the documentation requirements of the 
+    ANS Forth Standard X3J14 with regard to the associated Forth system
+    named WIN32FOR, sometimes refered to as Forth-95.  It is the intent
+    of the originators of WIN32FOR that it conform to the ANS Forth 
+    Standard, including all of the optional wordsets and extensions
+    thereof.  All wordsets except the BLOCK and BLOCK-EXT wordsets are
+    available when the Forth sytem is invoked.  The method for obtaining
+    the BLOCK and BLOCK-EXT wordsets is specified at the end of this 
+    document, as required by the ANS Forth Standard.  If you find that
+    the system and/or the related documentation is incorrect or does not
+    meet the ANS Standard, please notify the authors or the Forth 
+    Interest Group.
+    
+    WIN32FOR is designed to operate in a Windows-NT or a Windows-95 
+    environment.  With certain restrictions, it should be possible to
+    operate in a Windows 3.1 environment, when used in conjunction with
+    WIN32S.  The system has been placed in the public domain, with certain
+    restrictions on the use of the assembler (see 486ASM.DOC).  As a public
+    domain system, there is NO support by the authors or subsequent 
+    contributors.
+    
+
+    Implementation-defined Options
+
+        Sections 4.1.1, 7.4.1.1, 9.4.1.1, 10.4.1.1, 11.4.1.1, 12.4.1.1,
+        13.4.1.1, 14.4.1.1, 15.4.1.1 and 16.4.1.1 of the ANS Forth 
+        Standard require that the system shall document the values for,
+        or behaviors of, each of the following items:
+        
+
+        (1) Aligned address requirements (3.1.3.3 Addresses):
+                There is no requirement that addresses be aligned.
+                Note, however, that address supplied to certain Windows
+                functions may be required to be aligned on double word
+                boundaries.  Note that the data fields of words created
+                by CREATE , arrays and variables start on double word
+                boundaries.
+                
+
+        (2) Behavior of 6.1.1320 EMIT for non-graphic characters:
+                For graphics 0 through 6, 9, 11, 12, 14 through 31, and 
+                127 the default black vertical bar is usually displayed.
+                Graphic character 7 produces an audible short tone or 
+                "beep".  Graphic character 8 is the "backspace" 
+                character.  If the cursor is at the left-most position 
+                on a line, 8 EMIT will effectively be a no-operation.  
+                Otherwise, the previous character is effectively deleted
+                by the sequence backspace, space, and backspace.  
+                Graphic character 10 is the line-feed character.  10 
+                EMIT will cause the cursor to be advanced by one line 
+                without changing the horizontal position.  Graphic 
+                character 13 is the "carriage-return" character.  13 
+                EMIT will cause the cursor to be placed at the beginning 
+                of the current line.  Note that for the purposes of EMIT,
+                9 (Horizontal Tab) has no special effect.  Characters 
+                above 127 are generally system dependent.
+                
+
+        (3) Character editing of 6.1.0695 ACCEPT and 6.2.1390 EXPECT:
+                Editing support is provided for strings up to 126 
+                characters in length, with full word and character 
+                operations using keypad or WordStar keys as follows:
+
+                        Ctrl-A                  Left word
+                        Ctrl-S                  Left character
+                        Ctrl-D                  Right character
+                        Ctrl-F                  Right word
+                        Ctrl-G                  Forward delete
+                        Ctrl-T                  Word delete
+                        Ctrl-Y                  Line delete or clear
+                        Left arrow              Left character
+                        Ctrl-Left arrow         Left word
+                        Right arrow             Right character
+                        Ctrl-Right arrow        Right word
+                        Home                    Beginning of line
+                        End                     End of line
+                        ESC                     Discard changes and leave
+                        Return/Enter            Save changes and leave
+                        
+
+        (4) Character set ( 3.1.2 Character Types, 6.1.1320 EMIT,
+            6.1.1750 KEY):
+                Characters are usually 8 bits wide in the current 
+                implementation.  The character set for EMIT depends on 
+                the (selectable) currentfont.  The default font is the 
+                SYSTEM raster font.  See the word SET-FONT in file 
+                SCRNCTRL.F.  The character set for KEY is system
+                dependent.  The use of the cursor and function keys,
+                with or without the SHIFT or CTRL keys may result in 
+                values exceeding 255.  It is possible to obtain ANSI
+                character values in the range 1 to 255 from KEY by holding
+                the ALT key and typing up to 4 digits on the numeric
+                keypad, beginning with a leading "0" .  Thus ALT 0250
+                will yield the value of 250.  Normally one should avoid
+                the use of the ALT key, except for Windows functions.
+                
+ 
+        (5) Character-aligned address requirements (3.1.3.3 Addresses):
+                There are no particular requirements other than that the
+                address must be in a valid range.  Each character-aligned
+                address contains 8 bits (1 byte).
+                
+                
+        (6) Character-set-extensions matching characteristics (3.4.2
+            Finding definition names):
+                Characters above 127 in ASCII equivalents are not modified
+                for matching characteristics, regardless of the state of
+                CAPS .
+                                
+
+        (7) Conditions under which control characters match a space 
+            delimiter (3.4.1.1 Delimiters):
+                All characters less than or equal to 32 match a space 
+                character when a string is scanned by WORD .
+
+
+        (8) Format of the control-flow stack (3.2.3.2 Control-flow Stack):
+                Control-flow items are placed on the return stack.
+                
+        
+        (9) Conversion of digits larger than 35 (3.2.1.2 Digit conversion):
+                Correspondance continues up through character 254, or digit
+                189.
+                
+                
+        (10) Display after input terminates in 6.1.0695 ACCEPT and 6.2.1390
+             EXPECT:
+                No special display to indicate end of input.
+                
+                
+        (11) Exception abort sequence (as in 6.1.0680 ABORT"):
+                The data stack, return stack and local parameter stack are 
+                cleared.  QUIT is executed.
+  
+  
+        (12) Input line terminator (3.2.4.1 User Input Device):
+                The input terminator is the carriage return (character 13).
+
+                
+        (13) Maximum size of a counted string, in characters (3.1.3.4 
+             Counted strings, 6.1.2450 WORD):
+                The maximum size of a counted string is 255 characters.
+
+
+        (14) Maximum size of a parsed string, in characters (3.4.1 Parsing): 
+                The maximum size of a parsed string is 255 characters.
+
+
+        (15) Maximum size of a definition name, in characters (3.3.1.2 
+             Definition names):
+                The maximum size of a definition name is 63 characters.
+ 
+ 
+        (16) Maximum string length for 6.1.1345 ENVIRONMENT?, in characters:
+                The maximum length for ENVIRONMENT? is 255 characters.
+ 
+ 
+        (17) Method of selecting 3.2.4.1 User input device:
+                Not normally selectable.  The words KEY and ACCEPT are 
+                deferred words, which may be changed, but it is not a trivial
+                exercise.
+                
+
+        (18) Method of selecting 3.2.4.2 User output device:
+                Not normally selectable.  The words EMIT and TYPE are
+                deferred words which may be redirected to serve other output 
+                devices.  
+
+
+        (19) Methods of dictionary compilation (3.3 The Forth dictionary):
+                For normal Forth words, a header consists of (1) a string
+                of characters giving the name of the word, (2) a one byte
+                count field (with high order 2 bits reserved for system
+                use, (3) a 32 bit "view" field (giving information on the
+                source), (4) a 32 bit "link" field pointing to a previous
+                header, (5) a 32 bit execution address field which points
+                to code, and (6) the body of the word which may hold data,
+                addresses, actual code, or a high level definition.
+
+
+        (20) Number of bits in one address unit (3.1.3.3 Addresses):
+                The number of bits in one address unit is 8.
+
+
+        (21) Number representation and arithmetic (3.2.1.1 Internal number
+             representation:
+                For CONSTANT , VARIABLE , VALUE , members of a LONG-ARRAY 
+                (and associated variants), and values stored in memory 
+                using ! , the representation is 32 bit 2's complement 
+                binary in Little Endian format (least significant 8 bits 
+                at the lowest address).
+                
+                For 2CONSTANT , 2VARIABLE , members of a DOUBLE-ARRAY and
+                values stored in memory using 2! , the representation is
+                64 bit 2's complement binary with the most significant 32
+                bits stored at the least significant address in Little
+                Endian format, and the least significant 32 bits stored
+                in Little Endian format starting 4 address units higher
+                then the starting address.
+                
+                For members of a WORD-ARRAY and values stored in memory
+                using W! , the representation is 16 bit unsigned binary.
+                When the associated value is retrieved using W@, the most 
+                significant 16 bits of the item on the data stack are set 
+                to zero, without sign extension.
+                
+                For members of BYTE-ARRAY and values stored in memory using
+                C! , the representation is 8 bits unsigned binary.  When the
+                values are retrieved using C@ , the most significant 24 bits
+                of the stack item are set to zero.
+                
+ 
+        (22) Ranges for n, +n, u, d, +d, ud (3.13 Single-cell types, 3.1.4
+             Cell-pair types):
+
+                Type    Range
+
+                n       -2147483648 to 2147483647
+                
+                +n      0 to 2147483647
+                
+                u       0 to 4294967295
+                
+                d       -9223372036854775808 to 9223372036854775807
+                
+                +d      0 to 9223372036854775807
+                
+                ud      0 to (2**64)-1 = 18446744073709551615
+ 
+                
+        (23) Read-only data-space regions (3.3.3 Data space):
+                No area within Forth is read-only.  Areas outside of Forth
+                are read-only as determined by Windows.
+
+
+        (24) Size of buffer at 6.1.2450 WORD (3.3.3.6 Other transient 
+             regions):
+                The buffer returned by WORD is named POCKET .  It is 132 
+                bytes in length.  It does not overlap the buffer returned 
+                by #> .
+  
+  
+        (25) Size of one cell in address units (3.1.3 Single-cell types):
+                One cell encompasses 4 address units.
+ 
+ 
+        (26) Size of one character in address units (3.1.2 Character types):
+                One character encompasses 1 address unit.
+ 
+ 
+        (27) Size of the keyboard terminal input buffer (3.3.3.5 Input 
+             buffers):
+                The terminal input buffer is 128 bytes long
+
+
+        (28) Size of the pictured numeric output string buffer (3.3.3.6
+             Other transient regions):
+                The pictured numeric output string buffer is 80 bytes long.
+
+
+        (29) Size of the scratch area whose address is returned by 6.2.2000
+             PAD (3.3.3.6 Other transient regions):
+                The size of the scratch area returned by PAD is at least 512
+                bytes.  It is in essence the rest of available memory.  The
+                highest memory address can be determined from the function
+                MEMORY-END .
+
+        
+        (30) System case-sensitivity characteristics (3.4.2 Finding 
+             definition names):
+                The system default is case-insensitive, as determined by
+                the truth value in the variable CAPS.  If the variable is
+                set to true (the default value), lower case characters 
+                (letters a through z) are converted to upper case before
+                any dictionary searches.  Furthermore, the names of words
+                added to the dictionary will be in upper case.  If CAPS 
+                is set to false, characters will not be changed prior to
+                dictionary searches or before being placed in the 
+                dictionary.
+
+
+        (31) System prompt (3.4 The Forth text interpreter, 6.1.2050 QUIT):
+                The system prompt consists of a space, the letters ok and
+                a line feed and carriage return.
+
+
+        (32) Type of division rounding (3.2.2.1 Integer division, 
+             6.1.0100 */, 6.1.0110 */MOD , 6.1.0230 / , 6.1.0240 /MOD , 
+             6.1.1890 MOD):
+                Floored division is used in the operators */ */MOD / /MOD
+                and MOD .
+
+
+        (33) Values of 6.1.2250 STATE when true:
+                When STATE is true, its value is -1 (all bits set).
+
+        
+        (34) Values returned after arithmetic overflow (3.2.2.2 Other 
+             integer operations):
+                For addition, subtraction, and multiplication arithmetic
+                overflow will generally be the result of an infinitely
+                long 2's complement result truncated to the number of bits
+                allowed in the result of the operation.  The result of 
+                arithmetic overflow in division or modulus operations is
+                not readily predictable.
+
+
+        (35) Whether the current definition can be found after 6.1.1250
+             DOES> (6.1.0450 : )
+                The name of the current definition can not be found after
+                the occurrence of the word DOES> until the terminating ;
+                is encountered.
+
+        
+        (36) The format used for display by 7.6.2.1770 LIST (if 
+             implemented):
+                Assuming that the default values in BLOCK.F are use, LIST
+                will cause the printing of 16 lines of 64 characters each
+                from the current block file.  There is no explicit numbering
+                of lines and no explicit display of the end of a line.
+
+
+        (37) The length of a line affected by 7.6.2.2535 \ (if implemented):
+                Using the default values of C/L , the length of a line 
+                affected by \ while using \ in a block file is 64 characters,
+                including the character \ itself, assuming that it is the 
+                first character on the line.
+                
+
+        (38) Values used in the system by 9.6.1.0875 CATCH and 9.6.1.2275 
+             THROW (9.3.1 THROW values, 9.3.5 Possible actions on an 
+             ambiguous condition):
+                The following values used by THROW are the only ones currently
+                implemented:
+                        
+                        -1      (for ABORT )
+                        -2      (for ABORT" )
+                        -3      (for stack overflow)
+                        -4      (for stack underflow)
+                        -13     (for undefined words)
+
+
+        (39) Encoding of keyboard events (10.6.2.1305 EKEY):
+                This may be dependent on the particular system and keyboard 
+                used.  For the system and keyboard used for initial testing
+                of this system, the standard keys and control key 
+                combinations will be returned.  In addition the following
+                hexadecimal values will be returned:
+                
+                        Hex value       Key
+                        
+                        0x0000003       Ctl Break
+                        0x0010001       F1
+                        0x0010002       F2
+                            .            .
+                            .            .
+                        0x0010009       F9
+                        0x0020000       Home
+                        0x0020001       End
+                        0x0020002       Ins
+                        0x0020003       Del
+                        0x0020004       Left arrow
+                        0x0020005       Right arrow
+                        0x0020006       Up arrow
+                        0x0020007       Down arrow
+                        0x0020008       Scroll Lock
+                        0x0020009       Pause
+                        0x0020010       Pg Up
+                        0x0020011       Pg Dn
+                        0x0050001       Ctl F1
+                            .             .
+                            .             .
+                        0x0050009       Ctl F9
+                        0x0090001       Shft F1
+                            .             .
+                            .             .
+                        0x0090009       Shft F9
+                        0x00A0009       Shft Break
+                        0x00D0001       Ctl shft F1
+                            .                .
+                            .                .
+                        0x00D0009       Ctl shft F9
+                        0x0200001       Left mouse button
+                        0x0200002       Right mouse button
+                
+                It is also possible to enter numeric ASCII values directly
+                with the ALT key in conjunction with the numeric keypad.
+                The ASCII value should be in the range of 1 to 255, and must
+                be preceeded with a 0.
+
+
+        (40) Duration of a system clock tick:
+                1 millisecond. 
+
+
+        (41) Repeatability to be expected from execution of 10.6.2.1905 MS: 
+                20 milliseconds.
+
+        (42) File access methods used by 11.6.1.0765 BIN, 11.6.1.1010 
+             CREATE-FILE, 11.6.1.1970 OPEN-FILE, 11.6.1.2054 R/O, 
+             11.6.1.2056 R/W, and 11.6.1.2425 W/O: 
+                The values of file access methods allowed are the following:
+                
+                        r/o     0x80000000
+                        r/w     0xc0000000
+                        w/o     0x40000000
+                
+
+        (43) Format and range of floating-point numbers (12.3.1 Data types,
+             12.6.1.2143 REPRESENT):
+                Default floating-point numbers are represented in the 64
+                bit IEEE 754 format, in which the most significant bit is
+                the sign bit, the next 11 bits are the exponent bits (biased
+                by 1023), and the remaining 52 bits represent the fractional
+                binary bits of the significand.  There is an implied bit of
+                1 to the left of the 52 bits, which normally represents the
+                integer part of the significand.  The approximate numerical
+                range of represented numbers is 2.23 x 10**-308 to 1.79 x
+                10**308.  Other values represented include +0, -0, +infinity,
+                -infinity, and various forms of "Not a Number" or "NaNs".
+                The 32 bit IEEE 754 format is also avaliable using the
+                operators SF@ and SF!.  An 80 bit format may be made
+                available, but requires changing the internal constant
+                B/FLOAT in the file FLOAT.F to have the value 10 , and then 
+                re-compiling the system.  Note that the floating-point
+                numbers appear in memory in Little-Endian format, with the
+                least significant 8 bits at the lowest address.
+
+
+        (44) Results of 12.6.1.2143 REPRESENT when float is out of range: 
+                The results of REPRESENT when float is out of range
+                depend on the particular value being represented.  The
+                character count passed to REPRESENT is the maximum of one
+                of the following character strings:
+                
+                        "Unsupported"
+                        "NAN"
+                        "Infinity"
+                        "Empty"
+                        "Unknown"
+                        
+                The "Unsupported" string is returned when the floating-point
+                number has a representation not supported by the Intel 
+                Numeric Processing Unit (NPU).  "NAN" is returned when the
+                floating-point number has one of the "Not-a-Number" values
+                specified by the IEEE 754 Standard.  Similarly, "Infinity"
+                is returned when the floating-point value has one of the
+                values of infinity specified by the IEEE 754 Standard.  The
+                "Empty" string is returned when the floating-point stack is 
+                empty.  The "Unknown" string is returned when the floating-
+                point value has an unknown format (normally seen only in the
+                10 byte mode).
+                
+
+        (45) Rounding or truncation of floating-point numbers (12.3.1.2 
+             Floating-point numbers): 
+                Floating point numbers are rounded to the nearest represent-
+                able value.  If the infinitely precise value is 1/2 the
+                least significant representable bit, the result is rounded
+                so that the least significant bit is 0 (the "round to even"
+                rule in the IEEE 754 Standard.
+                
+
+        (46) Size of floating-point stack (12.3.3 Floating-point stack): 
+                The floating-point stack holds up to 256 floating-point
+                numbers.
+
+
+        (47) Width of floating-point stack (12.3.3 Floating-point stack):
+                The default floating-point stack is 8 bytes wide.  As
+                mentioned earlier, this may be changed by recompilation.
+
+
+        (48) Maximum number of locals in a definition (13.3.3 Processing
+             locals, 13.6.2.1795 LOCALS|):
+                The maximum number of local variables is 12.
+                                
+
+        (49) Values and meaning of ior (14.3.1 I/O Results data type, 
+             14.6.1.0707 ALLOCATE, 14.6.1.1605 FREE, 14.6.1.2145 RESIZE): 
+                For ALLOCATE and RESIZE , ior returns the value TRUE (-1)
+                on an error and FALSE (0) for no errors.  FREE always
+                returns a FALSE value.            
+                
+
+        (50) Ending sequence for input following 15.6.2.0470 ;CODE and 
+             15.6.2.0930 CODE :
+                END-CODE 
+
+
+        (51) Manner of processing input following 15.6.2.0470 ;CODE and 
+             15.6.2.0930 CODE :
+                Assuming that the assembler has been loaded (the default
+                condition), lines of assembly code source are assumed
+                to follow.  The ASSEMBLER vocabulary is added to the
+                vocabulary search order and the code is assembled until 
+                the word END-CODE is encountered.  The ASSEMBLER 
+                vocabulary is then removed from the vocabulary search 
+                order.
+
+
+        (52) Search-order capability for 15.6.2.1300 EDITOR and 
+             15.6.2.0740 ASSEMBLER (15.3.3 The Forth dictionary): 
+
+
+        (53) Maximum number of word lists in the search order (16.3.3 
+             Finding definition names, 16.6.1.2197 SET-ORDER): 
+                The maximum number of word lists in the search order is 12.
+ 
+                
+
+    General ambiguous conditions (4.1.2)
+
+        A system shall document the system action taken upon each of the 
+        general or specific ambiguous conditions identified in this 
+        Standard.  See 3.4.4 Possible actions on an ambiguous condition. 
+        The following general ambiguous conditions could occur because of a 
+        combination of factors: 
+        
+
+        (1) A name is neither a valid definition name nor a valid number
+            during text interpretation (3.4 The Forth text interpreter); 
+                Display an error message:
+                
+                        Error: <name> is undefined
+                        
+
+        (2) A definition name exceeded the maximum length allowed (3.3.1.2
+            Definition names):
+                Display an error message:
+                
+                        Truncating name longer than 63 characters!
+                        -> <name>
+                        
+                The first 63 characters of the name are retained as the
+                name of the definition.
+                                         
+        
+        (3) Addressing a region not listed in 3.3.3 Data Space:
+                A message box labeled "Exception" is displayed with the
+                exception number "C0000005".  When the "OK" is chosen, the
+                message "EXCEPTION: ACCESS_VIOLATION" is displayed, followed
+                by a dump of the registers and the return stack.
+                
+
+        (4) Argument type incompatible with specified input parameter, 
+            e.g., passing a flag to a word expecting an n (3.1 Data types):
+                Ignore and continue.
+                
+        
+        (5) Attempting to obtain the execution token, (e.g., with 
+            6.1.0070 ', 6.1.1550 FIND, etc.) of a definition with undefined 
+            interpretation semantics:
+                Display an error message:
+                
+                        Error: <name> is undefined
+                         
+
+        (6) Dividing by zero (6.1.0100 */, 6.1.0110 */MOD, 6.1.0230 /,
+            6.1.0240 /MOD, 6.1.1561 FM/MOD, 6.1.1890 MOD, 6.1.2214 SM/REM, 
+            6.1.2370 UM/MOD, 8.6.1.1820 M*/):
+                A message box labeled "Exception" is displayed with the
+                exception number "C0000094".  When the "OK" is chosen, the
+                message "EXCEPTION: INTEGER_DIVIDE_BY_ZERO" is displayed, 
+                followed by a dump of the registers and the return stack.
+         
+
+        (7) Insufficient data-stack space or return-stack space (stack 
+            overflow):
+                A message box labeled "Exception" is displayed with the
+                exception number "C00000FD".  When the "OK" is chosen, the
+                message "EXCEPTION: STACK_OVERFLOW" is displayed, followed
+                by a dump of the registers and the return stack.
+                
+
+        (8) Insufficient space for loop-control parameters: 
+                A message box labeled "Exception" is displayed with the
+                exception number "C0000005".  When the "OK" is chosen, the
+                message "EXCEPTION: ACCESS_VIOLATION" is displayed, followed
+                by a dump of the registers and the return stack.
+ 
+
+        (9) Insufficient space in the dictionary: 
+                Display an error message:
+                
+                        Error: ALLOT Out of memory!
+                        
+                
+        (10) Interpretating a word with undefined interpretation semantics:
+                Display an error message:
+                        
+                        Error: <name> compilation only
+
+
+        (11) Modifying the contents of the input buffer or a string literal
+             (3.3.3.4 Text-literal regions, 3.3.3.5 Input buffers):
+                No explicit system action (the action itself will not be
+                detected, but may result in unwanted and unstandard actions.
+                
+
+        (12) Overflow of a pictured numeric output string:
+                May cause unspecified error.
+                
+
+        (13) Parsed string overflow:
+                String is clipped to a length of 255.
+                
+        
+        (14) Producing a result out of range, e.g., multiplication (using *)
+             results in a value too big to be represented by a single-cell 
+             integer (6.1.0090 *, 6.1.0100 */, 6.1.0110 */MOD, 6.1.0570 
+             >NUMBER, 6.1.1561 FM/MOD, 6.1.2214 SM/REM, 6.1.2370 UM/MOD, 
+             6.2.0970 CONVERT, 8.6.1.1820 M*/):
+                Ignore and continue.
+                
+
+        (15) Reading from an empty data stack or return stack (stack 
+             underflow):
+                Display an error message:
+
+                        Error: stack underflow
+                                         
+
+        (16) Unexpected end of input buffer, resulting in an attempt to use
+             a zero-length string as a name:
+                In most cases, display an error message.
+                
+
+    Specific ambiguous conditions:
+
+        The following specific ambiguous conditions are noted in the 
+        glossary entries of the relevant words: 
+        
+        (1) >IN greater than size of input buffer (3.4.1 Parsing):
+                WORD will return an undefined string.
+                 
+
+        (2) 6.1.2120 RECURSE appears after 6.1.1250 DOES> :
+                Ignore and continue.
+                 
+
+        (3) Argument input source different than current input source for
+            6.2.2148 RESTORE-INPUT :
+                Will cause an undefined system behavior.
+            
+
+        (4) Data space containing definitions is de-allocated (3.3.3.2 
+            Contiguous regions):
+                Ignore and continue.
+                
+
+        (5) Data space read/write with incorrect alignment (3.3.3.1 Address
+            alignment):
+                Ignore and continue.
+                
+
+        (6) Data-space pointer not properly aligned (6.1.0150 ,, 6.1.0860
+            C,):
+                Ignore and continue.
+                
+
+        (7) Less than u+2 stack items (6.2.2030 PICK, 6.2.2150 ROLL):
+                Ignore and continue.
+                 
+
+        (8) Loop-control parameters not available (6.1.0140 +LOOP, 
+            .1.1680 I, 6.1.1730 J, 6.1.1760 LEAVE, 6.1.1800 LOOP, 6.1.2380
+            UNLOOP):
+                Ignore and continue.
+                
+
+        (9) Most recent definition does not have a name (6.1.1710 
+            IMMEDIATE):
+                Invert the state of the "immediate" bit in the header of
+                the most recently defined word with a header.
+                
+
+        (10) Name not defined by 6.2.2405 VALUE used by 6.2.2295 TO :
+                A message box labeled "Exception" is displayed with the
+                exception number "C0000005".  When the "OK" is chosen, the
+                message "EXCEPTION: ACCESS_VIOLATION" is displayed, followed
+                by a dump of the registers and the return stack.
+                 
+
+        (11) Name not found (6.1.0070 ', 6.1.2033 POSTPONE, 6.1.2510 
+             ['], 6.2.2530 [COMPILE] ):
+                Display an error message:
+                
+                        Error: <name> is undefined
+             
+
+        (12) Parameters are not of the same type (6.1.1240 DO, 6.2.0620
+             ?DO, 6.2.2440 WITHIN):
+                Ignore and continue.
+                
+
+        (13) 6.1.2033 POSTPONE or 6.2.2530 [COMPILE] applied to 6.2.2295 TO :
+                Ignore and continue.
+                
+
+        (14) String longer than a counted string returned by 6.1.2450 WORD:
+                WORD will return a length not exceeding 255, and skip over
+                any remaining characters.
+                
+
+        (15) u greater than or equal to the number of bits in a cell 
+             ( 6.1.1805 LSHIFT, 6.1.2162 RSHIFT):
+                Only the least significant 5 bits of the count u are used
+                in the shift count.
+                 
+
+        (16) Word not defined via 6.1.1000 CREATE (6.1.0550 >BODY, 6.1.1250
+             DOES> ):
+                Ignore and continue.
+
+
+        (17) Words improperly used outside 6.1.0490 <# and 6.1.0040 #> 
+             (6.1.0030 #, 6.1.0050 #S, 6.1.1670 HOLD, 6.1.2210 SIGN ):
+                Ignore and continue.
+                
+
+        (18) Correct block read was not possible:
+                Display an error message:
+                
+                        Error:  Error reading block
+                 
+
+        (19) I/O exception in block transfer:
+                Display one of the following error messages:
+                
+                        Error:  Error reading block
+                        Error:  Error writing block, probably out of disk space.
+                
+
+        (20) Invalid block number (7.6.1.0800 BLOCK, 7.6.1.0820 BUFFER,
+             7.6.1.1790 LOAD ):
+                Display an error message:
+                
+                        Error:  Error reading block
+                                      
+
+        (21) A program directly alters the contents of 7.6.1.0790 BLK :
+                Ignore and continue.
+                 
+
+        (22) No current block buffer for 7.6.1.2400 UPDATE :
+                Block 0 of the current block file will be updated. 
+
+
+        (23) d outside range of n in 8.6.1.1140 D>S :
+                The high order part of the number is discarded.  Any
+                errors are ignored.
+         
+
+        (24) 10.6.1.0742 AT-XY operation can't be performed on user output
+             device:
+                Ignore and continue.
+                
+
+        (25) Attempting to position a file outside its boundaries 
+             (11.6.1.2142 REPOSITION-FILE):
+                Ignore and continue.
+                 
+
+        (26) Attempting to read from file positions not yet written 
+             (11.6.1.2080 READ-FILE, 11.6.1.2090 READ-LINE ):
+                A count of 0 is returned.
+                 
+
+        (27) fileid is invalid (11.6.1.1717 INCLUDE-FILE ): 
+                A message box labeled "Exception" is displayed with the
+                exception number "C0000005".  When the "OK" is chosen, the
+                message "EXCEPTION: ACCESS_VIOLATION" is displayed.
+                
+
+        (28) I/O exception reading or closing fileid (11.6.1.1717 
+             INCLUDE-FILE, 11.6.1.1718 INCLUDED ):
+                Errors encountered on closing a file are ignored.  If an 
+                error occurs during reading, display an error message:
+                
+                        Error:   read error
+                        
+
+        (29) Named file cannot be opened (11.6.1.1718 INCLUDED ): 
+                Display an error message:
+
+                        Error: <filename> file not found
+                         
+
+        (30) Requesting an unmapped block number (11.3.2 Blocks in files): 
+                Display an error message:
+                
+                        Error:  Error reading block
+                        
+        
+        (31) Using 11.6.1.2218 SOURCE-ID when 7.6.1.0790 BLK is not zero: 
+                Not an error.
+                
+
+        (32) DF@ or DF! is used with an address that is not double-float
+             aligned:
+                This is not an error: all addresses are double-float
+                aligned.
+                 
+
+        (33) F@ or F! is used with an address that is not float aligned: 
+                This is not an error: all addresses are double-float
+                aligned.
+                
+
+        (34) Floating point result out of range (e.g., in 12.6.1.1430 F/ ):
+                If the result would overflow, a result of "infinity" is
+                returned.
+                
+
+        (35) SF@ or SF! is used with an address that is not single-float 
+             aligned: 
+                This is not an error: all addresses are single-float
+                aligned.
+                
+
+        (36) BASE is not decimal (12.6.1.2143 REPRESENT, 12.6.2.1427 F., 
+             12.6.2.1513 FE., 12.6.2.1613 FS. ):
+                REPRESENT returns the proper values with the string having
+                decimal digits.  F. displays the value in decimal.  FE. and
+                FS. display in decimal.
+                
+
+        (37) Both arguments equal zero (12.6.2.1489 FATAN2 ):
+                A floating point 0 is returned. 
+
+        (38) Cosine of argument is zero for 12.6.2.1625 FTAN :
+                There is no representable floating point value for which
+                the cosine is exactly zero.
+                 
+
+        (39) d can't be precisely represented as float in 12.6.1.1130 D>F :
+                In the default 64 bit floating-point mode, the double
+                precision value is rounded to 54 bits of significance,
+                using the least most 10 bits rounded to the nearest even
+                value.
+                
+
+        (40) Dividing by zero (12.6.1.1430 F/ ):
+                The result is "Infinity", and there is no error reported.
+                 
+
+        (41) Exponent too big for conversion (12.6.2.1203 DF!, 12.6.2.1204 
+             DF@, 12.6.2.2202 SF!, 12.6.2.2203 SF@ ):
+                In the default 64-bit precision mode, the representations
+                for floating point numbers is the same as used in D@ and 
+                D! .  For those cases there is no conversion error.  For
+                SF@ the conversion will be exact.  For SF! with a positive
+                exponent too large for conversion, the resulting value is
+                "infinity".  For SF! with a negative exponent too large
+                in magnitude, the result is zero.
+                
+
+        (42) float less than one (12.6.2.1477 FACOSH ):
+                No error is reported.  The function is calculated using
+                absolute values where appropriate to avoid errors.
+                 
+
+        (43) float less than or equal to minus-one (12.6.2.1554 FLNP1 ):
+                For a value of exactly minus-one, the result is "-infinity".
+                For values less than minus-one, the absolute value of the
+                value plus one is taken prior to the logarithm function.
+                No error is reported.
+                 
+
+        (44) float less than or equal to zero (12.6.2.1553 FLN, 12.6.2.1557 
+             FLOG ):
+                No error is reported.  For a value of zero, the result is
+                "-infinity".  For negative values, the absolute value is
+                applied prior to taking the logarithm function.
+                 
+
+        (45) float less than zero (12.6.2.1487 FASINH, 12.6.2.1618 FSQRT ):
+                No error is reported.  The absolute value is applied prior
+                to performing the function.
+                 
+
+        (46) float magnitude greater than one (12.6.2.1476 FACOS, 
+             12.6.2.1486 FASIN, 12.6.2.1491 FATANH ):
+                No error is reported. 
+
+        (47) integer part of float can't be represented by d in 12.6.1.1470 
+             F>D : 
+                The result is the most negative 64 bit double number.  No
+                error is reported.
+                
+
+        (48) String larger than pictured-numeric output area (12.6.2.1427 
+             F., 12.6.2.1513 FE., 12.6.2.1613 FS. ):
+                Not an error condition.
+                
+
+        (49) Executing a named local while in interpretation state 
+             (13.6.1.0086 (LOCAL) ):
+                The named local will be undefined.
+                                
+
+        (50) Name not defined by VALUE or LOCAL (13.6.1.2295 TO ):
+                The result is unspecified.
+                
+
+        (51) Deleting the compilation word-list (15.6.2.1580 FORGET ):
+                Not possible.
+                
+
+        (52) Fewer than u+1 items on control-flow stack (15.6.2.1015 
+             CSPICK, 15.6.2.1020 CSROLL ):
+                The result is undefined.
+                
+
+        (53) Name can't be found (15.6.2.1580 FORGET ): 
+                Display an error message:
+                
+                        Error: <name> is undefined
+                        
+
+        (54) Name not defined via 6.1.1000 CREATE (15.6.2.0470 ;CODE ):
+                Display an error message:
+                
+                        Error: ALLOT Out of memory!
+                
+
+        (55) 6.1.2033 POSTPONE applied to 15.6.2.2532 [IF] :
+                [IF] compiled into definition.
+                
+
+        (56) Reaching the end of the input source before matching 
+             15.6.2.2531 [ELSE] or 15.6.2.2533 [THEN] (15.6.2.2532 [IF] ):
+                Display an error message:
+                
+                        Error: Can't refill the input stream.
+                
+
+        (57) Removing a needed definition (15.6.2.1580 FORGET ):
+                Not an error: unhooks any forgotten deferred word back to its
+                default behaviour.  
+                
+
+        (58) Changing the compilation word list (16.3.3 Finding definition 
+             names): 
+                No effect on the compiler.
+                
+
+        (59) Search order empty (16.6.2.2037 PREVIOUS ):
+                PREVIOUS doesn't allow the wordlist to be empty: if it
+                would be empty, it inserts the ROOT vocabulary.
+                
+
+        (60) Too many word lists in search order (16.6.2.0715 ALSO ):
+                The least recently added vocabulary or ROOT is discarded.
+
+
+    Other system documentation required by the ANS Standard (Section 4.1):
+
+        A system shall provide the following information: 
+
+        (1) A list of non-standard words using 6.2.2000 PAD
+            (3.3.3.6 Other transient regions):
+                None.
+                
+
+        (2) Operator's terminal facilities available:
+                Full line editing including keypad cursor controls and
+                Wordstar functions ^A, ^S, ^D, ^F, ^G, ^T, ^E, and ^X.
+
+
+        (3) Program data space available, in address units:
+                199980 address units, in the default system, as distributed.
+                If more space is desired, another Forth system may be 
+                created by specifying a larger number with the MEMORY-FREE!
+                operator, then saving the Forth system using FSAVE .  For an
+                example, see the end of the file EXTEND.F .
+                
+
+        (4) Return stack space available, in cells:
+                256 cells.
+                
+                        
+        (5) Stack space available, in cells:
+                At least 256 cells.
+                
+        
+        (6) System dictionary space required, in address units:
+                314,812 address units.
+
+
+        (7) Any restrictions a multiprogramming system places on
+            the use of buffer addresses:
+                The system does not include a multiprogramming
+                capability.
+                
+            
+        (8) The number of blocks available for source text and data:
+                Depends on the size of the open block file.
+                
+
+
+    Method for obtaining the BLOCK and BLOCK Extension wordsets:
+
+        Ensure that the current directory is win32for.
+        From the console type the following:
+        
+                FLOAD BLOCK.F
+                
+        Use either CREATE-FILE or OPEN-FILE to determine the fileid.
+        Place the fileid value on the top of the data stack and invoke:
+        
+                SET-BLOCKFILE
+                
+        The standard BLOCK wordset and extensions may now be used.

@@ -1,0 +1,296 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Tokenizer Wordlist</strong></font></p>
+
+<hr>
+
+<p>The following words are in the TOKENIZER wordlist. In
+Tokenizing mode, the <a href="tokenint.html">interpreter</a>
+searches this wordlist first. The interpreter executes the word
+if it's an immediate word or if the interpreter is not in compile
+mode. </p>
+
+<p>Most of these words are state smart words. In other words,
+they have different behaviors depending on whether the
+interpreter is in compile mode or interpret mode. Their
+definitions are in TTOKEN.G.</p>
+
+<p>The search order during building generally goes something like
+TOKENIZER ... CORE ... HOME. The HOME vocabulary is a catch-all
+for words that execute on the host PC. If you define a target
+word that has the same name as a word in the HOME wordlist, that
+word will mask the home wordlist's version. If this causes a
+problem, you can place the desired HOME wordlist words within {{
+}} brackets.</p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Defining Words:</strong></font></p>
+
+<p>Most defining words have three different behaviors:</p>
+
+<ul>
+    <li>Compile mode: the xt for the defining word is compiled.</li>
+    <li>Interpret mode &amp; the word exists: the xt of the
+        defining word is compiled followed by the xt of the
+        existing child word.</li>
+    <li>Interpret mode &amp; the word doesn't exist: a new header
+        is created and a token# assigned to it. The xt of the
+        defining word is compiled followed by the xt of the new
+        child word.</li>
+</ul>
+
+<table border="0">
+    <tr>
+        <td nowrap><strong>:</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>code</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- magic )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>code{</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- f )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>VARIABLE</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>MARKER</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>2VARIABLE</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>CONSTANT</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>2CONSTANT </strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ARRAY</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>STRING</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>CREATE</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>VALUE</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+</table>
+
+<p><font color="#BF0000" size="4"><strong>Other defining words:</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top"><font size="3"><strong>PROGRAM</strong></font></td>
+        <td valign="top" nowrap><font size="3"><em>( &lt;name&gt;
+        -- )</em></font></td>
+        <td><font size="3">Marks the beginning of a tokenized
+        program with a 7-byte header. Lays down 0x07C9, a 2-byte
+        checksum and 3-byte length. Checksum and length are
+        resolved by END.</font></td>
+    </tr>
+    <tr>
+        <td><font size="3"><strong>END</strong></font></td>
+        <td nowrap><font size="3">( -- )</font></td>
+        <td><font size="3">Marks the end of this block of data
+        and resolve the checksum and length.</font></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>::</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Begins re-definition of an existing word
+        keeping the old xt value. </td>
+    </tr>
+    <tr>
+        <td nowrap><strong>code</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- magic )</em></td>
+        <td width="100%">Begins a code definition using the
+        current CPU type. Sets search order to ASSEM.</td>
+    </tr>
+    <tr>
+        <td valign="top"><font size="3"><strong>END*CODE </strong></font></td>
+        <td valign="top" nowrap><font size="3"><em>( magic -- )</em></font></td>
+        <td><font size="3">Ends a code definition, resolves the
+        length of the code string.<br>
+        Usage: CODE FOO ... C; END*CODE&quot;</font></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>code{</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- f )</em></td>
+        <td width="100%">Begins a machine language definition.<br>
+        Sample usage: CODE{ FOO 1 hex[ 01 F3 DE 22 ] }CODE \ 8051
+        </td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><font size="3"><strong>}code</strong></font></td>
+        <td valign="top" nowrap><em>( f -- )</em></td>
+        <td width="100%">Ends a CODE{ sequence.</td>
+    </tr>
+    <tr>
+        <td><strong>%%</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td><font size="3">Declares a new token, lays the token#</font></td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Other Compilation:</strong></font></p>
+
+<table border="0">
+    <tr>
+        <td nowrap><strong>,&quot;</strong></td>
+        <td nowrap><em>( string&quot; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>;</strong></td>
+        <td nowrap><em>( -- ) </em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>C&quot;</strong></td>
+        <td nowrap><em>( &lt;string&gt; -- ) </em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>S&quot;</strong></td>
+        <td nowrap><em>( &lt;string&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>.&quot;</strong></td>
+        <td nowrap><em>( &lt;string&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[COMPILE] </strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>POSTPONE </strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>TO</strong></td>
+        <td nowrap><em>( x &lt;name&gt; -- ) </em></td>
+    </tr>
+</table>
+
+<p><font color="#BF0000" size="4"><strong>Conditional
+Compilation:</strong></font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>#IF </strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Lays <font size="3">#IF# followed by a
+        16-bit displacement.</font></td>
+    </tr>
+    <tr>
+        <td><strong>#ELSE</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td>Resolves #IF's displacement, lays 0 <font size="3">#IF#
+        followed by a 16-bit displacement.</font></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>#ENDIF </strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Resolves #IF's or #ELSE's displacement.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>#THEN</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Same as #ENDIF.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Control Structures:</strong></font></p>
+
+<p><font size="3">The control structure words are only here for
+error checking. They are: <strong>BEGIN UNTIL AGAIN WHILE REPEAT
+MULTI</strong>. In addition, <strong>DO ?DO LOOP</strong> and <strong>+LOOP</strong>
+make corrections for local variable indexing</font></p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Other:</strong></font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>H#</strong></td>
+        <td nowrap><em>( &lt;hex_number&gt; -- ) </em></td>
+        <td width="100%">OFW word to represent a hex number.
+        Split for target's cell width if it's a double.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>CHAR</strong></td>
+        <td nowrap><em>( &lt;c&gt; -- ) </em></td>
+        <td width="100%">Lays CHAR followed by the character <em>&lt;c&gt;</em>.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[CHAR] </strong></td>
+        <td nowrap><em>( &lt;c&gt; -- ) </em></td>
+        <td width="100%">Lays a literal whose value is the
+        character <em>&lt;c&gt;</em>.</td>
+    </tr>
+    <tr>
+        <td><strong>.</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Lays down (.) TYPE. token pair.</td>
+    </tr>
+    <tr>
+        <td><strong>U.</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Lays down (U.) TYPE. token pair.</td>
+    </tr>
+    <tr>
+        <td><strong>D.</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Lays down (D.) TYPE. token pair.</td>
+    </tr>
+    <tr>
+        <td><strong>UD.</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Lays down (UD.) TYPE. token pair.</td>
+    </tr>
+    <tr>
+        <td><strong>.R</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Lays down (.R) TYPE. token pair.</td>
+    </tr>
+    <tr>
+        <td><strong>U.R</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Lays down (U.R) TYPE. token pair.</td>
+    </tr>
+    <tr>
+        <td><strong>{</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Begin a <a href="locals.html">locals</a> structure.</td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title>Home Vocabulary: Test & misc. words</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Home Vocabulary: Test
+&amp; misc. words</strong></font></p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Debugging</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" width="128"><strong>CLS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Clears the console. Typical usage {{ CLS
+        }}.</td>
+    </tr>
+    <tr>
+        <td valign="top" width="128"><strong>BUG</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Invokes the high level debugger. Opens
+        the source file to the start position and makes sure
+        target is in test mode.</td>
+    </tr>
+    <tr>
+        <td valign="top" width="128"><strong>TRACE</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Invokes the low level debugger. Opens
+        the debugger window and displays the disassembled code.</td>
+    </tr>
+    <tr>
+        <td valign="top" width="128"><strong>LOADLABELS</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Uploads addresses from the target's
+        binding table to enable low level debugging.</td>
+    </tr>
+    <tr>
+        <td valign="top" width="128"><strong>FSEND</strong></td>
+        <td valign="top" nowrap><em>( &lt;filename&gt; -- )</em></td>
+        <td width="100%">Sends a bytecode file to the target and
+        evaluates it.</td>
+    </tr>
+    <tr>
+        <td valign="top"><strong>RESET</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Asserts the target board's reset line
+        for ½ second. Typically by dropping the DTR line.</td>
+    </tr>
+    <tr>
+        <td valign="top"><strong>LOADFLASH</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">On processors that support JTAG or SPI
+        loading, load the ROM image into the processor's program
+        flash.</td>
+    </tr>
+</table>
+
+<p>The watch list is used by the watch window to display target
+data in real time. The watch window can call a Forth word and
+display the result, or it can monitor memory. For memory
+watching, <em>( address format string&quot; -- ) </em>parameters
+are needed. Address is the target memory address to watch, format
+is how it's displayed, and string&quot; is a quote-delimited
+description. The format number is two bytes: the upper byte is
+the display format and the lower byte is the byte count. Formats
+are: 0=byte, 1=16bit-LE, 2=16bit-BE, 3=32bit-LE, 4=32bit-BE,
+5=ASCII.</p>
+
+<p>Example: 0xC000 0x102 WATCHDATA&quot; Location C000 = &quot;
+adds an item to the watch list that fetches 2 bytes from data
+memory location 0xC000 and displays the data as a 16-bit
+little-endian number.</p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td nowrap><strong>CLEARWATCH </strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Clears the watch list.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ADDWATCH</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Adds a word to the watch list.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>WATCHCODE&quot;</strong></td>
+        <td valign="top" nowrap><em>( address format string&quot; -- )</em></td>
+        <td width="100%">Adds a code memory watch record to the
+        watch list. </td>
+    </tr>
+    <tr>
+        <td nowrap><strong>WATCHDATA&quot;</strong></td>
+        <td nowrap><em>( address format string&quot; -- )</em></td>
+        <td width="100%">Adds a data memory watch record. </td>
+    </tr>
+    <tr>
+        <td nowrap><strong>WATCHREG&quot;</strong></td>
+        <td nowrap><em>( address format string&quot; -- )</em></td>
+        <td width="100%">Adds a register watch record.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>WATCHEE&quot;</strong></td>
+        <td nowrap><em>( address format string&quot; -- )</em></td>
+        <td width="100%">Adds a non-volatile memory watch record.</td>
+    </tr>
+</table>
+
+<p>The debugger can use TCP/IP instead of a serial connection.
+The program HOST.EXE runs on a remote Windows PC and serves as a
+gateway. The remote PC talks to the target board through a serial
+link.</p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>IP? </strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Displays the current IP address of the
+        remote server.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>IP= </strong></td>
+        <td valign="top" nowrap><em>( &lt;string&gt; -- )</em></td>
+        <td width="100%">Sets the current IP address of the
+        remote server. Ex: IP= 123.45.67.89</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>IP: </strong></td>
+        <td valign="top" nowrap><em>( -- u )</em></td>
+        <td width="100%">Fetches the current IP address of the
+        remote server.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Token list rebuilding
+words</strong></font></p>
+
+<p>When you build a ROM and TSAVE a token file, that token file
+can be FLOADed to restore token assignments. This file is the
+interface between your application and your (or a user's) add-on
+code. You can supply this file to enable the end user to modify
+the application. These words modify fields in the words header
+and may be used by typical source code.</p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>NEW-IMAGE </strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Clears the image and pointers.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>NOFILES</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Clears the file ID list.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ADD-TOKEN</strong></td>
+        <td valign="top" colspan="2" nowrap><em>( xt spos sid dt
+        cfa &lt;name&gt; -- )</em></td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap>&nbsp;</td>
+        <td valign="top" colspan="2">Adds a token header to the
+        current vocabulary.<br>
+        xt = token#.<br>
+        spos, sid = file position and source file id.<br>
+        dt = datatype cfa = image address.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ADDFILE</strong></td>
+        <td valign="top" nowrap><em>( id# &lt;filename&gt; -- )</em></td>
+        <td width="100%">Adds a filename to the file ID list. See
+        NOFILES.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>DATATYPE</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Stores to the datatype field of the last
+        created header.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>&gt;FLAGS</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Stores x to the flags field of the last
+        created header.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>&gt;LITERAL</strong></td>
+        <td valign="top" nowrap><em>( x -- )</em></td>
+        <td width="100%">Stores x to the literal field of the
+        last created header.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>C(</strong></td>
+        <td valign="top" nowrap><em>( string) -- )</em></td>
+        <td width="100%">Stores a comment string, up to 32
+        characters long and delimited by ')', to the comment
+        field of the last created header.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Host miscellaneous</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td valign="top" nowrap><strong>{{</strong></td>
+        <td valign="top" nowrap><em>( ? -- ? )</em></td>
+        <td width="100%">Interpret the input stream until }}.
+        Uses only HOME in the search order and assumes there is
+        no compilation.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>}}</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Ends a {{ ... }} phrase. Must be on the
+        same line as {{.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>((</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Skip source until )) is encountered.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>//</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Skips source until end of line. Like the
+        C version.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>\</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Skips source until end of line.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>\S</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Skips the rest of the file.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>(SEE)</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Decompiles a host Forth word.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>_DBG</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Starts Win32forth's debugger, includes
+        Forth at the top of the search order. To use this, you
+        must set OldStartup to 1 and recompile the Firmware
+        Studio source. This is good for debugging Firmware Studio
+        itself.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>_DEBUG</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Similar to _DBG but doesn't start
+        debugger until &lt;name&gt; is executed.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>WARNING</strong></td>
+        <td valign="top" nowrap><em>( -- addr )</em></td>
+        <td width="100%">Flag: True if redefinitions cause a
+        warning message.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>NOSLACK</strong></td>
+        <td valign="top" nowrap><em>( -- addr )</em></td>
+        <td width="100%">Flag: True if warnings abort
+        compilation.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>OFF</strong></td>
+        <td valign="top" nowrap><em>( addr -- )</em></td>
+        <td width="100%">Stores false (0) to address.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>ON</strong></td>
+        <td valign="top" nowrap><em>( addr -- )</em></td>
+        <td width="100%">Stores true (-1) to address.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>BYTE-JOIN</strong></td>
+        <td valign="top" nowrap><em>( lo hi -- x )</em></td>
+        <td width="100%">Joins two bytes to form a 16-bit value.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>BYTE-SPLIT</strong></td>
+        <td valign="top" nowrap><em>( x -- lo hi )</em></td>
+        <td width="100%">Splits a 16-bit value to form two bytes.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>WORD-JOIN</strong></td>
+        <td valign="top" nowrap><em>( lo hi -- x )</em></td>
+        <td width="100%">Joins two 16-bit values to form a 32-bit
+        value.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>WORD-SPLIT</strong></td>
+        <td valign="top" nowrap><em>( x -- lo hi )</em></td>
+        <td width="100%">Splits a 32-bit value to form two 16-bit
+        values.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>SHELL</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Opens a DOS window.</td>
+    </tr>
+</table>
+</body>
+</html>

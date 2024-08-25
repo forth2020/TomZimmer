@@ -1,0 +1,63 @@
+\ Inner interpreter for AVR
+\ IP = 16-bit register
+
+\ Instruction stream: instA instB instC instD instE
+\ IP ------------------^ |
+\                        =---> execution_table --> your_code
+
+\ Words in ROM are assumed to be CODE words or subroutine threaded Forth definitions.
+\ Words in RAM are assumed to be list-type Forth definitions.
+
+\ The binding table consists of pointers to either kind of word. The INNER interpreter 
+\ fetches 16-bit tokens from the list. A token is actually an index into the binding table.
+\ For each token, INNER gets the corresponding binding table entry. 
+
+\ If the MSB is set, the code resides in data space so the IP is pushed onto the return 
+\ stack and interpretation resumes at the new address. 
+\ If the MSB is clear, the code resides in program space so it gets called.
+
+code Inner      ( -- )
+\ About 8 usec with 4 MHz clock.
+    begin       movw z,ip  ld R1,z+  ld R0,z+   \ fetch from RAM
+                movw ip,z
+		movw zl,R0			\ Z -> table
+                ld R1,z+  ld zl,z+
+                mov zh,R1  			\ Z = address of word
+                sbrc R1,7  
+        never   icall                           \ jump to the code in ROM
+        else    push ipl push iph               \ push current IP
+                andi R16,07F
+                movw ip,z                       \ load new IP
+        then
+    again       c;
+
+\ You can't run a Forth list out of program space. The ROM contains only subroutine
+\ threaded code. After startup, TOF loads a small startup program into RAM and executes 
+\ INNER to run it. The startup program calls MYSTUFF in a forever loop.
+
+
+code Semicolon  ( -- )
+                pop zl  pop zh                  \ this was called
+                pop iph pop ipl                 \ restore IP
+                ijmp c;                         \ return
+
+code Lit16      ( -- n )
+                pusht  movw z,ip  ld tosh,z+  ld tosl,z+
+                movw ip,z  ret c;
+
+code Lit8       ( -- n )
+                pusht  movw z,ip  ld tosh,z+
+                clr tosh  sbrc tosl,7  dec tosh \ sign extend
+                movw ip,z  ret c;
+
+code 0jmp16     ( -- )
+                movw z,ip  ld iph,z+  ld ipl,z+
+                ret c;
+
+code 0bran8     ( -- )
+                movw z,ip  ld R17,z+  ld R16,z+
+                add ipl,R16  adc iph,R17
+                ret c;
+
+
+

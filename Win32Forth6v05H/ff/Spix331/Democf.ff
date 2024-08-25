@@ -1,0 +1,201 @@
+\ Coldfire/68000 demonstration program with SPIX bus   10/01 by Brad Eckert
+
+host decimal
+anew demo_Coldfire/68000
+homeorder
+2 constant hardware             \ hardware configuration (see below)
+
+2 constant optimization         \ 0 = few code words  1 = string ops & math
+                                \ 2 = token reading   3 = peephole optimizer
+8 >addrnibbles                  \ debugger addresses span 0..FFFFFFFF
+7 constant #TOS                 \ TOS cache Data register
+5 constant #DSP                 \ data stack pointer address register
+
+{{ hardware 1 = }} [IF]         .( 68331 BCC module )           \ board 1
+    1           constant family        \ CPU: 0=68K 1=CPU32 2=Coldfire
+    0           constant standalone    \ 0 = no startup code
+    0x68331     constant chiptype      \ processor part#
+    14745600    constant xtalfreq      \ clock frequency in Hz
+    0x3000      constant RomBase       \ ROM code's base address (test area)
+    0x7000      constant RomSize       \ bytes of ROM
+    0xA000      constant RamBase       \ base address of main system RAM
+    0x6000      constant RamSize       \ bytes of RAM
+    50          constant RamPartition  \ percentage of RAM for data
+    0           constant FinalVectors  \ address of vectors
+    0x2464      constant EEPROMpart    \ Serial EEPROM type [2401,2402,..,2464]
+    0           constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.FCF
+    0           constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.FCF
+    0           constant slowmath      \ T = avoid hardware multiply and divide
+                include BEGIN.FCF      \ 68K/Coldfire basic register assignments
+hex
+[THEN]
+{{ hardware 2 = }} [IF]         .( 68331 BCC aux ROM )           \ board 2
+    1           constant family        \ CPU: 0=68K 1=CPU32 2=Coldfire
+    0           constant standalone    \ 0 = no startup code
+    0x68331     constant chiptype      \ processor part#
+    14745600    constant xtalfreq      \ clock frequency in Hz
+    0x80400     constant RomBase       \ ROM code's base address (test area)
+    0x7C00      constant RomSize       \ bytes of ROM
+    0x88000     constant RamBase       \ base address of main system RAM
+    0x8000      constant RamSize       \ bytes of RAM
+    50          constant RamPartition  \ percentage of RAM for data
+    0x80000     constant FinalVectors  \ address of vectors
+    0x2464      constant EEPROMpart    \ Serial EEPROM type [2401,2402,..,2464]
+    0           constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.FCF
+    0           constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.FCF
+    0           constant slowmath      \ T = avoid hardware multiply and divide
+                include BEGIN.FCF      \ 68K/Coldfire basic register assignments
+hex
+[THEN]
+
+\ Boot I2C bus bit bangs some GP pins on the 68331.
+assemble bclr.b #2,PORTGP \ this is bidirectional, could have been trashed
+         moveq #5E,d0  move.b d0,DDRGP  macro: SDA=0 \ pull low SDA
+assemble moveq #5A,d0  move.b d0,DDRGP  macro: SDA=1 \ float SDA
+assemble bclr.b #1,PORTGP               macro: SCL=0 \ I2C's SCL = 0
+assemble bset.b #1,PORTGP               macro: SCL=1 \ I2C's SCL = 1
+assemble btst.b #2,PORTGP               macro: SDA?  \ test SDA
+\ The SPIX bus uses PQ pins on the QSI module
+assemble move.b QPDR,d0  lsr.l #1,d0    macro: C=MISO  \ X bit = MISO
+assemble bset.b #1,QPDR                 macro: MOSI=1
+assemble bclr.b #1,QPDR                 macro: MOSI=0
+assemble bset.b #2,QPDR                 macro: SCK=1
+assemble bclr.b #2,QPDR                 macro: SCK=0
+assemble bset.b #3,QPDR                 macro: SS=1
+assemble bclr.b #3,QPDR                 macro: SS=0
+decimal
+\ note: Coldfire doesn't accept ea=#addr for BCLR # (etc) instructions.
+\ If you use a CPLD or FPGA for I/O, try putting each bit at a different address
+\ to enable faster I/O.
+\ Ex: MOVEQ #-1,D0 MOVE.B D0,MyPin takes 2 clocks on Coldfire, 16 clocks on 68K.
+\ Much slower if using BCLR, BSET, etc.
+
+include KERNEL.FCF              \ 68K specific kernel
+include KERNEL.FF               \ generic kernel
+include ERRORLOG.FCF            \ error logging
+include LOCALS.FCF              \ support for tokenized locals (AV6.FF tests)
+include TASKER.FF               \ multitasker
+include EEPROM.FF
+include SPIX331.FCF
+include SPIX.FF
+include LOADER.FF
+
+: at-xy         ( col row -- )  2drop ; c( position cursor at col,row)
+: max-xy        ( -- cols rows ) 0 0 ;  c( maximum cursor coordinate)
+: at-xy?        ( -- col row )   0 0 ;  c( current cursor position)
+
+app definitions
+
+: MyStuff       ( -- )                  c( Main program, called within loop )
+\ Peripherals can extend this to add themselves to the macroloop.
+                HotPlugPoll pause ;     \ test the SPIX chain for hot plugging
+
+\ =============================================================================
+\ Put your application after here. Generic SIP devices expect token assignments
+\ as assigned in the preceeding files and words.
+
+
+
+: EEbootup      ( 'src n -- )           c( load boot code from I2C EEPROM)
+\ attempt to load bytecode from a serial boot EEPROM if the device exists
+                EEpoll                  \ make sure boot device exists
+        if      over EE@N 0x07C9 <>
+        else    true
+        then    if      2drop exit      \ make sure it has a valid header
+                then
+                >r eval=ee evaluate
+                r> over
+        if      ." Boot load #" .       \ display error if any
+                ." ERROR=" . cr
+        else    2drop
+        then    ;
+
+APP DEFINITIONS  main-tokens
+
+0 user me
+4 user you
+
+64 128 128 newtask mytask
+
+variable specdepth
+
+: bumpme        ( -- )  depth specdepth !  begin me incr pause again ;
+
+\ Turn on and off LEDs
+code I3=1       ( -- ) bclr.b #3,PORTGP  next c; c( LED PG3 = on)
+code I3=0       ( -- ) bset.b #3,PORTGP  next c; c( LED PG3 = off)
+code I4=1       ( -- ) bclr.b #4,PORTGP  next c; c( LED PG4 = on)
+code I4=0       ( -- ) bset.b #4,PORTGP  next c; c( LED PG4 = off)
+
+binary
+loco GPTparams c;
+\ The main difference between a 331 and 332 is that the 332's timer system has
+\ been replaced by an HC11-like GPT timer module. We don't use this module
+\ except for I/O ports. We assume the registers have their reset settings.
+                0101101000000010 w,             \ DDRGP|PORTGP
+\ Although the SPIX could use the QSM's SPI module, we still have to bit bang
+\ some of the SPIX protocol so we might as well bit bang all of it. We use
+\ the QSM pins for general purpose I/O. Most Coldfires don't have a QSM, so it's
+\ better to avoid the QSM for forward compatibility.
+                0000000001111111 w,             \ PORTQS
+                0000000001001110 w,             \ PQSPAR|DDRQS
+decimal
+
+code init_peripherals ( -- )            c( initialize peripherals)
+                lea.l GPTparams,a0
+                move.w (a0)+,d0  move.w d0,DDRGP        \ set up the PG lines
+                move.w (a0)+,d0  move.b d0,QPDR         \ set up the PQ lines
+                move.w (a0)+,d0  move.w d0,QPAR
+                moveq #-1,d0     move.w d0,SCDR         \ send a dummy byte
+\ The 68K will reboot when it crashes, leaving the debugger waiting for a
+\ response. We send 0xFF out the SCI port to keep the debugger happy.
+                next c;
+
+: StartMain     ( -- )          c( Initialization for MAIN )
+\ Load order:
+\ 1. EEPROMs on the I2C bus: 0, 1, 2, ... 7
+\ 2. EEPROMs on the SPIX bus: 0, 1, ... n
+\ 3. EEPROM 0 on the I2C bus, secondary boot area.
+                init_peripherals
+                x_reset                 \ clear the SPIX bus
+                x_svc? dup deadbus ! 0= \ service plug kills hotplug polling
+    if          8 0
+        do      i EEdevice !
+                i CurrentNode !         \ allow MY to address this device
+                primaryboot  i EEbootup \ load from IIC memory bus
+        loop    \ At this point, boot code from internal devices has been loaded.
+                EEdevice off
+                CurrentNode off         \ load nodes starting with node 0
+        begin   CurrentNode @ x_test 0= \ does it look bootable?
+        while   eval_ext                \ yes, read and evaluate.
+        repeat  \ Now, we allow post-load fixes
+                secondaryboot 8 EEbootup
+    then        HPtimer 100 caltimer    \ hotplug polling runs at 10 Hz max.
+                mytask alsotask
+                ['] bumpme mytask reassign
+                mytask wake
+                ['] MyStuff 'bind ['] mainevent bind! \ hook us in **
+                ;
+
+\ ** This was a little different than REBIND. We needed an extra level of
+\ indirection so that we could chain things onto MyStuff. Add-on peripherals
+\ extend MyStuff. To see the chain's object code, use TRACE MyStuff.
+
+include END.FCF
+
+hidden previous \ previous
+tsave rom.hh                    \ save header data for tokenizer/debugger
+{{ hardware 2 = }} [IF] bsave 68331COD.BIN  \ save ROM image
+                 [ELSE] ssave TEST.S        \ save s-record version
+                 [THEN] \ save ROM image
+also hidden
+ndxsave winview.ndx             \ build a hyperlink index for this project
+previous
+
+\ Shortcut keys to get you to a terminal emulator:
+{{ hardware 1 = }} [IF] \ BCC331 eval board
+( F11 programs thru COM1 ) 11 defmacro DOS BTERM TEST.S
+( F12 programs thru COM2 ) 12 defmacro DOS BTERM 2 TEST.S
+[THEN]
+
+

@@ -1,0 +1,246 @@
+\ Terminal for sending/receiving files
+\ filename is specified on command line
+\ PGUP sends a file, PGDN starts logging, ESC stops logging.
+\ Compile with Tom Zimmer's TCOM
+
+\f empty
+decimal
+
+ 1 value port#
+create filename ," DEFAULT.DAT"
+12 value trate \ 9600 baud
+ 0 value done
+2variable borg \ bar origin
+variable blen  \ length of file to send, for bar update
+2variable bidx  \ byte tally
+
+include rs232ib.seq
+
+187 constant k_F1       \ help
+188 constant k_F2       \ toggle RTS
+189 constant k_F3       \ toggle DTR
+191 constant k_F5       \ upload to BUG332 monitor and quit
+195 constant k_F9       \ toggle display mode
+196 constant k_F10      \ quit
+201 constant k_PgUp     \ upload file
+209 constant k_PgDn     \ capture to file
+
+code com-modem  ( c1 -- )       \ set modem control lines RTS DTR
+\F              pop bx                          \ get control bits to program
+                mov dx, rs232_port              \ get the comport we're using
+                mov di, dx                      \ copy into DI
+                add dx, # 4
+                in al, dx                       \ get status port
+                and al, # $FC
+                or  al, bl
+                out dx, al
+\F              next
+\T              LOAD_BX
+\T              RET
+                end-code
+
+code modem-stat ( --- c1 )  \ -- -- dsr cts -- -- -- --
+\T              SAVE_BX
+                mov dx, rs232_port              \ get the comport we're using
+                mov di, dx                      \ copy into DI
+                add dx, # 6
+                in al, dx                       \ get status port
+                sub ah, ah                      \ clear high byte
+\F              1push
+\T              MOV BX, AX
+\T              RET
+                end-code
+
+create $load1   3 c, 'L' c, 'O' c, 13 c,        \ enter upload mode
+create $load2   5 c, 13 c, 13 c, 'G' c, 'O' c, 13 c, \ run program
+
+: send  ( addr -- ) count bounds ?do i c@ com-out loop ; \ send string
+
+: .filename     ( -- )  filename count type ;
+: myco          ( -- )  yellow >fg ;
+: bar           ( n char -- ) pad 80 rot fill
+                dup 0 80 between
+                if      pad swap type   \ draw a bar
+                else    drop
+                then    ;
+
+: bidxbump      ( -- ) bidx 2@ 1. d+ bidx 2! ;
+
+variable col
+
+: new           ( -- )    cr col off ;
+: +col          ( n -- )  col @ + dup col ! 79 > if new then ;
+: +type         ( a len -- ) dup +col type ;
+: say           ( a len -- ) new +type ;
+
+: upload        ( -- )  \ Enter upload mode
+                filename $hopen decimal
+        if      ltred  >fg " Couldn't find " say .filename myco new
+                \t [long]
+        else    ltcyan >fg " Uploading " say .filename
+                seqhandle endfile
+                ."  " 2dup d. ." bytes to send. ESC aborts." new
+                d2/ d2/ d2/ d2/ d2/ if drop -1 then u2/ blen !
+                0 0 seqhandle movepointer
+                at? borg 2!  0.0 bidx 2! \t [long]
+                begin   pad 1 seqhandle hread
+                        key? if key 27 = if drop 0 then then
+                        \t [long]
+                while   pad c@ com-out
+                        bidxbump  bidx 2@  over 31 and 0=
+                        if      d2/ d2/ d2/ d2/ d2/ drop
+                                borg 2@ at  80 swap u2/ blen @ */
+                                dup 'Û' bar 79 swap - '±' bar
+                        else    2drop
+                        then
+                repeat  " Done" say
+                close
+        then    ;
+
+2variable supposed
+variable ptr            \ cached file output
+514 array fbuf
+fbuf 512 + constant maxptr
+: fnew          ( -- )    fbuf ptr ! ;
+: append        ( c -- )  ptr @ c! ptr incr ;
+: flsh          ( -- )    fbuf ptr @ over - seqhandle hwrite drop fnew ;
+
+: showtally     ( -- )
+                bidx 2@ supposed 2!
+                time-elapsed drop 10 >
+        if      borg 2@ at bidx 2@ d. time-reset
+        then    ;
+
+: download      ( -- )  \ Enter download mode, append to file
+                fnew decimal
+                0.0 bidx 2!
+                write-only filename $hopen
+        if      filename seqhandle $>handle
+                seqhandle hcreate
+                if      ltred  >fg new ." Couldn't create " .filename myco new
+                        exit   \t [long]
+                else    ltcyan >fg new ." Logging to new "
+                then
+        else    seqhandle endfile bidx 2!
+                ltmagenta >fg new ." Logging to end of "
+        then    .filename ."  press ESC to end."
+                new time-reset bidx 2@ supposed 2!
+                at? borg 2! bidx 2@ d. \t [long]
+        begin   key? if key 27 =
+                  if ." total bytes logged." myco new flsh close exit
+                  then
+                then
+                com-cnt
+                if      com-get append  ptr @ maxptr = if flsh then
+                        bidx 2@ 1. d+ bidx 2! showtally
+                else    time-elapsed drop 9 >
+                        bidx 2@ supposed 2@ d= 0= and
+                        if      showtally
+                        then
+                then
+        again   ;
+
+variable dismode \ display mode: 0 = binary 1 = hex
+3 constant maxmodes
+
+: .mode         ( -- )
+                myco dismode @ maxmodes mod 6 *
+                " ASCII HEX   HEX*N " drop + 6 +type ;
+
+variable rtslevel
+variable dtrlevel
+: modem         ( a -- ) @ not 1 and . 2 +col  rtslevel @ not 1 and 2*
+                dtrlevel @ not 1 and or com-modem ;
+: .rts          ( -- ) myco " RTS=" +type rtslevel modem ;
+: .dtr          ( -- ) myco " DTR=" +type dtrlevel modem ;
+variable prevstat
+: .=            ( f -- )  ." =" 0<> 1 and . 2 +col ;
+: .dsr          ( -- )    myco " DSR" +type prevstat c@ $20 and .= ;
+: .cts          ( -- )    myco " CTS" +type prevstat c@ $10 and .= ;
+
+: TogRTS        ( -- ) rtslevel incr .rts ;
+: TogDTR        ( -- ) dtrlevel incr .dtr ;
+
+: .help0        ( -- )
+                myco
+                cr ." COM" port# . ." Display Mode   = " .mode
+                ."   F9 = toggle display mode"
+                cr .cts .dsr .rts .dtr ."  F2 = toggle RTS, F3 = toggle DTR"
+                cr ." Alt-C clears screen"
+                cr ;
+
+: .help         ( -- ) decimal
+                115200. rate mu/mod d. drop
+                ." baud, filename = " .filename ."   F1 = help, F10 = quit"
+                cr ." PGUP = upload, PGDN = start download, ESC = end transfer"
+                ;
+
+: m0            ( c -- )  case 10 of new endof
+                               13 of endof
+                               pad c! pad 1 type  1 +col  \ ASCII
+                          endcase ;
+
+: m1            ( c -- )  hex 0 <# bl hold # # #> type  3 +col ; \ HEX
+: tag?       ( c -- c f ) dup $80 and ;
+: m2            ( c -- )  tag? if new then m1 ;
+
+create mx ' m0 , ' m1 , ' m2 ,
+: mchar         ( c -- )  dismode @ maxmodes mod 2* mx + @ execute ;
+
+: term          ( -- )  \ input: baud, port#, filename in any order.
+\t              dos_to_tib
+                rtslevel off  dtrlevel off
+                white  >fg ." Terminal emulator v1.2 by Brad Eckert"
+                ltgray >fg
+                cr ." Usage: BTERM {port#} {baud} {filename} in any order."
+                myco 0 dismode !
+                \t [long]
+        begin   bl word dup c@
+        while   dup number?
+                if      drop nip        \ could be a baud rate or a port
+                        case 1 of 1 =: port# endof
+                             2 of 2 =: port# endof
+                             115200 of 1 =: trate endof
+                          >r 115200. r@ um/mod swap 2*  \ ( q 2r )
+                          r> > if 1+ then =: trate      \ round
+                        endcase
+                else    2drop dup c@ 1+ filename swap cmove
+                then
+        repeat  drop
+                trate =: rate
+                port# 2 = if com2: else com1: then
+                modem-stat prevstat c!
+                .help new .cts .dsr
+        begin   key? \t [long]
+                if  key case k_F10  of true =: done endof
+                             k_PgUp of upload   endof
+                             k_PgDn of download endof
+                             k_F9   of dismode incr new .mode endof
+                             k_F1   of .help0 .help new endof
+                             k_F2   of TogRTS new endof
+                             k_F3   of TogDTR new endof
+                             k_F5   of $load1 send upload
+                                       $load2 send endof
+                             173    of true =: done endof \ Alt-X
+                             174    of cls col off endof  \ Alt-C
+                             com-out
+                        endcase
+                then    \ -- -- dsr cts -- -- -- --
+                modem-stat $30 and
+                prevstat c@ over prevstat c! xor        \ lines changed?
+                dup if new then $20 /mod ( cts dsr )
+                if .dsr then
+                if .cts then
+                com-cnt
+                if      ltgreen >fg     \ green = terminal emulation mode
+                        com-get mchar
+                then    done
+        until   port# 2 = if ?REST_COM2: else ?REST_COM1: then myco
+                ltgray >fg
+                cr ." That's all, folks!" ;
+
+\s History
+1.0  initial version
+1.1  08/30/01 16:43 added CLS (Alt-C) and Quit (Alt-X)
+
+

@@ -1,0 +1,121 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<h1><font color="#C00000" size="5">Firmware Studio Development
+Environment</font></h1>
+
+<table border="1">
+    <tr>
+        <td bgcolor="#FFFFFF"><strong>Host</strong></td>
+        <td bgcolor="#FFFFFF"><a href="buildint.html"><strong>Builder</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="testint.html"><strong>Tester</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="tokenint.html"><strong>Tokenizer</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="forthint.html"><strong>Forthing</strong></a></td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#000000">After starting Firmware Studio, on the
+left side of the screen you'll see the search order along with
+the contents of the data stack. The </font><font color="#008000">current
+vocabulary</font><font color="#000000"> is in green, and the </font><font
+color="#0000FF">search order</font><font color="#000000"> is in
+blue. There are several modes of operation, many of which place a
+special vocabulary (colored gray) at the top of the search order.
+</font></p>
+
+<p><font color="#000000">Forth uses a simple syntax consisting of
+keywords separated by spaces. An interpreter parses keywords from
+an input stream such as the console or a file. Firmware Studio
+has a number of different interpreters. They are used for normal
+Forth evaluation, building executable ROM code, tokenizing source
+code and interactive testing of the target board. Although they
+differ in function, the principle of operation is the same for
+all of them. </font></p>
+
+<p><font color="#BF0000" size="4"><strong>Host Interpreter</strong></font></p>
+
+<table border="0" cellspacing="1">
+    <tr>
+        <td bgcolor="#C0C0FF"><img src="snaphome.gif" width="424"
+        height="265"></td>
+    </tr>
+</table>
+
+<p>Startup defaults to the HOST interpreter. This is the normal
+Forth interpreter, which you can get to anytime by pressing the
+HOST button <img src="buthost.gif" width="24" height="22"> or F7.
+To clear the search order, press the HOME button <img
+src="buthome.gif" width="24" height="22"> or F8.<font
+color="#000000"> Press F1 to get a list of hot keys.</font></p>
+
+<p><font color="#000000">The search order and some parameters are
+displayed in the left margin. </font><font color="#C00000"><strong>Here</strong></font><font
+color="#000000"> displays the next free byte in the target image.
+Normally, this is the next free ROM byte. </font><font
+color="#000000" face="Courier"><strong>RAM</strong></font><font
+color="#000000"> changes the action of Here, making it return the
+next free RAM byte. </font><font color="#000000" face="Courier"><strong>ROM</strong></font><font
+color="#000000"> changes it back. </font><font color="#C00000"><strong>Tok#</strong></font><font
+color="#000000"> is the next available token number. It's used
+when building ROM code. </font><font color="#008000"><strong>Depth</strong></font><font
+color="#000000"> is the stack depth, and any stack data will be
+displayed under </font><font color="#008000"><strong>Depth</strong></font><font
+color="#000000">. </font></p>
+
+<p><font color="#000000">The HOME vocabulary has all of the words
+you're likely to use, including Forth's CORE and CORE EXT words.
+The source file HOME.G contains these words. In the event you
+need to access more (such as floating point), you can enter ALSO
+FORTH to put the huge Win32forth vocabulary as well as Firmware
+Studio's internal words in the search order.</font></p>
+
+<p><font color="#000000">The interpreter goes through the search
+order looking for each blank-delimited string. When it finds a
+word in the dictionary, it either executes it or appends its
+semantics to the dictionary. Inside a definition, the word's
+IMMEDIATE flag will cause execution it's set. If the word isn't
+found, it's converted to a number and pushed onto the stack. This
+is typical Forth evaluation. If you're not up to speed on basic
+Forth, read the literature at </font><a
+href="http://www.forth.org"><font color="#000000">www.forth.org</font></a><font
+color="#000000"> before continuing.</font></p>
+
+<p><font color="#000000">The </font><font color="#008000">green
+name</font><font color="#000000"> in the left margin is the </font><font
+color="#008000">CURRENT</font><font color="#000000"> vocabulary.
+Any new definitions will go into this vocabulary. This vocabulary
+isn't part of the search order.</font></p>
+
+<p><font color="#000000">When target vocabularies are in the
+search order, you must understand that they may mask desired
+operations in the HOME vocabulary. For example, if the target
+vocabulary CORE contains DUP then that DUP will execute instead
+of the DUP in the HOME vocabulary. Words in a target vocabulary
+have no stack effect. They set a couple of global pointers for
+use by various interpreters. </font></p>
+
+<p><font color="#000000">An easy way to avoid this problem is to
+place the code to be interpreted inside of {{ }} brackets. {{
+switches to the HOST interpreter (regardless of which one is in
+use at the time) and puts the HOME vocabulary on top of the
+search order. }} restores the interpreter. {{ and }} can be used
+any time you want to do operations on the stack and you're not in
+HOST mode.</font></p>
+
+<hr>
+
+<p>&nbsp;</p>
+</body>
+</html>

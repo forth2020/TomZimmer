@@ -1,0 +1,1017 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title>CORE words: Arithmetic, Logic, Stack, Memory</title>
+</head>
+<body bgcolor="#C0FFFF">
+<hr>
+<p><b><font color="#BF0000" size="5">CORE words: Arithmetic, Logic, Stack and Memory&nbsp;</font></b></p>
+<hr>
+<p><b><font size="4" color="#BF0000">Arithmetic</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ABS&nbsp;</b></td>
+  <td nowrap><i>( x -- |x| )</i></td>
+  <td nowrap><b>absolute value of TOS</b></td>
+  <td nowrap>xt = 0x96</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNDER1+&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x1' x2 )</i></td>
+  <td nowrap><b>add 1 to NOS</b></td>
+  <td nowrap>xt = 0x19A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>1+&nbsp;</b></td>
+  <td nowrap><i>( x -- x+1 )</i></td>
+  <td nowrap><b>add 1 to TOS</b></td>
+  <td nowrap>xt = 0x50</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>+&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x3 )</i></td>
+  <td nowrap><b>add TOS to NOS</b></td>
+  <td nowrap>xt = 0x28</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNDER+&nbsp;</b></td>
+  <td nowrap><i>( a b c -- a+c b )</i></td>
+  <td nowrap><b>add TOS to item under NOS</b></td>
+  <td nowrap>xt = 0x73</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CELL+&nbsp;</b></td>
+  <td nowrap><i>( x -- x+4 )</i></td>
+  <td nowrap><b>add cellsize to TOS</b></td>
+  <td nowrap>xt = 0x6C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UM+&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- ud )</i></td>
+  <td nowrap><b>add top two items, double resul</b></td>
+  <td nowrap>xt = 0x27</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D2/&nbsp;</b></td>
+  <td nowrap><i>( d1 -- d2 )</i></td>
+  <td nowrap><b>arithmetic right shift double</b></td>
+  <td nowrap>xt = 0x6A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2/&nbsp;</b></td>
+  <td nowrap><i>( x1 -- x2 )</i></td>
+  <td nowrap><b>arithmetic right shift one bit</b></td>
+  <td nowrap>xt = 0x2F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;&gt;A&nbsp;</b></td>
+  <td nowrap><i>( x1 u -- x1&gt;&gt;u )</i></td>
+  <td nowrap><b>arithmetic right shift u places</b></td>
+  <td nowrap>xt = 0x61</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NEGATE&nbsp;</b></td>
+  <td nowrap><i>( x -- -x )</i></td>
+  <td nowrap><b>negate TOS</b></td>
+  <td nowrap>xt = 0x54</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UMAX&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- n3 )</i></td>
+  <td nowrap><b>choose maximum of n1, n2</b></td>
+  <td nowrap>xt = 0x98</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MAX&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- n3 )</i></td>
+  <td nowrap><b>choose maximum of n1, n2</b></td>
+  <td nowrap>xt = 0x9A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UMIN&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- n3 )</i></td>
+  <td nowrap><b>choose minimum of n1, n2</b></td>
+  <td nowrap>xt = 0x99</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MIN&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- n3 )</i></td>
+  <td nowrap><b>choose minimum of n1, n2</b></td>
+  <td nowrap>xt = 0x9B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>/&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- q )</i></td>
+  <td nowrap><b>dividend divisor -- quot</b></td>
+  <td nowrap>xt = 0xAC</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MOD&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- r )</i></td>
+  <td nowrap><b>dividend divisor -- rem</b></td>
+  <td nowrap>xt = 0xAA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>/MOD&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- r q )</i></td>
+  <td nowrap><b>dividend divisor -- rem quot</b></td>
+  <td nowrap>xt = 0xA9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DABS&nbsp;</b></td>
+  <td nowrap><i>( d -- |d| )</i></td>
+  <td nowrap><b>double-cell absolute value</b></td>
+  <td nowrap>xt = 0x97</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D+&nbsp;</b></td>
+  <td nowrap><i>( d1 d2 -- d3 )</i></td>
+  <td nowrap><b>double-cell add</b></td>
+  <td nowrap>xt = 0x66</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DNEGATE&nbsp;</b></td>
+  <td nowrap><i>( xd1 -- -xd1 )</i></td>
+  <td nowrap><b>double-cell negate</b></td>
+  <td nowrap>xt = 0x67</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D-&nbsp;</b></td>
+  <td nowrap><i>( d1 d2 -- d3 )</i></td>
+  <td nowrap><b>double-cell subtract</b></td>
+  <td nowrap>xt = 0x68</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>FM/MOD&nbsp;</b></td>
+  <td nowrap><i>( d1 n1 -- n2 n3 )</i></td>
+  <td nowrap><b>floored m/mod</b></td>
+  <td nowrap>xt = 0xAF</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WORD-JOIN&nbsp;</b></td>
+  <td nowrap><i>( nl nh -- n )</i></td>
+  <td nowrap><b>join  lo-16 hi-16 --&gt; 32</b></td>
+  <td nowrap>xt = 0x1A0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BYTE-JOIN&nbsp;</b></td>
+  <td nowrap><i>( cl ch -- n )</i></td>
+  <td nowrap><b>join lo and hi bytes</b></td>
+  <td nowrap>xt = 0x19F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D2*&nbsp;</b></td>
+  <td nowrap><i>( d1 -- d2 )</i></td>
+  <td nowrap><b>left shift double</b></td>
+  <td nowrap>xt = 0x6B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0MAX&nbsp;</b></td>
+  <td nowrap><i>( x -- u )</i></td>
+  <td nowrap><b>limit TOS to 0</b></td>
+  <td nowrap>xt = 0x9C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UD2/&nbsp;</b></td>
+  <td nowrap><i>( d1 -- d2 )</i></td>
+  <td nowrap><b>logical right shift double</b></td>
+  <td nowrap>xt = 0x69</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>U2/&nbsp;</b></td>
+  <td nowrap><i>( x1 -- x2 )</i></td>
+  <td nowrap><b>logical right shift one bit</b></td>
+  <td nowrap>xt = 0x2E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2*&nbsp;</b></td>
+  <td nowrap><i>( x -- x*2 )</i></td>
+  <td nowrap><b>multiply TOS by 2</b></td>
+  <td nowrap>xt = 0x52</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CELLS&nbsp;</b></td>
+  <td nowrap><i>( x1 -- x2 )</i></td>
+  <td nowrap><b>multiply by cell size</b></td>
+  <td nowrap>xt = 0x6D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>*/&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 n3 -- q )</i></td>
+  <td nowrap><b>n1*n2/n3 --&gt; quot</b></td>
+  <td nowrap>xt = 0xAE</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>*/MOD&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 n3 -- r q )</i></td>
+  <td nowrap><b>n1*n2/n3 --&gt; rem quot</b></td>
+  <td nowrap>xt = 0xAB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BOUNDS&nbsp;</b></td>
+  <td nowrap><i>( a n -- aend abeg )</i></td>
+  <td nowrap><b>set up for DO..LOOP</b></td>
+  <td nowrap>xt = 0x9F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>W&gt;N&nbsp;</b></td>
+  <td nowrap><i>( c -- n )</i></td>
+  <td nowrap><b>sign extend 16-bit --&gt; cell</b></td>
+  <td nowrap>xt = 0x183</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C&gt;N&nbsp;</b></td>
+  <td nowrap><i>( c -- x )</i></td>
+  <td nowrap><b>sign extend byte --&gt; cell</b></td>
+  <td nowrap>xt = 0x182</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>M/MOD&nbsp;</b></td>
+  <td nowrap><i>( d n -- r q )</i></td>
+  <td nowrap><b>signed   d/n --&gt; r q</b></td>
+  <td nowrap>xt = 0xA5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>M*&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- d )</i></td>
+  <td nowrap><b>signed mult, double-cell result</b></td>
+  <td nowrap>xt = 0xA7</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>*&nbsp;</b></td>
+  <td nowrap><i>( n1 n2 -- n3 )</i></td>
+  <td nowrap><b>signed mult, single-cell result</b></td>
+  <td nowrap>xt = 0xAD</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>S&gt;D&nbsp;</b></td>
+  <td nowrap><i>( n -- d )</i></td>
+  <td nowrap><b>signed single --&gt; signed double</b></td>
+  <td nowrap>xt = 0x95</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WORD-SPLIT&nbsp;</b></td>
+  <td nowrap><i>( n -- nl nh )</i></td>
+  <td nowrap><b>split 32 --&gt; lo-16 hi-16</b></td>
+  <td nowrap>xt = 0x19E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BYTE-SPLIT&nbsp;</b></td>
+  <td nowrap><i>( w -- cl ch )</i></td>
+  <td nowrap><b>split into lo and hi bytes</b></td>
+  <td nowrap>xt = 0x19D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UNDER1-&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x1' x2 )</i></td>
+  <td nowrap><b>subtract 1 from NOS</b></td>
+  <td nowrap>xt = 0x19B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>1-&nbsp;</b></td>
+  <td nowrap><i>( x -- x-1 )</i></td>
+  <td nowrap><b>subtract 1 from TOS</b></td>
+  <td nowrap>xt = 0x51</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>-&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x3 )</i></td>
+  <td nowrap><b>subtract TOS from NOS</b></td>
+  <td nowrap>xt = 0x29</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CELL-&nbsp;</b></td>
+  <td nowrap><i>( x -- x-4 )</i></td>
+  <td nowrap><b>subtract cellsize from TOS</b></td>
+  <td nowrap>xt = 0x199</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BYTE-SWAP&nbsp;</b></td>
+  <td nowrap><i>( n -- n' )</i></td>
+  <td nowrap><b>swap lower 2 bytes of n</b></td>
+  <td nowrap>xt = 0x1A1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SM/REM&nbsp;</b></td>
+  <td nowrap><i>( d1 n2 -- n2 n3 )</i></td>
+  <td nowrap><b>symmetric m/mod</b></td>
+  <td nowrap>xt = 0xB0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UD*&nbsp;</b></td>
+  <td nowrap><i>( ud1 u -- ud2 )</i></td>
+  <td nowrap><b>unsigned 32*16 -&gt; 32 multiply</b></td>
+  <td nowrap>xt = 0x1C8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UM*&nbsp;</b></td>
+  <td nowrap><i>( u1 u2 -- ud )</i></td>
+  <td nowrap><b>unsigned 32*32 --&gt; 64 multiply</b></td>
+  <td nowrap>xt = 0xA3</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>UM/MOD&nbsp;</b></td>
+  <td nowrap><i>( ud u -- r q )</i></td>
+  <td nowrap><b>unsigned 64/32 --&gt; r32 q32</b></td>
+  <td nowrap>xt = 0xA4</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>U/MOD&nbsp;</b></td>
+  <td nowrap><i>( u1 u2 -- r q )</i></td>
+  <td nowrap><b>unsigned u/u --&gt; r q</b></td>
+  <td nowrap>xt = 0xA8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MU/MOD&nbsp;</b></td>
+  <td nowrap><i>( ud# un1 -- rem d#quot )</i></td>
+  <td nowrap><b>unsigned ud/u --&gt; ur udq</b></td>
+  <td nowrap>xt = 0xA6</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Logic</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0&lt;&nbsp;</b></td>
+  <td nowrap><i>( x -- f )</i></td>
+  <td nowrap><b>T if negative</b></td>
+  <td nowrap>xt = 0x2B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0&gt;=&nbsp;</b></td>
+  <td nowrap><i>( x -- f )</i></td>
+  <td nowrap><b>T if non-negative</b></td>
+  <td nowrap>xt = 0x59</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0&gt;&nbsp;</b></td>
+  <td nowrap><i>( x -- f )</i></td>
+  <td nowrap><b>T if non-negative</b></td>
+  <td nowrap>xt = 0x5B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0&lt;&gt;&nbsp;</b></td>
+  <td nowrap><i>( x -- f )</i></td>
+  <td nowrap><b>T if nonzero</b></td>
+  <td nowrap>xt = 0x58</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0&lt;=&nbsp;</b></td>
+  <td nowrap><i>( x -- f )</i></td>
+  <td nowrap><b>T if not positive</b></td>
+  <td nowrap>xt = 0x5A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0=&nbsp;</b></td>
+  <td nowrap><i>( x -- f )</i></td>
+  <td nowrap><b>T if zero</b></td>
+  <td nowrap>xt = 0x2A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>INVERT&nbsp;</b></td>
+  <td nowrap><i>( x -- ~x )</i></td>
+  <td nowrap><b>bitwise invert TOS</b></td>
+  <td nowrap>xt = 0x53</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>AND&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x3 )</i></td>
+  <td nowrap><b>and top two stack items</b></td>
+  <td nowrap>xt = 0x24</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BIT-OFF&nbsp;</b></td>
+  <td nowrap><i>( bit# addr -- )</i></td>
+  <td nowrap><b>clear bit# of char at addr</b></td>
+  <td nowrap>xt = 0x93</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ON?&nbsp;</b></td>
+  <td nowrap><i>( addr -- f )</i></td>
+  <td nowrap><b>flag at addr &lt;&gt; 0?</b></td>
+  <td nowrap>xt = 0x90</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>OFF?&nbsp;</b></td>
+  <td nowrap><i>( addr -- f )</i></td>
+  <td nowrap><b>flag at addr = 0?</b></td>
+  <td nowrap>xt = 0x91</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LSHIFT&nbsp;</b></td>
+  <td nowrap><i>( x1 u -- x1&lt;&lt;u )</i></td>
+  <td nowrap><b>left shift u places</b></td>
+  <td nowrap>xt = 0x5F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>WITHIN&nbsp;</b></td>
+  <td nowrap><i>( u ul uh -- f )</i></td>
+  <td nowrap><b>lo &lt;= n &lt; hi unsigned</b></td>
+  <td nowrap>xt = 0x9D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BETWEEN&nbsp;</b></td>
+  <td nowrap><i>( n lo hi --- f1 )</i></td>
+  <td nowrap><b>lo &lt;= n &lt;= hi signed</b></td>
+  <td nowrap>xt = 0x9E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>RSHIFT&nbsp;</b></td>
+  <td nowrap><i>( x1 u -- x1&gt;&gt;u )</i></td>
+  <td nowrap><b>logical right shift u places</b></td>
+  <td nowrap>xt = 0x60</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>XOR&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x3 )</i></td>
+  <td nowrap><b>or top two stack items</b></td>
+  <td nowrap>xt = 0x26</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>OR&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x3 )</i></td>
+  <td nowrap><b>or top two stack items</b></td>
+  <td nowrap>xt = 0x25</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BIT-ON&nbsp;</b></td>
+  <td nowrap><i>( bit# addr -- )</i></td>
+  <td nowrap><b>set bit# of char at addr</b></td>
+  <td nowrap>xt = 0x92</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BIT?&nbsp;</b></td>
+  <td nowrap><i>( bit# addr -- f )</i></td>
+  <td nowrap><b>test bit# of char at addr</b></td>
+  <td nowrap>xt = 0x94</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- f )</i></td>
+  <td nowrap><b>true if NOS &lt; TOS signed</b></td>
+  <td nowrap>xt = 0x86</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>U&lt;&nbsp;</b></td>
+  <td nowrap><i>( u1 u2 -- flag )</i></td>
+  <td nowrap><b>true if NOS &lt; TOS unsigned</b></td>
+  <td nowrap>xt = 0x8A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>=&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- f )</i></td>
+  <td nowrap><b>true if NOS = TOS</b></td>
+  <td nowrap>xt = 0x5C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;&gt;&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- f )</i></td>
+  <td nowrap><b>true if NOS = TOS</b></td>
+  <td nowrap>xt = 0x5D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- f )</i></td>
+  <td nowrap><b>true if NOS &gt; TOS</b></td>
+  <td nowrap>xt = 0x88</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;=&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- f )</i></td>
+  <td nowrap><b>true if NOS &gt; TOS</b></td>
+  <td nowrap>xt = 0x89</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;=&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- f )</i></td>
+  <td nowrap><b>true if NOS &gt;= TOS</b></td>
+  <td nowrap>xt = 0x87</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D0&lt;&nbsp;</b></td>
+  <td nowrap><i>( d -- f )</i></td>
+  <td nowrap><b>true if double-cell &lt; 0</b></td>
+  <td nowrap>xt = 0x8C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D0&lt;&gt;&nbsp;</b></td>
+  <td nowrap><i>( d -- f )</i></td>
+  <td nowrap><b>true if double-cell &lt;&gt; 0</b></td>
+  <td nowrap>xt = 0x8D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>D0=&nbsp;</b></td>
+  <td nowrap><i>( d -- f )</i></td>
+  <td nowrap><b>true if double-cell = 0</b></td>
+  <td nowrap>xt = 0x8B</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Stack&nbsp;</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DEPTH&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b># of cells on the data stack</b></td>
+  <td nowrap>xt = 0x18D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>-1&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>-1&nbsp;</b></td>
+  <td nowrap>xt = 0x4A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>0&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>0&nbsp;</b></td>
+  <td nowrap>xt = 0x4B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>1&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>1&nbsp;</b></td>
+  <td nowrap>xt = 0x4C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>2&nbsp;</b></td>
+  <td nowrap>xt = 0x4D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PLUCK&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 x3 -- x1 x2 x3 x1 )</i></td>
+  <td nowrap><b>same as 2 pick</b></td>
+  <td nowrap>xt = 0x75</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BL&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>ASCII blank</b></td>
+  <td nowrap>xt = 0x4E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CELL&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>address units per cell</b></td>
+  <td nowrap>xt = 0x47</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>FALSE&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>all '0' bits</b></td>
+  <td nowrap>xt = 0x49</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TRUE&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>all '1' bits</b></td>
+  <td nowrap>xt = 0x48</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2OVER&nbsp;</b></td>
+  <td nowrap><i>( a b c d -- a b c d a b )</i></td>
+  <td nowrap><b>copy 2nd cell pair</b></td>
+  <td nowrap>xt = 0x64</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>OVER&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x1 x2 x1 )</i></td>
+  <td nowrap><b>copy 2nd item on the stack</b></td>
+  <td nowrap>xt = 0x23</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>R@&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>copy cell from return stack</b></td>
+  <td nowrap>xt = 0x55</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DUP&gt;R&nbsp;</b></td>
+  <td nowrap><i>( x -- x )</i></td>
+  <td nowrap><b>copy cell to return stack</b></td>
+  <td nowrap>xt = 0x56</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2R@&nbsp;</b></td>
+  <td nowrap><i>( -- d )</i></td>
+  <td nowrap><b>copy double from return stack</b></td>
+  <td nowrap>xt = 0x80</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NIP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x1 )</i></td>
+  <td nowrap><b>discard 2nd item on stack</b></td>
+  <td nowrap>xt = 0x4F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NOOP&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>does nothing</b></td>
+  <td nowrap>xt = 0x1C5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>R&gt;DROP&nbsp;</b></td>
+  <td nowrap><i>( x -- x )</i></td>
+  <td nowrap><b>drop cell from return stack</b></td>
+  <td nowrap>xt = 0x57</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2DROP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- )</i></td>
+  <td nowrap><b>drop cell pair</b></td>
+  <td nowrap>xt = 0x62</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>3DROP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 x3 -- )</i></td>
+  <td nowrap><b>drop triple from stack</b></td>
+  <td nowrap>xt = 0x198</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2DUP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x1 x2 x1 x2 )</i></td>
+  <td nowrap><b>duplicate cell pair</b></td>
+  <td nowrap>xt = 0x63</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DUP&nbsp;</b></td>
+  <td nowrap><i>( x -- x x )</i></td>
+  <td nowrap><b>duplicate top item</b></td>
+  <td nowrap>xt = 0x20</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>?DUP&nbsp;</b></td>
+  <td nowrap><i>( x -- x x | 0 )</i></td>
+  <td nowrap><b>duplicate top item if nonzero</b></td>
+  <td nowrap>xt = 0x5E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CLEAR&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>empty the data stack</b></td>
+  <td nowrap>xt = 0x18C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2SWAP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 x3 x4 -- x3 x4 x1 x2 )</i></td>
+  <td nowrap><b>exchange top two cell pairs</b></td>
+  <td nowrap>xt = 0x65</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EXECUTECFA&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>execute at absolute address</b></td>
+  <td nowrap>xt = 0x191</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EXECUTE&nbsp;</b></td>
+  <td nowrap><i>( xt -- )</i></td>
+  <td nowrap><b>execute at binding table location <i>xt</i></b></td>
+  <td nowrap>xt = 0xB9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PICK&nbsp;</b></td>
+  <td nowrap><i>( ... n -- ... x[n] )</i></td>
+  <td nowrap><b>get nth stack element</b></td>
+  <td nowrap>xt = 0x74</td>
+ </tr>
+ <tr>
+  <td><i></i></td>
+  <td width="100%" colspan="3">
+0 pick = dup, 1 dup = over, etc.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>R&gt;&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>pop cell from return stack</b></td>
+  <td nowrap>xt = 0x2D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2R&gt;&nbsp;</b></td>
+  <td nowrap><i>( -- d )</i></td>
+  <td nowrap><b>pop double from return stack</b></td>
+  <td nowrap>xt = 0x7F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;R&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>push cell to return stack</b></td>
+  <td nowrap>xt = 0x2C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2&gt;R&nbsp;</b></td>
+  <td nowrap><i>( d -- )</i></td>
+  <td nowrap><b>push double to return stack</b></td>
+  <td nowrap>xt = 0x7E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DROP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x1 )</i></td>
+  <td nowrap><b>remove item from stack</b></td>
+  <td nowrap>xt = 0x21</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ROT&nbsp;</b></td>
+  <td nowrap><i>( abc -- bca)</i></td>
+  <td nowrap><b>rotate third stack item to top</b></td>
+  <td nowrap>xt = 0x71</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>-ROT&nbsp;</b></td>
+  <td nowrap><i>( abc -- cab)</i></td>
+  <td nowrap><b>rotate top to third stack item</b></td>
+  <td nowrap>xt = 0x72</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>-PICK&nbsp;</b></td>
+  <td nowrap><i>( ... x n -- ... )</i></td>
+  <td nowrap><b>store NOS to the TOSth element</b></td>
+  <td nowrap>xt = 0x76</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SWAP&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x2 x1 )</i></td>
+  <td nowrap><b>swap top 2 cells</b></td>
+  <td nowrap>xt = 0x22</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TUCK&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 -- x2 x1 x2 )</i></td>
+  <td nowrap><b>tuck TOS under NOS</b></td>
+  <td nowrap>xt = 0x7A</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Memory</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>W@&nbsp;</b></td>
+  <td nowrap><i>( addr -- w )</i></td>
+  <td nowrap><b>16-bit fetch</b></td>
+  <td nowrap>xt = 0x31</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>W!&nbsp;</b></td>
+  <td nowrap><i>( w addr -- )</i></td>
+  <td nowrap><b>16-bit store</b></td>
+  <td nowrap>xt = 0x34</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>W@P&nbsp;</b></td>
+  <td nowrap><i>( addr -- x )</i></td>
+  <td nowrap><b>16bit fetch from program memory</b></td>
+  <td nowrap>xt = 0x186</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>W!P&nbsp;</b></td>
+  <td nowrap><i>( x addr -- )</i></td>
+  <td nowrap><b>16bit store to program memory</b></td>
+  <td nowrap>xt = 0x189</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>+!&nbsp;</b></td>
+  <td nowrap><i>( n addr -- )</i></td>
+  <td nowrap><b>add n to the cell at addr</b></td>
+  <td nowrap>xt = 0x79</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>!A+&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>append cell to A stream</b></td>
+  <td nowrap>xt = 0x3D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>!R+&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>append cell to R stream</b></td>
+  <td nowrap>xt = 0x43</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C!A+&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>append char to A stream</b></td>
+  <td nowrap>xt = 0x3F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>@&nbsp;</b></td>
+  <td nowrap><i>( addr -- x )</i></td>
+  <td nowrap><b>cell fetch, MSB first</b></td>
+  <td nowrap>xt = 0x32</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>!&nbsp;</b></td>
+  <td nowrap><i>( x addr -- )</i></td>
+  <td nowrap><b>cell store, MSB first</b></td>
+  <td nowrap>xt = 0x35</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C@&nbsp;</b></td>
+  <td nowrap><i>( addr -- c )</i></td>
+  <td nowrap><b>char fetch</b></td>
+  <td nowrap>xt = 0x30</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C@P&nbsp;</b></td>
+  <td nowrap><i>( addr -- c )</i></td>
+  <td nowrap><b>char fetch from program memory</b></td>
+  <td nowrap>xt = 0x184</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C!&nbsp;</b></td>
+  <td nowrap><i>( c addr -- )</i></td>
+  <td nowrap><b>char store</b></td>
+  <td nowrap>xt = 0x33</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C!P&nbsp;</b></td>
+  <td nowrap><i>( c addr -- )</i></td>
+  <td nowrap><b>char store to program memory</b></td>
+  <td nowrap>xt = 0x187</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DECR&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>decrement cell by 1</b></td>
+  <td nowrap>xt = 0x7D</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2@&nbsp;</b></td>
+  <td nowrap><i>( a -- x1 x2 )</i></td>
+  <td nowrap><b>double-cell fetch</b></td>
+  <td nowrap>xt = 0x8F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>2!&nbsp;</b></td>
+  <td nowrap><i>( x1 x2 a -- )</i></td>
+  <td nowrap><b>double-cell store</b></td>
+  <td nowrap>xt = 0x8E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>@A&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>fetch cell from A stream</b></td>
+  <td nowrap>xt = 0x38</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>@R&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>fetch cell from R stream</b></td>
+  <td nowrap>xt = 0x40</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C@A&nbsp;</b></td>
+  <td nowrap><i>( -- c )</i></td>
+  <td nowrap><b>fetch char from A stream</b></td>
+  <td nowrap>xt = 0x3A</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>@P&nbsp;</b></td>
+  <td nowrap><i>( addr -- x )</i></td>
+  <td nowrap><b>fetch from program memory</b></td>
+  <td nowrap>xt = 0x185</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>A@&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>get A register</b></td>
+  <td nowrap>xt = 0x37</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>INCR&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>increment cell by 1</b></td>
+  <td nowrap>xt = 0x7C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LAY&nbsp;</b></td>
+  <td nowrap><i>( addr c -- addr' )</i></td>
+  <td nowrap><b>lay a char to memory</b></td>
+  <td nowrap>xt = 0x7B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>B@@+P&nbsp;</b></td>
+  <td nowrap><i>( a -- c )</i></td>
+  <td nowrap><b>lift byte from an input stream</b></td>
+  <td nowrap>xt = 0x1A7</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Assume the pointer will always be in RAM data space,
+data is in code space.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>B@@+&nbsp;</b></td>
+  <td nowrap><i>( a -- c )</i></td>
+  <td nowrap><b>lift byte from an input stream</b></td>
+  <td nowrap>xt = 0x1A6</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Assume the pointer will always be in RAM data space,
+data is in data space.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>@A+&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>lift cell from A stream</b></td>
+  <td nowrap>xt = 0x39</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>@R+&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>lift cell from R stream</b></td>
+  <td nowrap>xt = 0x41</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C@A+&nbsp;</b></td>
+  <td nowrap><i>( -- c )</i></td>
+  <td nowrap><b>lift char from A stream</b></td>
+  <td nowrap>xt = 0x3B</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>A!&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>set A register</b></td>
+  <td nowrap>xt = 0x36</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>!A&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>store cell to A stream</b></td>
+  <td nowrap>xt = 0x3C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>!R&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>store cell to R stream</b></td>
+  <td nowrap>xt = 0x42</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C!A&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>store char to A stream</b></td>
+  <td nowrap>xt = 0x3E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>OFF&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>store false to addr</b></td>
+  <td nowrap>xt = 0x78</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>!P&nbsp;</b></td>
+  <td nowrap><i>( x addr -- )</i></td>
+  <td nowrap><b>store to program memory</b></td>
+  <td nowrap>xt = 0x188</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ON&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>store true to addr</b></td>
+  <td nowrap>xt = 0x77</td>
+ </tr>
+</table>
+</body>
+</html>

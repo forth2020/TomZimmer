@@ -1,0 +1,43 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="TOF" content="8051">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Boot Code</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><b>Boot Code</b></font></p>
+
+<hr>
+
+<p>At startup, TOF </p>
+
+<p>\ Boot sequence:<br>
+\ Evaluate primary boot code (in target board's EEPROM)<br>
+\ Initialize the expansion interface<br>
+\ Select node 0<br>
+\ BEGIN Attempt to evaluate boot code from the node.<br>
+\ If valid boot code, append the node number to the active list.<br>
+\ Select the next node<br>
+\ UNTIL four consecutive invalid boot devices are found.<br>
+\ Evaluate secondary boot code (in target board's EEPROM)<br>
+<br>
+\ External devices contain the following boilerplate in their
+boot EEPROMs:<br>
+\ byte contents (big endian)<br>
+\ 000 0xC0DE indicates that this EEPROM contains code<br>
+\ 002 Vendor key (00=generic)<br>
+\ 003 0x07C9<br>
+\ 005 16-bit checksum<br>
+\ 007 24-bit length<br>
+\ 00A code...<br>
+\ 7FF last usable byte in 25C160 EEPROM<br>
+</p>
+</body>
+</html>

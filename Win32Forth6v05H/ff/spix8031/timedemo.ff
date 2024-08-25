@@ -1,0 +1,24 @@
+anew timer_demo                 \ timer word demonstration      BNE
+
+\ CALTIMER sets up a timer structure
+\ PREMATURE? is false only after the designated time has elapsed
+
+\ We use this scheme to guarantee a minimum time between periodic events,
+\ so as to limit their impact on CPU time.
+
+\ "Time is nature's way of keeping everything from happening all at once".
+\ -- Steven Wright.
+
+variable tally                  \ rough seconds count
+2variable time                  \ allocate a short timer structure
+
+time 1000 caltimer              \ set up for roughly a 1 second timeout
+
+:: mystuff      mystuff         \ do everybody else's stuff first
+                time premature? ?exit
+                tally incr ;    \ gets done about once a second
+
+\ This scheme lends itself to low performance multitasking where the time is
+\ tested at a relatively low frequency like 10 to 100 Hz.
+
+

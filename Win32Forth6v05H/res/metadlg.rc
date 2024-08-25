@@ -1,0 +1,140 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.K.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_META DIALOG DISCARDABLE  0, 0, 242, 266
+STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Build Executable betaV3.4D"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "&Build",IDOK,185,5,50,14
+    DEFPUSHBUTTON   "&Cancel",IDCANCEL,185,22,50,14
+    EDITTEXT        IDC_EDTAPPMEM,100,50,55,12,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    ES_NUMBER | WS_GROUP
+    EDITTEXT        IDC_EDTSYSMEM,100,65,55,12,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    ES_NUMBER | WS_GROUP
+    EDITTEXT        IDC_EDTCODEMEM,100,80,55,12,ES_UPPERCASE | 
+                    ES_AUTOHSCROLL | ES_NUMBER | WS_GROUP
+    CONTROL         "Build &EXE file",IDC_RADEXE,"Button",BS_AUTORADIOBUTTON | 
+                    BS_NOTIFY | WS_GROUP | WS_TABSTOP,25,120,55,10
+    CONTROL         "&Fixed loadpoint at: (hex)",IDC_CHKFIXED,"Button",
+                    BS_AUTOCHECKBOX | BS_NOTIFY | WS_GROUP | WS_TABSTOP,35,
+                    135,89,10
+    EDITTEXT        IDC_EDTORIGIN,35,150,55,12,ES_UPPERCASE | ES_AUTOHSCROLL | 
+                    WS_GROUP
+    PUSHBUTTON      "C&heck Address",IDC_BTN_CHKADDR,35,164,55,15,BS_NOTIFY
+    CONTROL         "Build &DLL file",IDC_RADDLL,"Button",BS_AUTORADIOBUTTON | 
+                    BS_NOTIFY | WS_GROUP | WS_TABSTOP,25,195,85,10
+    CONTROL         "C&ONSTANT",IDC_CHKOPTCON,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,25,225,95,10
+    CONTROL         "&VARIABLE",IDC_CHKOPTVAR,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,25,235,100,9
+    CONTROL         "&NEXT/EXEC",IDC_CHKNEXT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,25,245,100,9
+    LTEXT           "&Application:",IDC_STATIC,25,52,65,8
+    LTEXT           "&System:",IDC_STATIC,25,67,60,8
+    LTEXT           "&Code:",IDC_STATIC,25,82,60,8
+    GROUPBOX        "Kernel Build Options",IDC_STATIC,5,105,230,105,WS_GROUP
+    EDITTEXT        IDC_EDTMSG,101,150,124,35,ES_MULTILINE | ES_AUTOHSCROLL | 
+                    ES_READONLY | NOT WS_BORDER | NOT WS_TABSTOP
+    GROUPBOX        "Optimisation",IDC_STATIC,5,215,230,45
+    LTEXT           "Win32Forth betav3.4D. Please report any problems on www.topica.com/lists/Win32Forth",
+                    IDC_STATIC,55,5,120,30,SS_NOPREFIX
+    ICON            IDI_ICON1,IDC_STATIC,10,10,20,20,SS_REALSIZEIMAGE
+    GROUPBOX        "Memory Size",IDC_STATIC,5,40,230,60
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO MOVEABLE PURE 
+BEGIN
+    IDD_META, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 235
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 259
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON    DISCARDABLE     "Win32For.ico"
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE MOVEABLE PURE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE MOVEABLE PURE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE MOVEABLE PURE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.K.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

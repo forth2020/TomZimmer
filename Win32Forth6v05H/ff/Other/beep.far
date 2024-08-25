@@ -1,0 +1,65 @@
+host homeorder also forth
+fvariable tunemult  fvariable period  fvariable delay
+: note          ( -- b' a' )
+        period f@ tunemult f@ f/ fdup period f! f>s
+        delay f@  tunemult f@ f* fdup delay f!  f>s ;
+: noteslew      ( length period mult*1e6 -- )
+        s>f 1000000 s>f f/ tunemult f!
+        s>f period f!  s>f delay f! ;
+homeorder building
+also core also also definitions
+
+pcreate tunedn
+        64 31 0707107 noteslew
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        0 c, 0 c,
+pcreate tuneup
+        10 200 1414214 noteslew
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        0 c, 0 c,
+((
+pcreate tunedn
+        64 31 0793700 noteslew
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        0 c, 0 c,
+pcreate tuneup
+        10 200 1259921 noteslew
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        note c, c,
+        0 c, 0 c,
+))
+
+\ beep ( duration period -- ) 
+\ creates tone by making (duration) cycles using a (period) delay per cycle.
+
+code tune       ( addr -- )             c( play a tune from a table)
+                movw al,xl              ; A = addr of table
+        begin   movw zl,al
+                clr xh     lpm | mov xl,R0  adiw z,1  ; get length
+                tst xl  if_z rjmp DROP then
+                rcall dup  lpm | mov xl,R0  adiw z,1  ; get freq
+                movw al,zl  rcall beep  rcall DUP
+        again   c;
+
+

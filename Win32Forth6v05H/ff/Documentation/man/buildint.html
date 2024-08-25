@@ -1,0 +1,347 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>Firmware Studio
+Development Environment</strong></font></p>
+
+<table border="1">
+    <tr>
+        <td bgcolor="#FFFFFF"><a href="hostint.html"><strong>Host</strong></a></td>
+        <td bgcolor="#FFFFFF"><strong>Builder</strong></td>
+        <td bgcolor="#FFFFFF"><a href="testint.html"><strong>Tester</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="tokenint.html"><strong>Tokenizer</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="forthint.html"><strong>Forthing</strong></a></td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Builder Interpreter</strong></font></p>
+
+<p><font color="#000000">The builder interpreter is used for
+building ROM code. Instead of appending code to the host PC's
+dictionary, it appends machine code to a ROM image. Each kind of
+processor supported by Firmware Studio has a file that extends
+the builder lexicon to support a particular processor. BLDMCF.G,
+for example, is the builder file that configures Firmware Studio
+to compile code for a Coldfire CPU.</font></p>
+
+<p><font color="#BF0000" size="5"><strong><img src="snapbi.gif"
+width="424" height="271"></strong></font></p>
+
+<p><font color="#000000">You can enter Builder mode by pressing <img
+src="butbuild.gif" width="24" height="22">, typing BI or
+BUILDING, or picking from a menu. The demo programs invoke
+BUILDING for you. You probably won't have occasion to compile new
+words from the command line, but will have to know how the
+builder interpreter works.</font></p>
+
+<p><font color="#000000">The builder interpreter has special
+compilation words at the top of the search order. During
+compilation, the interpreter usually skips the top of the search
+order and finds the word in a target vocabulary. Upon executing
+the word, it finds that a pointer to that word's header has been
+set and uses data from the header to compile a call to the word.
+A more detailed description is shown below:</font></p>
+
+<table border="1" width="100%" bordercolor="#C00000">
+    <tr>
+        <td><font color="#000000" face="Arial">The </font><a
+        href="builder.html"><font color="#000000" face="Arial">BUILDER</font></a><font
+        color="#000000" face="Arial"> wordlist is at the top of
+        the search order, and one of the token wordlists (CORE,
+        for example) is next on the wordlist. During compilation,
+        the top (BUILDER) wordlist is excluded to minimize name
+        clashes. For example, a target word that uses HERE in its
+        definition isn't affected by the presence of HERE in the
+        BUILDER wordlist.</font><p><font color="#000000"
+        face="Arial">Search the search order for the word<br>
+        Found?<br>
+        IF Compiling?<br>
+        <img src="tab.gif" width="24" height="11">IF Immediate?<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">IF Execute it<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">ELSE Search again,
+        but exclude the BUILDER wordlist<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11">Found?<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11">IF Immediate?<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11">IF Error: Not a target word<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11">ELSE Execute it<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11"><img src="tab.gif" width="24" height="11">Was
+        this a target word?<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11"><img src="tab.gif" width="24" height="11">IF
+        Compile a subroutine call<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11"><img src="tab.gif" width="24" height="11">ELSE
+        Error: Not a target word<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11"><img src="tab.gif" width="24" height="11">ENDIF<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11"><img src="tab.gif" width="24"
+        height="11">ENDIF<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11">ELSE Error: Can't use in compile
+        mode<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11"><img src="tab.gif"
+        width="24" height="11">ENDIF<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">ENDIF<br>
+        <img src="tab.gif" width="24" height="11">ELSE<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">Execute it<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">Was this a target
+        word?<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">IF Error: Can't
+        interpret target code<br>
+        <img src="tab.gif" width="24" height="11"><img
+        src="tab.gif" width="24" height="11">ENDIF<br>
+        <img src="tab.gif" width="24" height="11">ENDIF<br>
+        ELSE<br>
+        Try to convert the word to a number<br>
+        Converted ok?<br>
+        IF Compiling?<br>
+        <img src="tab.gif" width="24" height="11">IF generate
+        inline code for literal<br>
+        <img src="tab.gif" width="24" height="11">ELSE leave the
+        number on the stack<br>
+        <img src="tab.gif" width="24" height="11">ENDIF<br>
+        ELSE Error: word is unrecognized<br>
+        ENDIF</font></p>
+        </td>
+    </tr>
+</table>
+
+<hr>
+
+<p>The ROM builder part of Firmware Studio uses the following
+defered words for processor-specific compile behaviors. Defered
+words are a Forth way to provide late binding, and have been used
+since long before OOP was in style. Browse the source file
+TBUILD.G to see how the builder uses the defered words listed
+below. The builder for each processor defines actions for them.
+See BLDAVR.G, BLD8051.G, BLDMCF.G, etc.</p>
+
+<table border="0" width="100%">
+    <tr>
+        <td width="30%">defer <strong>colonmark</strong></td>
+        <td><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">' noop is colonmark</td>
+        <td>Marks the beginning of a colon definition, does
+        nothing if subroutine threading.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>compilelit</strong></td>
+        <td><em>( x -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; lit:&quot; h. ; is
+        compilelit</td>
+        <td>Compiles code to push a number onto the stack.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>compilecall</strong></td>
+        <td><em>( t-addr -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; call:&quot; h. ; is
+        compilecall</td>
+        <td>Compiles code to call a subroutine.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>compilemacro</strong></td>
+        <td><em>( t-addr -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; macro:&quot; h. ; is
+        compilemacro</td>
+        <td>Copies inline code, maybe does some peephole
+        optimization.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>compileexit</strong></td>
+        <td><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; &lt;exit&gt;&quot; ; is
+        compileexit</td>
+        <td>Compiles code to exit a word.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>ins-align</strong></td>
+        <td><em>( -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">' noop is ins-align</td>
+        <td>Aligns on instruction boundary. Can be used by MISC
+        type processors.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>&gt;mark</strong></td>
+        <td><em>( -- t-addr flag )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; &gt;mark&quot; 0 0 ; is
+        &gt;mark</td>
+        <td>Compiles and marks an unconditional forward branch.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>&gt;-mark</strong></td>
+        <td><em>( -- t-addr flag )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot;&gt;-mark&quot; 0 0 ; is
+        &gt;-mark</td>
+        <td>Compiles and marks a conditional forward branch:
+        Branch if Plus.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>&gt;0mark</strong></td>
+        <td><em>( -- t-addr flag )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; &gt;0mark&quot; 0 0 ; is
+        &gt;0mark</td>
+        <td>Compiles and marks a conditional forward branch:
+        Branch if Zero.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>&gt;mmark</strong></td>
+        <td><em>( -- t-addr flag )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; &gt;mmark&quot; 0 0 ; is
+        &gt;mmark</td>
+        <td>Compiles and marks a MULTI..REPEAT control structure.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <b>&gt;resolve</b> </td>
+        <td><i>( t-addr flag -- )</i> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname 2drop ; is &gt;resolve </td>
+        <td>Resolves a forward branch.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <b>&lt;mark</b></td>
+        <td><i>( -- t-addr flag )</i></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot;&lt;mark&quot; 0 0 ; is
+        &lt;mark</td>
+        <td>Marks the destination of a backward branch.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <b>&lt;resolve</b> </td>
+        <td><i>( t-addr flag -- )</i> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname 2drop ; is &lt;resolve </td>
+        <td>Compiles a backward unconditional branch.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>&lt;0resolve</strong> </td>
+        <td><em>( t-addr flag -- )</em> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname 2drop ; is &lt;0resolve </td>
+        <td>Compiles a backward conditional branch. Branch if
+        Zero.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <b>&lt;-resolve</b> </td>
+        <td><i>( t-addr flag -- )</i> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname 2drop ; is &lt;-resolve </td>
+        <td>Compiles a backward conditional branch. Branch if
+        Plus.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>compileoffset</strong> </td>
+        <td><em>( -- )</em> </td>
+    </tr>
+    <tr>
+        <td width="30%">' noop is compileoffset </td>
+        <td>Compiles code to add offset to address on the stack </td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>local-fetch</strong> </td>
+        <td><em>( n -- )</em> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; Local@:&quot; . ; is
+        local-fetch </td>
+        <td>Compiles code to fetch a local at cell n on the
+        return or frame stack.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <b>local-store</b> </td>
+        <td><em>( n -- )</em> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; Local!:&quot; . ; is
+        local-store </td>
+        <td>Compiles code to store to cell n on the return or
+        frame stack.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>local-begin</strong> </td>
+        <td><em>( #locals #args -- )</em> </td>
+    </tr>
+    <tr>
+        <td width="30%">:noname 2drop ; is local-begin </td>
+        <td>Compiles code to move parameters to the return or
+        frame stack.</td>
+    </tr>
+    <tr>
+        <td width="30%">defer <strong>local-end</strong> </td>
+        <td><em>( #locals -- )</em></td>
+    </tr>
+    <tr>
+        <td width="30%">:noname .&quot; End-local &quot; . ; is
+        local-end </td>
+        <td>Compiles code to remove the local frame.</td>
+    </tr>
+</table>
+
+<p>&nbsp;</p>
+</body>
+</html>

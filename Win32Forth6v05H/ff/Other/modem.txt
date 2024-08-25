@@ -1,0 +1,12 @@
+\ Some ideas for modem communication
+\ Under Construction
+
+\ The following handshake conditions are set up:
+\ Host drops DTR to return the modem to command state.
+\ DCD goes high when modem is connected and ready to transfer data.
+
+create modem$1 ," E0V0%S1%D2%C1" ; 40 allot
+\ echo off -------^ ^  ^  ^  ^----- Assert DCD only during carrier linkage
+\ digit responses --/  |  \-------- 1>0 on DTR returns to command state
+\                      \----------- DSR=1 until carrier is lost
+

@@ -1,0 +1,409 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>CORE words: String, Console, Numeric conversion</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+<p><b><font color="#BF0000" size="5">CORE words: String, Console and Numeric conversion</font></b></p>
+<hr>
+<p><font size="4" color="#BF0000"><b>Strings</b></font></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CHAR+&nbsp;</b></td>
+  <td nowrap><i>( x -- x+1 )</i></td>
+  <td nowrap><b>add chararacter size to TOS</b></td>
+  <td nowrap>xt = 0x6E</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>.&quot;&nbsp;</b></td>
+  <td nowrap><i>( &lt;string&gt; -- )</i></td>
+  <td nowrap><b>compile a string to type</b></td>
+  <td nowrap>xt = 0xF7</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>S&quot;&nbsp;</b></td>
+  <td nowrap><i>( &lt;string&gt; -- )</i></td>
+  <td nowrap><b>compile string, returns a,len</b></td>
+  <td nowrap>xt = 0xF9</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>C&quot;&nbsp;</b></td>
+  <td nowrap><i>( &lt;string&gt; -- )</i></td>
+  <td nowrap><b>compile string, returns addr</b></td>
+  <td nowrap>xt = 0xF8</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>,&quot;&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>copy string to dictionary</b></td>
+  <td nowrap>xt = 0xCF</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Lay a counted incoming string to the dictionary.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>FILL&nbsp;</b></td>
+  <td nowrap><i>( a n c -- )</i></td>
+  <td nowrap><b>fill array a with n chars of c</b></td>
+  <td nowrap>xt = 0xA1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BLANK&nbsp;</b></td>
+  <td nowrap><i>( a n -- )</i></td>
+  <td nowrap><b>fill array with blanks</b></td>
+  <td nowrap>xt = 0xBB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>ERASE&nbsp;</b></td>
+  <td nowrap><i>( a n -- )</i></td>
+  <td nowrap><b>fill array with zeros</b></td>
+  <td nowrap>xt = 0xBA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>COUNT&nbsp;</b></td>
+  <td nowrap><i>( a -- a' c )</i></td>
+  <td nowrap><b>get length of a counted string</b></td>
+  <td nowrap>xt = 0x70</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>/STRING&nbsp;</b></td>
+  <td nowrap><i>( addr len n -- addr' len' )</i></td>
+  <td nowrap><b>index into the string by n</b></td>
+  <td nowrap>xt = 0xA2</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+Returns addr+n and len-n, n&gt;=0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MOVE&nbsp;</b></td>
+  <td nowrap><i>( asrc adest n -- )</i></td>
+  <td nowrap><b>move string of n chars</b></td>
+  <td nowrap>xt = 0xA0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CHARS&nbsp;</b></td>
+  <td nowrap><i>( x1 -- x2 )</i></td>
+  <td nowrap><b>multiply by character size</b></td>
+  <td nowrap>xt = 0x6F</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>-SCAN&nbsp;</b></td>
+  <td nowrap><i>( a n1 c -- a n2 )</i></td>
+  <td nowrap><b>remove trailing characters</b></td>
+  <td nowrap>xt = 0xB5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SCAN&nbsp;</b></td>
+  <td nowrap><i>( a1 n1 c1 -- a2 n2 )</i></td>
+  <td nowrap><b>scan string for character</b></td>
+  <td nowrap>xt = 0xB7</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SKIP&nbsp;</b></td>
+  <td nowrap><i>( a1 n1 c -- a2 n2 )</i></td>
+  <td nowrap><b>skip leading characters until c</b></td>
+  <td nowrap>xt = 0xB8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>COMP&nbsp;</b></td>
+  <td nowrap><i>( a1 a2 n1 -- f1 )</i></td>
+  <td nowrap><b>string compare a1 a2 len</b></td>
+  <td nowrap>xt = 0xB6</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Console output</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CLS&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>clear screen</b></td>
+  <td nowrap>xt = 0x1BB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>_CLS&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>clears virtual console screen</b></td>
+  <td nowrap>xt = 0x1B6</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>.&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>display signed to output device</b></td>
+  <td nowrap>xt = 0xD4</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SPACE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>emit a blank</b></td>
+  <td nowrap>xt = 0xCC</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SPACES&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>emit blanks</b></td>
+  <td nowrap>xt = 0xCD</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CR&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>new line on the console</b></td>
+  <td nowrap>xt = 0xC3</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EMIT&nbsp;</b></td>
+  <td nowrap><i>( char -- )</i></td>
+  <td nowrap><b>output a character</b></td>
+  <td nowrap>xt = 0xC0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>$TYPE&nbsp;</b></td>
+  <td nowrap><i>( $addr -- )</i></td>
+  <td nowrap><b>output a counted string</b></td>
+  <td nowrap>xt = 0x1BF</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TYPE&nbsp;</b></td>
+  <td nowrap><i>( addr len -- )</i></td>
+  <td nowrap><b>output a string</b></td>
+  <td nowrap>xt = 0xC1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EMITS&nbsp;</b></td>
+  <td nowrap><i>( n char -- )</i></td>
+  <td nowrap><b>output repeated characters</b></td>
+  <td nowrap>xt = 0xC2</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>_EMIT&nbsp;</b></td>
+  <td nowrap><i>( c -- )</i></td>
+  <td nowrap><b>output to the virtual console</b></td>
+  <td nowrap>xt = 0x1B7</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CON$&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>raw buffer for virtual console</b></td>
+  <td nowrap>xt = 0x1B5</td>
+ </tr>
+ <tr>
+  <td><i> [string]</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PAD$&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>scratchpad/conversion area</b></td>
+  <td nowrap>xt = 0x1BE</td>
+ </tr>
+ <tr>
+  <td><i> [string]</i></td>
+  <td width="100%" colspan="3">84-byte minimum
+</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>TYPE.&nbsp;</b></td>
+  <td nowrap><i>( addr len -- )</i></td>
+  <td nowrap><b>type string and space</b></td>
+  <td nowrap>xt = 0xCE</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>VCON$&nbsp;</b></td>
+  <td nowrap><i>( -- a len )</i></td>
+  <td nowrap><b>virtual console output data</b></td>
+  <td nowrap>xt = 0x1BD</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Numeric conversion</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>NUMPAD&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>-&gt; numeric conversion area</b></td>
+  <td nowrap>xt = 0xC4</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PAD&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>address of scratchpad area</b></td>
+  <td nowrap>xt = 0xC5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(UD.)&nbsp;</b></td>
+  <td nowrap><i>( ud -- a len )</i></td>
+  <td nowrap><b>convert unsigned double to string</b></td>
+  <td nowrap>xt = 0xD2</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DIGIT&nbsp;</b></td>
+  <td nowrap><i>( char base -- n f )</i></td>
+  <td nowrap><b>convert ASCII to digit</b></td>
+  <td nowrap>xt = 0x1A4</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;DIGIT&nbsp;</b></td>
+  <td nowrap><i>( n -- c )</i></td>
+  <td nowrap><b>convert digit to ASCII</b></td>
+  <td nowrap>xt = 0x19C</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>#&nbsp;</b></td>
+  <td nowrap><i>( ud1 -- ud2 )</i></td>
+  <td nowrap><b>convert one digit</b></td>
+  <td nowrap>xt = 0xC8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>#S&nbsp;</b></td>
+  <td nowrap><i>( ud -- 0 )</i></td>
+  <td nowrap><b>convert remaining digits</b></td>
+  <td nowrap>xt = 0xC9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(D.)&nbsp;</b></td>
+  <td nowrap><i>( d -- a len )</i></td>
+  <td nowrap><b>convert signed double to string</b></td>
+  <td nowrap>xt = 0xD3</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(.)&nbsp;</b></td>
+  <td nowrap><i>( n -- a len )</i></td>
+  <td nowrap><b>convert signed to string</b></td>
+  <td nowrap>xt = 0xD1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&gt;NUMBER&nbsp;</b></td>
+  <td nowrap><i>( ud addr len -- ud' addr' len' )</i></td>
+  <td nowrap><b>convert string to a number</b></td>
+  <td nowrap>xt = 0x1C9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(U.)&nbsp;</b></td>
+  <td nowrap><i>( u -- a len )</i></td>
+  <td nowrap><b>convert unsigned to string</b></td>
+  <td nowrap>xt = 0xD0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>#&gt;&nbsp;</b></td>
+  <td nowrap><i>( ud -- addr len )</i></td>
+  <td nowrap><b>finish pictured numeric output</b></td>
+  <td nowrap>xt = 0xCB</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>HOLD&nbsp;</b></td>
+  <td nowrap><i>( char -- )</i></td>
+  <td nowrap><b>insert character into number</b></td>
+  <td nowrap>xt = 0xC7</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SIGN&nbsp;</b></td>
+  <td nowrap><i>( x -- )</i></td>
+  <td nowrap><b>insert minus sign if n&lt;0</b></td>
+  <td nowrap>xt = 0xCA</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>HLD&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>pointer for numeric conversion</b></td>
+  <td nowrap>xt = 0x1B9</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BASE&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>radix for number conversion</b></td>
+  <td nowrap>xt = 0x1B8</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3">2..36 is valid
+</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(.R)&nbsp;</b></td>
+  <td nowrap><i>( n width -- a len )</i></td>
+  <td nowrap><b>signed to string right justify</b></td>
+  <td nowrap>xt = 0x1C0</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;#&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>start pictured numeric output</b></td>
+  <td nowrap>xt = 0xC6</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>(U.R)&nbsp;</b></td>
+  <td nowrap><i>( n width -- a len )</i></td>
+  <td nowrap><b>unsigned to string rt justify</b></td>
+  <td nowrap>xt = 0x1C1</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DECIMAL&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>use base 10 for numeric output</b></td>
+  <td nowrap>xt = 0x1C7</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>HEX&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>use base 16 for numeric output</b></td>
+  <td nowrap>xt = 0x1C6</td>
+ </tr>
+</table>
+
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>Firmware Studio
+Development Environment</strong></font></p>
+
+<table border="1">
+    <tr>
+        <td bgcolor="#FFFFFF"><a href="hostint.html"><strong>Host</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="buildint.html"><strong>Builder</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="testint.html"><strong>Tester</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="tokenint.html"><strong>Tokenizer</strong></a></td>
+        <td bgcolor="#FFFFFF"><strong>Forthing</strong></td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Forthing Interpreter</strong></font></p>
+
+<p><font color="#000000">Forthing mode behaves a lot like
+traditional Forth. It has the feel of a Forth that's resident on
+the target board, but some processing is done on the host PC. The
+input stream (keyboard/file) is converted to tokenized code
+before being sent to the target board. This tokenized code, which
+is semantically equivalent to the text input, is processed by an
+evaluator on the target board. </font></p>
+
+<p><img src="snapforth.gif" width="426" height="318"></p>
+
+<p><font color="#000000">You can enter tokenizer mode by pressing
+<img src="buttar.gif" width="24" height="22"> or by typing FI or
+FORTHING. In tokenizer mode, the left margin displays the same
+information as in tester mode. Unlike tester mode, you're not
+allowed to alter the return stack. If you enter &gt;R in forthing
+mode, you'll probably crash the target board.</font></p>
+
+<p><font color="#000000">The Forthing interpreter is similar to
+the tokenizer interpreter except that it communicates with the
+target board. After tokenizing text input, it sends the tokenized
+code to the target board, to a location between the end of the
+dictionary and the lowest currently used point of the binding
+table. This is just a &quot;safe&quot;, temporary location. Then
+it turns the target board's evaluator loose on this code.</font></p>
+</body>
+</html>

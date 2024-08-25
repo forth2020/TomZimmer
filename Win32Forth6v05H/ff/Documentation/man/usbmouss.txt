@@ -1,0 +1,343 @@
+\ USB support using Philips PDIUSBD11 USB interface chip.
+\ Brad Eckert 5/01
+
+\ The I2C interface is processor-specific, the rest is ANS Forth with TOF
+\ extensions. This version supports a HID device.
+
+\ To send data to the host, load OUTPUT array with 0,length,data and use
+\ 80 S_ON to tell the interface to send it. Example array data: 0,5,1,2,3,4,5
+
+\ After the host sends data, INPUT buffer contains 2,length,data.
+\ The app should IN_OFF after processing it and also send a response to indicate
+\ that the application has processed the data.
+
+\ I2C interface for PDIUSBD11 ---------------------------------------------
+
+\ AVR macros needed to bit bang the I2C bus:
+\   scl+  scl-  Set and clear the SCL line.
+\   sda+  sda-  Set and clear the SDA line.
+\   sda?        Skip next instruction if SDA is clear.
+\   Note: SDA is "open drain": keep pin at '0', control the direction register.
+hex
+code send_stop  ( -- )                  \ send I2C stop
+                sda- scl+
+                nop  sda+ ret c;
+
+code send_start ( -- )                  \ send I2C start
+                sda-  nop
+                scl-  ret c;
+
+code send_byte  ( byte -- )
+                ldi R17,8
+        for     lsl tosl                \ shift out the bits
+                if_c    sda+
+                else    sda-
+                then    nop   scl+
+                1 cycle_delay scl-
+        next R17 sda+   nop   scl+
+                1 cycle_delay scl-      \ assume we get an ACK bit
+                rjmp DROP c;
+
+code recv_byte  ( last? -- c )          \ -1 = last byte
+                ldi R17,8
+        for     scl+  lsl tosl
+                sda?  ori tosl,1
+                scl-
+        next R17
+                tst tosh
+        if_ne   sda+
+        else    sda-                    \ send ACK if not last byte
+        then    nop nop
+                scl+  nop
+                scl-  nop
+                sda+
+                clr tosh
+                ret c;
+
+\ end processor-specific code ---------------------------------------------
+
+\ To send data to the host, load OUTPUT with data and do 80 S_ON
+\ The 1st two bytes of OUTPUT must contain 00 and length.
+
+variable  remaining             \ # of bytes left to send
+variable  remptr                \ pointer to remaining data
+0A array  output                \ output string, 1stbyte<>0 to send
+0A array  input                 \ incoming data (starts at offset=2)
+cvariable ustatus               \ flag variable
+cvariable idle_time
+{{ bootdevice? }} [IF] cvariable boot_protocol [THEN]
+
+0F0 constant rw
+
+\ Status flags are addressed using a mask. Example: bit 2 uses mask = 04.
+
+: s_on          ( mask -- )     ustatus c@ or ustatus c! ;
+: s_off         ( mask -- )     invert ustatus c@ and ustatus c! ;
+: s_on?         ( mask -- flg ) ustatus c@ and 0<> ;
+
+\ Get the various fields of a control packet
+
+: getval        ( offset -- c ) pad + c@ ;
+: bmreqtyp      ( -- c )        2 getval ;
+: bmreq         ( -- c )        3 getval ;
+: wvalue        ( -- c )        4 getval ;
+: wvalue+1      ( -- c )        5 getval ;
+: windex        ( -- c )        6 getval ;      \ assumes index < 256
+: wlength       ( -- c )        8 getval 9 getval byte-join ;
+
+\ Send commands to the USB chip via the I2C connection
+
+: start_h11     ( command -- )  send_start send_byte ;
+: write_command ( command -- )  36 start_h11 send_byte send_stop ;
+: start_read    ( command -- )  write_command 35 start_h11 ;
+: start_write   ( command -- )  write_command 34 start_h11 ;
+: send_le       ( n -- )        byte-split swap send_byte send_byte ;
+
+: read_one      ( cmd -- byte ) start_read true recv_byte send_stop ;
+: write_one     ( byte cmd -- ) start_write send_byte send_stop ;
+
+: read_two      ( cmd -- word ) start_read false recv_byte true recv_byte
+                                send_stop byte-join ;           \ LSB first
+: write_two     ( word cmd -- ) start_write send_le send_stop ;
+
+: set_address   ( address -- )  0D1 write_one ;
+: validate      ( -- )          0FA write_command ;
+: ept0_in       ( -- status )   3 read_one ;
+: clr_int       ( n -- )        40 or read_one drop ; \ clear interrupt flag
+: no_support    ( -- )          1 43 write_one ;      \ set emb ept0 in stall
+
+: ept_ack       ( endpt -- )    write_command 0F1 write_command ; \ send ack
+: send_[        ( len -- )      3 write_command rw start_write
+                                0 send_byte send_byte ;
+: ]_send        ( -- )          send_stop validate ;
+: send_none     ( byte len -- )   send_[ send_byte ]_send ;
+: send_one      ( byte -- )     1 send_none ;
+: send_two      ( n -- )        2 send_[ send_le   ]_send ;
+
+\ Multi-byte read and write
+
+: read_h11      ( addr len -- ) \ read string
+                rw start_read  >r a!
+        multi   r@ 0= recv_byte c!a+
+        repeat  r>drop send_stop ;
+
+: write_h11     ( addr len -- ) \ write string
+                rw start_write >r a!
+        multi   c@a+ send_byte
+        repeat  r>drop send_stop
+                validate ;
+
+\ The host gets long descriptor strings in 8-byte chunks. Here, we break up the
+\ data, send out a chunk and manage pointers. Note that the descriptors reside
+\ in program space, so the memory operators fetch from program memory.
+
+: send_more     ( -- )
+\ Send pending data to the host via control_in endpoint.
+                remptr @
+                remaining @ dup 8 -     ( len len' )
+                dup 0<
+        if      drop 0                  ( now later )
+        else    nip 8 swap
+        then    remaining !             ( a len )
+                2dup + remptr ! >r      ( addr | sublen )
+                pad a!                  \ Out: 00 sublen data[1..sublen]
+                0 c!a+ r@ c!a+          \ lay 00 and sublen
+        multi   countp c!a+             \ get bytes from program memory
+        repeat  r>drop drop             \ copy to PAD
+                pad a@ pad -            ( 'pad sublen )
+                3 write_command         \ select control endpoint
+                write_h11 ;             \ write the data
+
+: send_ptr      ( addr len -- )
+                remaining ! remptr ! ;
+
+: send_to_host  ( addr len -- )
+\ Send new data to the host via an endpoint.
+                send_ptr send_more ;
+
+\ USB initialization ------------------------------------------------------
+
+\ The 16-bit configuration value:
+
+\                cccccccc10001110     c = clock divisor
+\          reserved -----+||||||+---- enable remote wakeup
+\          reserved ------+||||+----- no lazyclock
+\          reserved -------+||+------ clock running even in suspend state
+\       SoftConnect --------++------- debug mode
+
+\ If the USB chip supplies a clock to your processor, the output frequency is
+\ Fclk = 48MHz / (N+1)
+
+: d11_mode      ( c -- )
+                0B00 or                 \ clock setup: 4 MHz
+                0F3 write_two ;
+
+\ input states:
+\ 0 = waiting for "set_report" command
+\ 1 = waiting for the report data
+\ 2 = waiting for the application to use the data (app calls in_off when done)
+
+: in_off        ( -- )
+                0 input c! ;
+
+: initial_d11   ( -- )                  \ startup code should call this
+                0 0 send_ptr            \ clear output buffer
+                1 ustatus c!
+                in_off
+{{ bootdevice? }} [IF] 1 boot_protocol c! \ default = report protocol
+                [THEN]
+                08E d11_mode ;
+
+: restart_usb_device ( -- )
+                0 0D0 write_one         \ enable hub
+                80  set_address         \ disable embed address
+                2 0D8 write_one         \ enable hub interrupt endpoint
+                initial_d11 ;
+
+\ Standard requests -------------------------------------------------------
+
+\ Refer to Chapter 9 of USB specification 1.1.
+
+: get_status ( -- )                     \ 0
+                bmreqtyp 3 and qcase:   \ get request type
+        [ 00 ]  ?[ ustatus c@ 3 and send_two ]? \ device status: sp,rw
+        [ 01 ]  ?[ 0                send_two ]? \ i/f status
+        [ 02 ]  ?[ windex qcase:        \ ept status
+                   [ 00 ] ?[  0             send_two ]? \ ctl-out always un_stall
+                   [ 80 ] ?[  4 s_on? 1 and send_two ]? \ ctl-in
+                   [ 81 ] ?[  8 s_on? 1 and send_two ]? \ endpoint 1 (in)
+                   2drop no_support ]?
+                2drop no_support ;
+
+: send_zero     ( -- )                  \ 11
+                0 0 send_none ;
+
+: clear_feature ( -- )                  \ 1  clear dev,interface,endpt feature
+                bmreqtyp qcase:
+        [ 00 ]  ?[ 2 s_off
+                   08E d11_mode       send_zero ]? \ clear remote wakeup
+        [ 02 ]  ?[ windex qcase:
+                   [ 00 ] ?[          send_zero ]? \ clear ept feature
+                   [ 80 ] ?[  4 s_off send_zero ]? \ hub ept0 in unstall
+                   [ 81 ] ?[  8 s_off send_zero ]? \ hub ept1 in unstall
+                   no_support ]?
+                no_support ;
+
+: set_feature   ( -- )                  \ 3  clear dev,interface,endpt feature
+                bmreqtyp qcase:
+        [ 00 ]  ?[ 2 s_on
+                   08F d11_mode      send_zero ]?  \ set remote wakeup
+        [ 02 ]  ?[ windex qcase:
+                   [ 00 ] ?[         send_zero ]?  \ set ept feature
+                   [ 80 ] ?[  4 s_on send_zero ]?  \ hub ept0 in stall
+                   [ 81 ] ?[  8 s_on send_zero ]?  \ hub ept1 in stall
+                   no_support ]?
+                no_support ;
+
+: set_address   ( -- )                  \ 5  set device address
+                wvalue 80 or send_zero
+        begin   ept0_in 1 and 0=
+        until   set_address ;           \ write new address to hub
+
+: send_des      ( addr len -- )         \ send descriptor
+                wlength min send_to_host ;
+
+: send_des$     ( addr -- )             \ send descriptor to host
+                countp send_des ;
+
+: send_desX     ( addr -- )             \ send descriptor to host
+                dup c@p send_des ;      \ send length and string
+
+: get_descriptor ( -- )                 \ 6
+                wvalue+1 qcase:
+        [ 01 ]  ?[ wvalue if no_support exit then   \ standard device
+                   stand_dev_desc send_des$ ]?
+        [ 02 ]  ?[ wvalue if no_support exit then   \ configuration
+                   config_desc    send_des$ ]?
+        [ 03 ]  ?[ wvalue qcase:                    \ strings
+                [ 00 ] ?[ string00    send_desX ]?
+                [ 01 ] ?[ string01    send_desX ]?
+                [ 02 ] ?[ string02    send_desX ]?
+                [ 03 ] ?[ string03    send_desX ]?
+                no_support
+                ]?
+        [ 21 ]  ?[ hid_desc       send_desX ]?
+        [ 22 ]  ?[ report_desc    send_des$ ]?
+                no_support ;
+
+: get_config ( -- )                     \ 8
+                40 s_on? 1 and send_one ; \ 1=configured, 0=not_yet
+
+: set_config ( -- )                     \ 9
+                wvalue qcase:           \ disable config or enable fn endpoint 1
+        [ 00 ]  ?[ 40 s_off                  send_zero ]?
+        [ 01 ]  ?[ 40 s_on  2 0D8 write_one  send_zero ]?
+                no_support ;
+
+: get_interface ( -- )                  \ 10
+                0 send_one ;
+
+: decode_req ( -- )
+                bmreqtyp 60 and
+        if      bmreq  qcase:           \ class request
+                [ 01 ] ?[                      18 send_one  ]? \ get report
+                [ 09 ] ?[  1 input c!             send_zero ]? \ set report
+                [ 02 ] ?[            idle_time c@ send_one  ]? \ get idle
+                [ 0A ] ?[ wvalue+1   idle_time c! send_zero ]? \ set idle
+{{ bootdevice? }} [IF]
+                [ 03 ] ?[        boot_protocol c@ send_one  ]? \ get protocol
+                [ 0B ] ?[ wvalue boot_protocol c! send_zero ]? \ set protocol
+                [THEN]
+        else    bmreq  qcase:           \ standard request
+                [ 00 ] ?[ get_status        ]?
+                [ 01 ] ?[ clear_feature     ]?
+                [ 03 ] ?[ set_feature       ]?
+                [ 05 ] ?[ set_address       ]?
+                [ 06 ] ?[ get_descriptor    ]?
+                [ 08 ] ?[ get_config        ]?
+                [ 09 ] ?[ set_config        ]?
+                [ 0A ] ?[ get_interface     ]?
+                [ 0B ] ?[ send_zero         ]?
+        then    no_support ;
+
+: getpacket     ( dest -- )             \ get incoming packet from D11 chip
+                2 ept_ack  0A read_h11  \ get string from host
+                0F2 write_command ;     \ clear buffer
+
+: usb_poll      ( -- )
+                0F4 read_two
+        [ 02 ]  ifset 2 clr_int
+                       input c@ 1 =             \ expecting some data?
+                       if    input getpacket    \ "have data"
+                             2 input c!
+                             send_zero
+                             drop exit
+                       then
+                       82 read_one              \ setup packet status
+                [ 02 ] ifset 3 ept_ack          \ need "3 ack" here
+                             pad getpacket      \ get setup string from host
+                             decode_req         \ decode it
+                       then  2drop exit
+                then
+        [ 03 ]  ifset  3 clr_int
+                       ept0_in                  \ select emb ept0 in
+                [ 00 ] ifclr remaining @        \ buffer is ready? data to send?
+                          if send_more then     \ yes, send more data
+                       then
+                       2drop exit
+                then
+        [ 04 ]  ifset  4 clr_int
+                       4 read_one               \ D11 buffer not full?
+                [ 00 ] ifclr 80 s_on?           \ anything to send?
+                         if output              \ 1st 2 bytes are ( 00 length )
+                            output 1 + c@ 2 + write_h11
+                            80 s_off
+                         then
+                       then
+                       2drop exit
+                then
+        [ 0E ]  ifset restart_usb_device
+                then
+                drop ;
+decimal
+

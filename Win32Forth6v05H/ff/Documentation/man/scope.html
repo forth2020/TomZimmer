@@ -1,0 +1,264 @@
+
+
+<head>
+<title>Graphical Memory Viewer</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+<p><font color="#bf0000" size="5"><strong><img border="0" src="butwave.gif" width="24" height="22">
+Graphical Display Window</strong></font></p>
+<hr>
+<p>This is a graphic version of the data hex dump window. It collects data from
+the target and displays it in graphic format. This is useful for tuning things
+on the target board where a graphical view would be helpful.&nbsp;&nbsp;</p>
+<table border="1">
+  <tr>
+    <td><img border="0" src="snapgraph.gif" width="134" height="225"></td>
+    <td>
+      <table border="1" width="100%">
+        <tr>
+    <td colspan="2" bgcolor="#FFFF00">
+<b>Scope keys:</b> </td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+F2 </td>
+    <td bgcolor="#FFFFFF">Toggle auto/manual reload</td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+F5 </td>
+    <td bgcolor="#FFFFFF">Reload</td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+'0'</td>
+    <td bgcolor="#FFFFFF">Show parameters for channel 0</td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+'1'</td>
+    <td bgcolor="#FFFFFF">Show parameters for channel 1</td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+'2'</td>
+    <td bgcolor="#FFFFFF">Show parameters for channel 2</td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+'3'</td>
+    <td bgcolor="#FFFFFF">Show parameters for channel 3</td>
+        </tr>
+        <tr>
+    <td bgcolor="#FFFFFF">
+ESC&nbsp;</td>
+    <td bgcolor="#FFFFFF">done</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+
+<hr>
+
+<p><b><font color="#BF0000">Channel setup words:</font>&nbsp;</b></p>
+
+<p>You can display up to four channels. Each channel displays left to right,
+like an oscilloscope. These words (in the HOME wordlist) set up each channel.
+First, use <b>g_chan</b> to select the channel to modify.</p>
+
+<table border="0" width="100%">
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_chan</b></td>
+    <td nowrap valign="top">
+<i>
+( n -- )</i></td>
+    <td width="100%">
+Selects channel to operate on. 0..3.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_addr</b></td>
+    <td nowrap valign="top">
+<i>
+( t-addr -- )</i></td>
+    <td width="100%">
+Sets the start address of data to display.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_data</b></td>
+    <td nowrap valign="top">
+<i>
+( -- h-addr )</i></td>
+    <td width="100%">
+Points to data buffer.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_length</b></td>
+    <td nowrap valign="top">
+<i>
+( n -- )</i></td>
+    <td width="100%">
+Sets the number of data points to display. Allowable length is up to 1024 bytes.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_center&nbsp;&nbsp;</b></td>
+    <td nowrap valign="top">
+<i>
+( pels -- )</i></td>
+    <td width="100%">
+Sets position of centerline. 0 = top.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_gain</b></td>
+    <td nowrap valign="top">
+<i>
+( scale -- )</i></td>
+    <td width="100%">
+Sets point multiplier: scale = 1/0x10000000 to 0x7FFFFFFF/0x10000000.&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_pitch</b></td>
+    <td nowrap valign="top">
+<i>
+( n -- )</i></td>
+    <td width="100%">
+Sets X pitch in pixels per sample.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_color</b></td>
+    <td nowrap valign="top">
+<i>
+( n -- )</i></td>
+    <td width="100%">
+Sets color of scope trace.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_type</b></td>
+    <td nowrap valign="top">
+<i>
+( n -- )</i></td>
+    <td width="100%">
+Sets type of data to display.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+    </td>
+    <td nowrap valign="top">
+    </td>
+    <td width="100%">
+0=byte, 1=word, 2=long, +4=alternating, +8=little-endian, +16=unsigned, +32=autoscale</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+<b>
+g_clear</b></td>
+    <td nowrap valign="top">
+<i>
+( -- )</i></td>
+    <td width="100%">
+Initializes channel to default settings.</td>
+  </tr>
+  <tr>
+    <td valign="top" nowrap>
+    </td>
+    <td nowrap valign="top">
+    </td>
+    <td width="100%">
+pitch = 1,
+centerline = 100,
+color = light green,
+gain = auto,
+type = signed byte</td>
+  </tr>
+</table>
+&nbsp;
+<hr>
+<p><b><font color="#BF0000">Color values range from 0 to 15 for traces on a black background:</font></b></p>
+<table border="1">
+  <tr>
+    <td bgcolor="#000000"><font color="#000000"><b>0 = black</b></font></td>
+    <td bgcolor="#000000"><font color="#000080"><b>4 = dark blue</b></font></td>
+    <td bgcolor="#000000"><font color="#808080"><b>8 = dark gray&nbsp;</b></font></td>
+    <td bgcolor="#000000"><font color="#0000FF"><b>12 = blue</b></font></td>
+  </tr>
+  <tr>
+    <td bgcolor="#000000"><font color="#800000"><b>1 = dark red</b></font></td>
+    <td bgcolor="#000000"><font color="#800080"><b>5 = dark magenta&nbsp;</b></font></td>
+    <td bgcolor="#000000"><font color="#FF0000"><b>9 = red</b></font></td>
+    <td bgcolor="#000000"><font color="#FF00FF"><b>13 = magenta&nbsp;</b></font></td>
+  </tr>
+  <tr>
+    <td bgcolor="#000000"><font color="#008000"><b>2 = dark green&nbsp;</b></font></td>
+    <td bgcolor="#000000"><font color="#008080"><b>6 = dark cyan</b></font></td>
+    <td bgcolor="#000000"><font color="#00FF00"><b>10 = green</b></font></td>
+    <td bgcolor="#000000"><font color="#00FFFF"><b>14 = cyan</b></font></td>
+  </tr>
+  <tr>
+    <td bgcolor="#000000"><font color="#808000"><b>3 = brown</b></font></td>
+    <td bgcolor="#000000"><font color="#C0C0C0"><b>7 = gray</b></font></td>
+    <td bgcolor="#000000"><font color="#FFFF00"><b>11 = yellow</b></font></td>
+    <td bgcolor="#000000"><font color="#FFFFFF"><b>15 = white</b></font></td>
+  </tr>
+</table>
+<p><b><font color="#BF0000">Type detail:</font></b></p>
+<p>Size: byte = 8-bit, word = 16-bit, long = 32-bit</p>
+<p>The<b> Alternating</b> bit causes every other point to be skipped. You can
+set up two traces to display interleaved data.</p>
+<p>The <b>Unsigned</b> bit causes data to be treated as unsigned.</p>
+<p>The <b>Autoscale</b> bit turns on autoscale mode.</p>
+<hr>
+<p><b><font color="#BF0000">Sample usage:</font></b></p>
+<table border="0">
+  <tr>
+    <td nowrap><b>0 g_chan </b></td>
+    <td width="100%">Selects channel 0</td>
+  </tr>
+  <tr>
+    <td nowrap><b>g_clear</b></td>
+    <td width="100%">Sets default values</td>
+  </tr>
+  <tr>
+    <td nowrap><b>0x98000 g_addr </b></td>
+    <td width="100%">Start address in data RAM</td>
+  </tr>
+  <tr>
+    <td nowrap><b>256 g_length</b></td>
+    <td width="100%">256 samples</td>
+  </tr>
+  <tr>
+    <td nowrap><b>1 g_type</b></td>
+    <td width="100%">Signed 16-bit big-endian data</td>
+  </tr>
+</table>
+<p>For displaying just one trace, autoscale is a nice feature. The
+window adjusts the gain and center values to fit the available window height.
+You can dump out the parameters and then manually set the gain using them as a
+starting point. In the above example, '0' prints:</p>
+<p><font face="Courier New">Channel 0 [] configuration:<br>
+100 points of signed 8-bit<br>
+Start address = 0<br>
+Auto-scale Center=86 Gain=235469698<br>
+Pitch=1 Color=10<br>
+</font></p>

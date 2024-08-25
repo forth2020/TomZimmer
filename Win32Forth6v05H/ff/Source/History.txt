@@ -1,0 +1,570 @@
+Change history of Firmware Studio, newest is at end of file.
+
+=========================================================================
+Changes from version 1.10
+
+Replaced SEC@ and SEC! with COUNTER@ and COUNTER! which use different
+units.  COUNTER@ counts up in increments of 1 to 1000 microseconds.
+CTRSCALE is a constant that allows you to convert between raw count and
+milliseconds.
+
+You can use an arbitrary timebase to periodically bump the counter as
+long as CTRSCALE is feasible.  That means at least a 1 kHz increment
+rate, unless you want to bump the counter by more than one each tick.
+
+|COUNTER| masks off everything but the lower 32 bits of a double.
+CTRSCALE is milliseconds per tick * 2^cellsize.
+
+example conversions:
+: TICKS>MS  ( u1 -- u2 )    CTRSCALE UM* NIP ;
+: MS>TICKS  ( u1 -- u2 )    0 SWAP CTRSCALE UM/MOD NIP ;
+
+Removed the following:
+LIFT    ( a -- a' n )
+NLAY    ( a n -- a' )
+Replaced them with array operators from "Machine Forth":
+A! A@ @A @A+ !A !A+ C@A C@A+ C!A C!A+ @R @R+ !R !R+
+
+Sped up text painting in the text window class.  Made the hex dump class
+more flexible, for example it handles arbitrary char widths.
+
+Removed the minimize button because I haven't found the cause of the hang
+when the console window is minimized.
+
+Modified the whole thing to more easily support other target CPUs.
+
+Added new features: DEFER, IS
+
+Upon declaration, a DEFERed word points to UNINITIALIZED.  Also, all
+undefined positions in the binding table point to UNINITIALIZED.
+Remember, all words in TOF are inherently defered so you don't really need
+DEFER.  But, it does make for portably to mainstream Forths and better
+looking code.
+
+Added words to scramble ROM image data so that you can scramble address
+and data lines on the ROM for easier routing during PCB layout.  Bits are
+pre-scrambled so that the correct data shows up on the CPU's data lines.
+
+Cleaned up and rearranged the 8051 kernel.  Conditional compilation simplifies
+support for diverse hardware setups.
+
+Serial EEPROM support for various IIC devices was implemented, with high
+level stuff being written in Forth and moved to KERNEL.FF
+
+FW.G is now set up so that if you FLOAD it, it creates an executable
+FF.EXE. I used Microangelo to create come icons, which you can assign to a
+shortcut. You can create a shortcut in Windows, then change its Properties
+to run FF.EXE and use your own icon.
+
+Extended the auto-baud range in COMMO.G to include the following baud rates:
+115.2, 57.6, 38.4, 19.2, 14.4, 4.8, and 2.4 kbps.
+
+Added a usage counter to the XT header information.  A word's usage
+counter is bumped each time it's referenced in a definition so you can see
+which words are used the most and which are dead code.  Click on the USE header
+in the catalog window to sort the words by usage frequency.
+
+Added macro capability to the assembler, example usage:
+assemble your_code_here macro: foo      use foo inside code definitions
+
+Sped up the 8051's evaluator by converting more words to code.  The AV?.G
+test suite displays evaluator throughput, typically 400 to 800 tokens per
+second with a 12 MHz crystal.
+
+Added support for relocatable tokens. The evaluator keeps track of the
+highest token value used. Upon starting an evaluation, a fence is set
+using this value so that all tokens after the fence are free for use. When
+the evaluator sees an incoming token between 0x1000 and 0x1FFF, it
+subtracts 0x1000 and adds the value of the fence. These relocatable tokens
+are typically private to an application. This scheme prevents clashes with
+other applications' token usage.
+
+Multiple plug-n-play peripherals would have relocatable tokens except for the
+words they're redefining.  Each peripheral's token set would be assigned to a
+free area of the binding table at load time.
+
+For example, a plug-and-play LCD display driver would redefine CLS, EMIT,
+CR and TYPE. All other words would be made local by the phrase "0x1000
+>TOKEN#".
+
+Token numbers 0001..0FFF and 2000..FFFF are usually used to access ROM
+routines.
+
+The tokenizer didn't tokenize double numbers correctly. Fixed.
+
+Updated the test suite to test the new Machine Forth and time primitives.
+
+Added load-time conditional compilation: #IF, #THEN, #ENDIF, #ELSE.  These
+skip forward in boot memory.  There is no provision for skipping backward in
+boot memory (as in real OFW), since this would complicate serial EEPROM use.
+
+Added an upload feature that sends a bytecode file to the target board and runs
+the evaluator.
+
+Expanded the target's configuration data to allow more usage without knowledge
+of token assignments.  For example, you can connect to an arbitrary target,
+upload bytecode test files, and view the virtual console without loading any
+token assignments.
+
+
+-----------------------------------------------------------------------------
+Experiences in bringup of Coldfire VM on MCF5307 Evaluation Board    7/99
+
+Wrote disassembler, builder and assembler for Coldfire.
+Used an old 68000 cross assembler to assemble a test file for the disassembler.
+Set up assembler to disassemble output code so whatever I typed in got echoed.
+
+Wrote many kernel words in Forth, later converted to code.
+Wrote the backdoor debugger in assembly.
+Worked out a few more bugs in the assembler by SEEing the built code.
+
+Got backdoor debugger to talk to host PC after discovering the evaluation
+board's Trap15 calls.  In HOST mode (F7 ALSO FORTH) debugged various backdoor
+commands.  Added TESTMORE flag to beginning of FW.G to keep target snapshot
+display from hanging during preliminary testing.  Also added menu item for
+this.
+
+Eval board's S-record upload missed a record once in a while no matter which
+terminal program I used, maybe my PC's serial port is flaky.  The board
+reports "Download Successful" even if a record is dropped.  If I concatenate
+two copies of TEST.S to a single file and send that, it seems to work ok.
+
+Tried to add direct-access feature to UART communications that would talk
+directly to the UART instead of using Win32 calls.  Wrote 00 to the UART's
+interrupt mask register to disable interrupts, then polled for data.  This
+scheme didn't work.  Although Windows95/98 allows access to bare metal, it
+mediates this access so you can get unexpected results.  WindowsNT just
+disallows such access altogether.
+
+Added glossary extractor. Use ctrl-alt-G in the catalog window to make a
+glossary. Sort by the field you want bacause the glossary sort order matches
+the catalog window sort order. Really cool feature.
+
+Changed tokenizing test setup to send to target a line at a time or in blocks.
+Use line at a time to see exactly which line of a test file hangs the system.
+
+Tokenized/uploaded test suite until everything passed. I used optimization=0
+(many words in Forth) and debugged the Forth-based primitives. Then, I used
+optimization=2 (many words in code) and debugged the system again.
+You should always use optimization=2 or more for speed. The Forth-based
+primitives are slow but they help in porting to other processors.
+
+Released 2.01  8/13/99 ========================================================
+
+Got low level machine debugger working om MCF5307 and set up the debugger as
+a task in the task queue. Configured debugger to use UART2 at 115K, no Trap15
+calls.  Added section on 68K VM to manual.
+
+Released 2.02  8/17/99 ========================================================
+
+Changes after 2.02:
+
+Fixed 68K !R+, whose in-line code didn't increment.
+Added test to AV5.FF to test !R and !R+
+
+Added .assemble directive to dump the assembler labels.
+
+Set up 68K error handler.  When an error exception occurs, it stores a special
+reboot value and cold boots.  After bootup, the reboot value is tested and
+causes an error message to be sent to the virtual console.
+
+Builder didn't like ; being the last word in a file.  Buildinterp wasn't
+clearing PFA-local after executing immediate words.  Fixed.
+
+S-record saver put out S3 records instead of S2, also put out the wrong
+terminator. Correct terminator is S9,S8 or S7 and has the start address. Fixed.
+
+Added support for local assembler labels, so you can drop in regular 68K/CF
+code by changing the label names of branches and calls. Up to 128 branches and
+36 different labels are allowed.
+
+Created a 68K multitasker that uses PAUSE and TID, fixed manual chapter 4.
+
+Several words in the 8051 kernel wouldn't pass the test suite in 32-bit mode.
+Fixed and tested.  Also added CELL- to both kernels and the test suite.
+
+Released 2.03  8/24/99 ========================================================
+
+Changes after 2.03:
+
+Test suite would work on CF in line-at-a-time mode but hang after a while
+otherwise.  This is because the host used HERE to determine where to place
+test code, which caused a problem when HERE addressed data space.  Debugger now
+uses a version of HERE that always points to code space.
+Also fixed the 8051 version.
+
+Added support for Mot's 68332 BCC module (evaluation board).  I had to fix
+multiply and divide, and use a BDM debugger to find out the effect of the trace
+exception because the data book didn't explicitly say.  Removed a word #RTS
+whose XT was zero, which happened to crash the BCC because the binding table was
+at the very top of RAM and the memory for XT 0 was non-existent.
+
+The tracing part of the debugger was using SP unnecessarily and would have caused
+problems had interrupts been running.  Fixed.
+
+Updated chapter 3 of manual.
+
+Released 2.04  8/30/99 ========================================================
+
+Improved MARKER and ANEW so that ANEW resets the token# and here pointers.
+
+Fixed VOCABULARY so that vocabularies in token wordlists don't complain.
+This allows things like
+VOCABULARY ABC ALSO ABC DEFINITIONS : FOO ; PREVIOUS DEFINITIONS
+which places FOO in the ABC vocabulary.
+
+Made zz.bat file to create release files that include executable files.
+
+Released 2.05  9/28/99 ========================================================
+
+Tested evaluator (DEMO51.FF image) using 8051 simulator to see where the
+cycles go. Time usage was:
+compile/immediate determination:   200
+compile,                           500
+execute                     20 to 2000
+pause                              200
+Evaluation takes about 1K cycles per token.
+On the demo program, startup time was about 150K cycles.
+
+Added assembler directives VECTOR{, VECTOR and }VECTOR for 8051 and 68K targets,
+see the demo programs for usage in finite state machines (FSMs). I especially
+like the 68K FSM demo.
+
+Added disassembler and ROM builder for the 80486 using the built-in 486
+disassembler and assembler. See DEMO86.FF for a beginning, anyway.
+Removed the 8086 disassembler because it wasn't debugged and I didn't want to
+write a 8086 builder. I hope to eventually build a boot floppy that runs the
+TOF VM on any 386 or higher motherboard.
+
+Modified error messages to print red.  Stuff you type is black, stuff
+the computer prints is now blue.  If you don't like the colors, the color
+settings are at the end of FW.G.
+
+Added HLOAD directive to load .HEX files.
+
+Added XLOAD-BL51 to load external labels generated by a Keil 8051 C linker.
+
+Added support for calling external C modules from Forth (see CDEMO.F51). You
+load the hex file generated by the linker using HLOAD then load the map file
+using XLOAD-BL51 to build a list of available calls.
+.PROCS lists all available calls.
+
+Added TEST{ and }TEST to the builder to enable interactive testing. Removed some
+earlier code and its menu item that did something similar.
+To develop code at 0xB000, enter the builder and use
+0xB000 ORG TEST{ : FOO ... ; }TEST to compile and download, then FOO to test.
+
+Released 2.06  10/31/99 ========================================================
+
+Added HEX[ directive to embed hex data directly using HEX[ ... ].  Example:
+CODE{ FOO 1 HEX[ F3 DE 22 ] }CODE   See CODE{ in tokenizer glossary.
+
+Added glossaries to the manual. Appendix A = Builder, B = Tokenizer, C = Tester.
+
+Added SF1.0, SF and UF directives to HOME.  SF1.0 returns the target's
+equivalent of the fraction 1.0.  SF <n> and UF <n> read the floating point
+number <n> from the input stream and convert it to its signed or unsigned
+fractional equivalent.  Example: CREATE FOO SF 0.82782 , SF -0.2738 ,
+
+Abort" message now clears BSTATE so an error inside a ROM definition exits
+compile mode.  Added HIDE an REVEAL to : and ; so : FOO FOO ; calls the old FOO
+instead of making a recursive call. Use RECURSE for that.
+
+Added AFTER: and BEFORE: to the ROM builder.  AFTER: <name> extends the
+definition of <name> by invoking a call to the old <name> code and compiling
+the rest of the definition like :.  BEFORE: <name> is similar except that it
+puts the call to <name> at the end.  These allow add-on modules to extend
+startup code.  Example: AFTER: INIT mydata 10 '*' fill ; could be part of an
+included file.  Or, if the module supports a hardware device (like a UART), INIT
+could be extended to initialize the appropriate registers.
+
+Added /BIT/ directive to 8051 builder for easier allocation of bit flags.  /BIT/
+just swaps the HERE pointer with a temporary variable.  Added a similar /IRAM/
+directive.  Changed BEGIN.F51 to use these to assign bits.
+Moved RP051 assignment in DEMO51.FF to near the end of the file.
+
+Added SYSINIT (does nothing) to KERNEL.FF.  Add-on modules can extend SYSINIT,
+which is basically startup code.  With enhancements like AFTER: and /IRAM/, an
+included file can contain everything relating to a hardware object.
+
+Changed the meaning of #ENDIF in the tokenizer to be the same as #THEN, like it
+should be.  Fixed the test suite too.
+
+Improved configuration saver to save positions whenever a re-paint is done
+(as when re-sizing a window).
+
+Added a RESET button to the toolbar.  This button drops the COM port's DTR line
+for 1/2 second to reset the target board.  The console command for it is RESET,
+which also waits for the target board to come back up before continuing.
+
+Added TCP/IP support to connect to the target board over the internet.  A HOST
+program runs under Windows95/NT on a remote host PC.  The target board is hooked
+up to this PC.  Use the _T_arget _I_nternet menu option to select internet mode,
+set the IP address with the IP= command, then press the "connect" button.
+
+Under NT, TextOut would sometimes cause a complaint.  After trying to figure out 
+why, I finally masked the error.  Complaints are masked several places in
+Win32forth, so I didn't feel bad.  There seem to be no side effects.
+
+Added a disassembler Atmel's AVR processors.
+
+Released 2.07  4/00 ===========================================================
+
+This release was 2.070, which I wanted to put up but had problems with the
+TCP/IP stuff.  The network stuff should be better now, although I haven't
+done much testing.  In other words, it works but not very robustly.
+
+Enhanced the watch window (WATCH.G) to do generic memory watching.
+WATCHDATA" WATCHCODE" WATCHREG" and WATCHEE" take a quote-delimited string
+as the name/descriptor field.  They need a return address and a format number.
+The format number is two bytes: the upper byte is the display format and the
+lower byte is the byte count.  Formats are: 0=byte, 1=16bit-LE, 2=16bit-BE,
+3=32bit-LE, 4=32bit-BE, 5=ASCII.
+
+Example: 0xC000 0x102 WATCHDATA" Location C000 = "
+adds an item to the watch list that fetches 2 bytes from data memory location
+0xC000 and displays the data as a 16-bit little-endian number.
+
+This method of watching is more efficient and doesn't need knowledge of tokens.
+
+Added a builder for AVR processors. The AVR doesn't have program RAM so it won't
+support TOF.  But, Firmware Studio serves nicely as a classic Forth development
+environment.  The AVRs are targeted at simpler applications, where you don't
+need such powerful tools as TOF.
+
+Wrote a debug monitor so Firmware Studio can talk to an AVRmega evaluation
+board.  You can test in Forth, but code must be loaded into the board via
+Atmel's AVRisp utility.  Many of the Forth core words are defined.
+
+Changed BEGIN.F51 to allow 2% error in baud rate estimation instead of 3%.
+
+Added some optimization to 8051 builder.  (Literal) AND/OR/XOR generates machine
+code.  Tested with AV?.FF test suite to make sure it didn't break something.
+
+Added inline assembly directives C[ and ]C.  Added ASMARRAY directive which
+works like ASMBYTE,etc. but takes a byte count from the stack.
+
+Added an AVR chapter to the manual (Chapter 5).
+
+I decided a studio was a nicer place to work than a factory, so I changed the
+title bar and documentation to "Firmware Studio".  Also added a 'REDO' button
+so you can repeat the last action when testing hardware.
+
+Added support for RS485 multidrop communications. MAVR.G includes AVR code that
+implements a reasonably robust link layer.  Added Appendix E to describe it.
+
+Added colorization to Tom Zimmer's Winview editor. Tom will include it in later
+versions of Winview.
+
+Modified GETLABEL used by all assemblers to bump the usage tally, so if you
+write all assembly you get a better representation of how many times a word
+is referenced.
+
+Noticed that the Word97 files in release 2.07 had a macro virus. Cleaned and
+installed virus scan s/w on all PCs.
+
+Released 2.080  8/00 ===========================================================
+
+Added more assembler macros for the AVR.  JUMP[ Rn label ..... label ]JUMP
+builds an execution table that uses Rn as the index. Must be a 1-liner.
+CASE Rn { # OF ... ENDOF } [other] ENDCASE structure looks like the Forth
+version and assumes # is a constant.  
+
+USB" lays down unicode strings needed for USB descriptors.
+
+Fixed optimizations in the AVR builder for AND,OR,@ and !.  Fixed or appended
+AVR kernel: Fixed 2/, U2/, 0<, added MIN, MAX, 0MAX, (%OF), (%MULTI), etc.
+
+Added an "abort" button that pops up when RS485 communication gets stuck.
+
+Added hyperlink file builder NDXSAVE that is similar to TSAVE but saves in a
+format used by the Winview editor. The demo files now contain
+NDXSAVE WINVIEW.NDX
+Example: FLOAD DEMO51.FF causes the editor to link to files/words used by
+DEMO51.FF. This makes navigation of a project a whole lot easier.
+
+Released 2.081  9/00 ===========================================================
+
+Made the 68K multitasker cell-size independent and renamed it TASKER.FF from
+TASK.FCF. TASK.FCF now displays an error message telling you to change the file
+name.
+
+Added PAUSE to the AVR kernel.  It works just like the 68K version. The AVR demo
+now demonstrates multitasking.  PAUSE is in machine code.  With an 8 MHz xtal,
+PAUSE takes about 4.5us to do a context switch and 1.5us to skip over each
+sleeping task.  Not bad for an 8-bit micro!
+
+Fixed/added a few more kernel words for AVR.  My AVR projects continue to shake
+out bugs, and the bugs are very sparse now.
+
+Added IFCLR and IFSET directives to AVR builder, which compiles efficient bit
+tests.  USAGE:  IFCLR 3 SWAP THEN is the same as DUP 8 AND 0= IF SWAP THEN
+
+Added >R optimization to AVR builder to push literals to the stack.  Great for
+MULTI..REPEAT which does something 0 or more times.
+
+Noticed that the Coldfire's builder had a bug in USER, which tells me that so
+far nobody is exploiting the full power of Forth's multitasking.  Bug fixed.
+
+Released 2.082  10/6/00 ========================================================
+
+While waiting for a keystroke, the CPU usage (under NT) was pegged at full.
+Inserted 10ms delay in the loop so it doesn't slow down other apps. If you're
+displaying live dump or watch windows, CPU usage will still go to 100%.
+Otherwise, CPU usage will be low.
+
+Added some more stuff to the right-click menu, mostly functions that I use
+frequently.  Bumped the rev level to 2.09.
+
+Fixed a bug in the AVR builder that showed up with speed optimization off.
+Literals immediately followed by EXIT or ; were getting trashed.
+
+Added IF ELSE THEN to the tester, which act like [IF] [ELSE] [THEN]. I needed
+this for test files.
+
+Fixed AVR C@ (optimization problem), C@A, C@A+ (wasn't clearing upper TOS),
+2OVER.
+
+Added a graphic display window that plots realtime target board data.  I'll
+document it when I have time, or you can check out GRAPH.G.  Still pretty rough.
+
+Released 2.090  11/27/00 =======================================================
+
+Added character between ticks to the list of possible immediate labels in AVR.
+For example, LDI R16,'A' is now valid and compiles as LDI R16,65.
+
+Added MULTI to AVR assembler.
+Usage: MULTI Rd <yourcode> REPEAT where Rd = any reg.
+Used to do something 0 to 128 times.  To do something 1 to 256 times, use
+FOR <yourcode> NEXT Rd which takes one less instruction.
+
+Released 2.091  02/15/01 =======================================================
+
+Added EMIT to home vocabulary. Refresh left border information (snapshot) after
+compiling with right-click menu. Fixed the minimize hangup bug, so windows can
+be minimized now. Version bumped to 2.10 because of changes to host files.
+
+Fixed 68K disassembler: d16(pc) and d8(pc,xn) weren't right.
+
+Added REL flag to the 68K builder, which tells us to compile relocatable code.
+This uses 32-bit BSR and BRA, which isn't available on a classic 68000 but is
+on 683XX and Coldfire.
+
+Added a bit array to tag which bytes in the ROM image are data. Disassembler is
+much less confusing now when displaying code with embedded data.
+
+Added REG@: and REG!: to 8051 builder. Example: REG: P1 compiles code to fetch
+a byte from P1. REG!: is the store version. They expect a register label.
+
+Added IFCLR and IFSET directives to 8051 and 68K builders, which compile
+efficient bit tests.  Changed the syntax so that IFCLR gets its bit number off
+the stack at compile time instead of getting it from the input stream.
+USAGE:  [ 3 ] IFCLR SWAP THEN is the same as DUP 8 AND 0= IF SWAP THEN
+
+Added COMPILE-OFFSET (default = noop) and LAY_BINDING (default = i,) to
+TBUILD.G.  COMPILE-OFFSET may lay down offset code for VARIABLE, etc. which
+turns out to probably be a bad idea, but I left the NOOP in anyway. LAY_BINDING
+lays cells into the binding table initialization table.  LAY_BINDING could be
+changed to lay down LJMP instructions in the event that you want part of the
+binding table in ROM, in order to save some RAM space.
+
+Fixed MULTI, DO, LOOP in the single stepper.
+
+Added local variable support to the builder (68K,51,AVR) and single stepper.
+
+Added local variable support to the tokenizer, tested on 8051 only. Noticed that
+the tester doesn't like multi-line definitions with locals. 
+
+Fixed CODE in the tokenizer. CODE didn't like non-unique names. Now it accepts
+existing names so as to allow re-definitions. Also fixed CODE{.
+
+Removed trailing blanks from the copy-to-clipboard commands (ctrl-C).
+
+Fixed TRACE to get its address from the target's binding table, allowing easier
+tracing of compiled machine code.
+
+Released 2.10  03/15/01 =======================================================
+
+Fixed A! optimization that mishandled LITERAL A!.
+
+Fixed AVR builder and disassembler to allow RJMP to take advantage of the fact
+that the address space wraps around. So, RJMP spans an 8K part.
+
+Fixed PCREATE that assumed that the code to create a literal would be a constant
+size. Now it allows compilelit to lay down different code lengths. I noticed
+this when I created an array near a page boundary on the AVR. The 8051 and 68K
+builders weren't affected. The problem showed up when the AVR used RCALL FALSE
+to start a literal, followed by optional LDI TOSX,# instructions.
+
+Added a feature that uses an evaluation board to load boot code into a box's
+serial EEPROM. You can program a boot file to node 0 (the first box) from the
+file menu. Don't forget the shorting block. The shorting block enables the
+EEPROM to be un-protected before the write and write protected after the write.
+Remove the jumper for normal use to keep the EEPROM write protected.
+
+Modified HLOAD to update HERE, so that the ROM image expands to accommodate the
+hex file. You can include a binary image by putting at the end of your file:
+0x4000 ORG HLOAD MyObj.HEX which assumes the hex file starts at 0x4000 or
+0x4000 ORG INCLUDE-FILE MyObj.BIN which simply appends a binary file to the ROM
+image. Use these to include legacy code you want to call.
+
+Added H# which works like OFW's H#. Another way to represent hex numbers.
+
+Released 2.11  08/13/01 =======================================================
+
+Fixed minor bug in 68K disassembler: 8-bit branches weren't displaying right.
+
+Tested -IF, -WHILE and -UNTIL, which are equivalent to DUP 0< IF etc. I decided
+to test them, so I had to fix the AVR builder. The 8051 and 68K builders already
+had it right. They're not very useful, and IFSET/IFCLR do the same thing.
+
+Removed a test from AV3.FF in the verification suite. More stringent error 
+checking doesn't allow the tokenizer to handle the syntax of that test, which 
+involves unusual mixing of control structures.
+
+Fixed PC relative addressing in the 68K assembler/disassembler which was off
+by two when using a label. Ex. LEA.L MyWord(PC),A0.
+
+Widened effective address filter of 68K bit instructions to allow literal EAs
+with BCLR, BSET, etc. CPU32 parts support them, Coldfire doesn't. Just remember
+that the assembler will allow BCLR etc. some EAs the Coldfire won't execute.
+
+Fixed a 68K optimization bug in ,+lit where it was missing a @.
+
+Rearranged token assignments of 8051 and 68K versions to fit a common 
+specification.
+
+Added buttons for host, building and forthing modes. Added token# check at the 
+beginning of forthing mode. If the current token# is in use by the target, it's 
+bumped up to the first unused token value. Otherwise, test code could step on 
+tokens that are already in use by the target board.
+
+Released 2.12  10/10/01 =======================================================
+
+Added DISASSEMBLE to home lexicon. Given a range of addresses, it disassembles
+to the screen. Similar to SEE. ex: 100 200 disassemble
+
+Added DSAVE <filename> which saves the ROM image in disassembled format. If you 
+want to get a bird's eye view of the ROM's machine code, DSAVE to a file and 
+browse it with a text editor. The assembly listing includes labels and data 
+areas.
+
+Added HTML format glossary generator: Use Ctrl-shift-H in token browser.
+
+Fixed token list saver to leave a space after the name if it runs into the 
+comment field. Otherwise caused a parsing problem when loading ROM.HH.
+
+Added AVR programming and target connection via a programming cable on the 
+PC's parallel port. Frees up the UART.
+
+Added help files in HTML format.
+
+Released 2.13  11/16/01 =======================================================
+
+Corrected tokenizer error checking to allow BEGIN WHILE AGAIN ELSE THEN.
+
+Set up path for help files at startup so they're always found.
+
+Added builder support for DOES>.
+
+Released 2.14  11/28/01 =======================================================

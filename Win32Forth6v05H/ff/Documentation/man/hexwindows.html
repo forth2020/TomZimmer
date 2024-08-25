@@ -1,0 +1,121 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Hex Windows</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>Hex Dump Windows</strong></font></p>
+
+<hr>
+
+<p><font color="#000000">All of the hex dump windows use the
+class defined in CLASHEX.F. When open, they are continuously
+updated. The address range spanned by the window is read from the
+target board or from host PC memory. Each hex window has two
+buffers: one for current data and one for previous data. When the
+current data is different from the previous data, the color of
+the changed data is colored red. At startup, the previous data
+buffer is zeroed so initially any nonzero data will show up red. </font></p>
+
+<table border="1">
+    <tr>
+        <td colspan="2" bgcolor="#FFFF00"><strong>Table HW1. Key
+        usage</strong></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F1</td>
+        <td bgcolor="#FFFFFF">Help screen</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F2</td>
+        <td bgcolor="#FFFFFF">Toggle browse/edit (white =
+        editable)</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F3</td>
+        <td bgcolor="#FFFFFF">Find next changed memory location</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">Shift-F3</td>
+        <td bgcolor="#FFFFFF">Find previous changed memory
+        location</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F4</td>
+        <td bgcolor="#FFFFFF">Next memory page</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">Shift-F4</td>
+        <td bgcolor="#FFFFFF">Previous memory page</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F5</td>
+        <td bgcolor="#FFFFFF">Upload entire page</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F6</td>
+        <td bgcolor="#FFFFFF">Start of data memory</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">F7</td>
+        <td bgcolor="#FFFFFF">Start of specialty memory</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">Tab</td>
+        <td bgcolor="#FFFFFF">Toggle cursor between Hex and ASCII</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">ctrl-Z</td>
+        <td bgcolor="#FFFFFF">Clear persistence (red <font
+        face="Courier">-&gt;</font> black)</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">ctrl-C</td>
+        <td bgcolor="#FFFFFF">Copy table to clipboard</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">ESC</td>
+        <td bgcolor="#FFFFFF">Close window</td>
+    </tr>
+</table>
+
+<p><font color="#BF0000" size="4"><strong>Sample window.</strong></font></p>
+
+<p><img src="snaphex.gif" width="363" height="316"></p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>The five hex dump
+windows:</strong></font></p>
+
+<table border="1">
+    <tr>
+        <td><font size="4">IMG</font></td>
+        <td><font size="4">ROM image resident on the PC</font></td>
+    </tr>
+    <tr>
+        <td><font size="4">CODE </font></td>
+        <td><font size="4">Code space on target</font></td>
+    </tr>
+    <tr>
+        <td><font size="4">DATA</font></td>
+        <td><font size="4">Data space on target</font></td>
+    </tr>
+    <tr>
+        <td><font size="4">REG</font></td>
+        <td><font size="4">Register image on target</font></td>
+    </tr>
+    <tr>
+        <td><font size="4">EE</font></td>
+        <td><font size="4">Non-volatile boot memory on target</font></td>
+    </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title>SYSTEM words: EEPROM and expansion bus</title>
+</head>
+<body bgcolor="#C0FFFF">
+<hr>
+<p><b><font color="#BF0000" size="5">SYSTEM words: EEPROM and expansion bus</font></b></p>
+<hr>
+<p><b><font size="4" color="#BF0000">Cursor positioning</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>AT-XY&nbsp;</b></td>
+  <td nowrap><i>( col row -- )</i></td>
+  <td nowrap><b>Position cursor at col,row</b></td>
+  <td nowrap>xt = 0x213</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>AT-XY?&nbsp;</b></td>
+  <td nowrap><i>( -- col row )</i></td>
+  <td nowrap><b>Current cursor position</b></td>
+  <td nowrap>xt = 0x215</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MAX-XY&nbsp;</b></td>
+  <td nowrap><i>( -- cols rows )</i></td>
+  <td nowrap><b>Maximum cursor coordinate</b></td>
+  <td nowrap>xt = 0x214</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">Serial EEPROM&nbsp;</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;EE!&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>Send control bytes to EEPROM</b></td>
+  <td nowrap>xt = 0x1F3</td>
+ </tr>
+ <tr>
+  <td></td>
+  <td width="100%" colspan="3">
+send control byte(s), return control byte for status polling</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>&lt;EE@&nbsp;</b></td>
+  <td nowrap><i>( addr -- )</i></td>
+  <td nowrap><b>Set up for sequential read</b></td>
+  <td nowrap>xt = 0x1F7</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EE!&nbsp;</b></td>
+  <td nowrap><i>( c -- )</i></td>
+  <td nowrap><b>Store next byte to EEPROM</b></td>
+  <td nowrap>xt = 0x1F6</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EE!&gt;&nbsp;</b></td>
+  <td nowrap><i>( -- ior )</i></td>
+  <td nowrap><b>End EEPROM write, T if error</b></td>
+  <td nowrap>xt = 0x1F5</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EE=MAIN&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Select main serial eeprom</b></td>
+  <td nowrap>xt = 0x1FC</td>
+ </tr>
+ <tr>
+  <td>&nbsp;</td>
+  <td width="100%" colspan="3">
+If you have an alternate IIC EEPROM bus, you can define a
+word similar to this one to redirect serial EEPROM operators
+to that bus.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EE@&nbsp;</b></td>
+  <td nowrap><i>( -- c )</i></td>
+  <td nowrap><b>Get next sequential EEPROM byte</b></td>
+  <td nowrap>xt = 0x1F8</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EE@&gt;&nbsp;</b></td>
+  <td nowrap><i>( -- c )</i></td>
+  <td nowrap><b>Get next EEPROM byte, end read</b></td>
+  <td nowrap>xt = 0x1F9</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EE@N&nbsp;</b></td>
+  <td nowrap><i>( a -- n )</i></td>
+  <td nowrap><b>Read 16-bit value from EEPROM</b></td>
+  <td nowrap>xt = 0x1FE</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EEDEVICE&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>EEPROM device select 0..7</b></td>
+  <td nowrap>xt = 0x1F2</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EEMAX&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>Maximum EEPROM address</b></td>
+  <td nowrap>xt = 0x1FB</td>
+ </tr>
+ <tr>
+  <td><i> constant</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EEMIN&nbsp;</b></td>
+  <td nowrap><i>( -- x )</i></td>
+  <td nowrap><b>Minimum EEPROM address</b></td>
+  <td nowrap>xt = 0x1FA</td>
+ </tr>
+ <tr>
+  <td><i> constant</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EEPOLL&nbsp;</b></td>
+  <td nowrap><i>( -- f )</i></td>
+  <td nowrap><b>Test for presence of EEPROM</b></td>
+  <td nowrap>xt = 0x1F4</td>
+ </tr>
+ <tr>
+  <td>&nbsp;</td>
+  <td width="100%" colspan="3">
+read last selected device, return T if found.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVAL=EE&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Set up to evaluate EEPROM code</b></td>
+  <td nowrap>xt = 0x1FD</td>
+ </tr>
+</table>
+<p><b><font size="4" color="#BF0000">SPIX bus probing</font></b></p>
+<table border="1" width="100%" cellspacing="0" cellpadding="0">
+ <tr>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Name</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Stack Effect</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Summary</strong></font></td>
+<td valign="top" bgcolor="#008080"><font color="#FFFFFF"
+face="Arial"><strong>Token</strong></font></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>BOOTIMAGE&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>2K boot ROM image</b></td>
+  <td nowrap>xt = 0x20B</td>
+ </tr>
+ <tr>
+  <td><i> [RAMdata]</i></td>
+  <td width="100%" colspan="3">
+The BootImage array is for temporary storage of boot code. We can't boot
+directly from EEPROM because of possible communication errors. So, we copy it
+to RAM and then evaluate it. You can define this as a constant if you know of
+a free area of RAM that nobody will bother.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>CURRENTNODE&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>Next free node</b></td>
+  <td nowrap>xt = 0x20C</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3">
+Points to the next empty node, the one after the end of the SPIX chain.
+This is bumped upward during ennumeration of the SPIX devices.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>DEADBUS&nbsp;</b></td>
+  <td nowrap><i>( -- a )</i></td>
+  <td nowrap><b>T if booting has been disabled</b></td>
+  <td nowrap>xt = 0x20D</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>EVAL_EXT&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Evaluate external SIP boot code</b></td>
+  <td nowrap>xt = 0x210</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>HOTPLUGPOLL&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Test for change in bus config</b></td>
+  <td nowrap>xt = 0x212</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>HPTIMER&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b></b><b>Timer to pace hot-plug bus probing</b></td>
+  <td nowrap>xt = 0x211</td>
+ </tr>
+ <tr>
+  <td><i> [double]</i></td>
+  <td width="100%" colspan="3">Timer to limit polling bandwidth
+</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>LAST_BYTE&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>Result from x_byte!</b></td>
+  <td nowrap>xt = 0x206</td>
+ </tr>
+ <tr>
+  <td><i> [cell]</i></td>
+  <td width="100%" colspan="3"></td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>MY&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Current node number</b></td>
+  <td nowrap>xt = 0x20E</td>
+ </tr>
+ <tr>
+  <td><i>IMMEDIATE</i></td>
+  <td width="100%" colspan="3">
+state smart: compile a literal or return the number.
+The interpret action only makes sense when evaluating boot code.
+Sample Usage : emit my x_node lcd_emit ;</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>PRIMARYBOOT&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>Address of pre-boot program in EEPROM</b></td>
+  <td nowrap>xt = 0x1FF</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>SECONDARYBOOT&nbsp;</b></td>
+  <td nowrap><i>( -- addr )</i></td>
+  <td nowrap><b>Address of post-boot program in EEPROM</b></td>
+  <td nowrap>xt = 0x200</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_BYTE!&nbsp;</b></td>
+  <td nowrap><i>( c -- )</i></td>
+  <td nowrap><b>Write byte to SPIX output</b></td>
+  <td nowrap>xt = 0x207</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_NODE&nbsp;</b></td>
+  <td nowrap><i>( node# -- )</i></td>
+  <td nowrap><b>Selects a new node</b></td>
+  <td nowrap>xt = 0x201</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_PORT&nbsp;</b></td>
+  <td nowrap><i>( port# -- )</i></td>
+  <td nowrap><b>Selects a port within a node</b></td>
+  <td nowrap>xt = 0x202</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_READ&nbsp;</b></td>
+  <td nowrap><i>( src dest len -- )</i></td>
+  <td nowrap><b>Reads from boot EEPROM on SPIX module</b></td>
+  <td nowrap>xt = 0x208</td>
+ </tr>
+ <tr>
+  <td><i></i></td>
+  <td width="100%" colspan="3">
+Read EEPROM into RAM using page read.
+Read segments twice to check for bit errors.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_RESET&nbsp;</b></td>
+  <td nowrap><i>( -- )</i></td>
+  <td nowrap><b>Clears the bus logic</b></td>
+  <td nowrap>xt = 0x204</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_SVC?&nbsp;</b></td>
+  <td nowrap><i>( -- f )</i></td>
+  <td nowrap><b>Looks for a service plug</b></td>
+  <td nowrap>xt = 0x205</td>
+ </tr>
+ <tr>
+  <td><i></i></td>
+  <td width="100%" colspan="3">
+A service plug disables bootup. On the SPIX bus, short
+pins 5 &amp; 6 together to indicate a service plug.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_TEST&nbsp;</b></td>
+  <td nowrap><i>( node -- ior )</i></td>
+  <td nowrap><b>Test boot ROM   ior: 0=valid</b></td>
+  <td nowrap>xt = 0x20F</td>
+ </tr>
+ <tr>
+  <td><i></i></td>
+  <td width="100%" colspan="3">
+Get data from the bottom of the boot EEPROM
+Expecting: C0 DE ?? 07 C9 csum16 length24</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_TRANSFER&nbsp;</b></td>
+  <td nowrap><i>( addr len -- )</i></td>
+  <td nowrap><b>Xfer current port to/from memory</b></td>
+  <td nowrap>xt = 0x203</td>
+ </tr>
+ <tr>
+  <td><i></i></td>
+  <td width="100%" colspan="3">
+Shift an active SS to the desired node, then transfer the data.
+First, we assume all SS lines are inactive. As long as this is the case, it's
+safe to clock the port-select counter. Upon entry, the port# is indeterminate.</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_WRITE&nbsp;</b></td>
+  <td nowrap><i>( src dest len -- )</i></td>
+  <td nowrap><b>Write to boot EEPROM on SPIX module</b></td>
+  <td nowrap>xt = 0x209</td>
+ </tr>
+ <tr>
+  <td><i></i></td>
+  <td width="100%" colspan="3">
+Write data in blocks until it's written</td>
+ </tr>
+ <tr>
+  <td valign="top" align="left" nowrap><b>X_WRSR&nbsp;</b></td>
+  <td nowrap><i>( c -- result )</i></td>
+  <td nowrap><b>Write to EEPROM status register</b></td>
+  <td nowrap>xt = 0x20A</td>
+ </tr>
+</table>
+</body>
+</html>

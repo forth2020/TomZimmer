@@ -1,0 +1,168 @@
+\ Boot code for a character LCD module on the SPIX bus.     6/22/01 Brad Eckert
+
+\ This code displays elapsed time and switch status on the LCD display.
+
+\ Using the SPIX bus to drive an LCD module in 4-bit mode displays about 150
+\ characters per second. This was measured by having three modules each running
+\ their own screen update program.
+
+host decimal
+anew bootcode
+homeorder building                      \ building a ROM image
+also core also system definitions
+0x000 0x7FF rom-bounds                  \ boot device is 25C160
+{{ 0 org }}                             \ start at location 0
+0xC0 c, 0xDE c,                         \ standard TOF key
+0x00 c,                                 \ generic device type (see LOADER.FF)
+tokenizing {{ 0x1000 >token# }}         \ relative TOKENIZED CODE
+program autoexec                        c( tokenized boot program)
+
+\ Character LCD interface
+
+\ Port wiring uses lower 6 bits: D7 D6 D5 D4 E RS
+\ This is a parallel port assumed to power up in an indeterminate state.
+\ When port 2 is selected, X_BYTE! writes to the LCD control lines.
+
+{{ hex }}
+
+01 constant lcd_rs      \ Wire positions (2^bit#)
+02 constant lcd_e
+
+create LCDinit  4 c,    \ LCD initialization string: length
+                28 c,   \ 4-bit data
+                06 c,   \ increment cursor
+                0C c,   \ display on, cursor off
+                01 c,   \ Clear display
+
+: >lcd          ( -- )          my x_node 2 x_port ;
+: lcd_port!     ( c -- )        80 or x_byte! ;
+
+: lcd_nybble    ( n status -- )                 c( send nybble to the LCD port)
+                >r 0F and 2* 2* dup             \ align 4-bit data
+                r@ or lcd_e or  lcd_port!       \ pulse E line
+                r> or lcd_port! ;               \ assume port! takes a few usec.
+
+: lcd_byte      ( n status -- )                 c( send byte to the LCD port)
+                >lcd  >r dup 4 rshift
+                r@ lcd_nybble
+                r> lcd_nybble
+                2 0 ticks ;
+
+: lcd_command   ( command --) 0 lcd_byte 2 ms ; c( send command to LCD) \ RS = 0
+: lcd_data      ( data -- )   lcd_rs lcd_byte ; c( send data to LCD) \ RS = 1
+
+: lcd_define    ( addr byte -- )                c( define user-defined character)
+                3 lshift 40 or lcd_command      \ Select char to define
+                8 >r
+        multi   count lcd_data
+        repeat  r>drop drop ;
+
+: lcd_cls       ( -- )                          c( clear screen and home cursor)
+                LCDinit count >r
+        multi   count lcd_command
+        repeat  r>drop drop ;
+
+: lcd_init      ( -- )                          c( reset display from software)
+                >lcd 0 lcd_port! 40 ms          \ Wait a little while
+                >lcd 3 0 lcd_nybble 10 ms       \ spec calls for 4.1 mS delay
+                >lcd 3 0 lcd_nybble 10 ms
+                32 lcd_command                  \ put into 4-bit mode
+                lcd_cls ;                       \ clear screen, enable display
+
+create lcd_rows 0x00 c, 0x40 c, 0x14 c, 0x54 c, \ OK for ??x2 and 20x4 displays
+
+: lcd_gotoxy    ( col row -- )                  c( position cursor WRT [0,0])
+                lcd_rows + c@ +
+                80 or lcd_command ;             \ set cursor position
+
+lcd_init                                        \ initialize the LCD
+
+: mytype        ( addr len -- )                 \ type a string
+      >r multi  count lcd_data
+        repeat  r>drop drop ;
+
+
+{{ decimal }}
+
+: elapsed       ( -- ud )
+\ time in milliseconds that the counter has run
+\ 32 bits will hold less than 999 hours at the rate COUNTER runs.
+                counter@ ctrscale um*   ( lotime hitime*scale )
+                rot      ctrscale um*   ( hitime*scale lotime*scale )
+                nip 0 d+ ;              \ /65536
+
+\ Notice .TIME converts the time to numeric format and displays 13 characters
+\ each time. The update speed could be sped up by refreshing only the lower
+\ digits and cutting the conversion short.
+
+20 string pd$   \ temporary pad for numeric conversion
+
+\ We don't want a PAUSE between BASE @ and BASE ! because the verification
+\ suite (or other debugger user) might want to use BASE or do some number
+\ conversion. We use our own PAD$ so we don't step on somebody elses PAD usage.
+
+: .time         ( ud -- )
+\ display time in HHHH:MM:SS.SSS format
+                base @ >r
+                decimal ['] pd$ ['] pad$ bind[
+                <# # # # '.' hold       \ pick off thousandths
+                60 mu/mod               ( sec MINUTES )
+                60 mu/mod               ( sec minutes HOURS )
+                2swap swap 0 # # 2drop  \ seconds
+                ':' hold   0 # # 2drop  \ minutes
+                ':' hold   #s           \ hours
+                bl hold bl hold #>      ( addr len )
+                >r 13 tuck - r> + swap  ( addr' 13 )
+                ]bind
+                r> base !
+                0 1 lcd_gotoxy mytype
+                ;
+
+variable prevsw  prevsw on              \ last switches state
+variable lcd_swdata
+
+: switches      ( -- c )
+                my x_node 3 x_port      \ select the switch input
+                lcd_swdata on
+                lcd_swdata 1 x_transfer
+                lcd_swdata c@ ;
+
+: update_time   ( -- )                  \ update time on the screen
+                elapsed .time  switches \ switch data
+                dup prevsw @ <>
+        if      dup prevsw !  bl lcd_data
+                6 >r
+                multi   dup 4 and 0= 1 and lcd_data
+                        2/              \ graphic chars 0=open 1=closed
+                repeat r>drop
+        then    drop ;
+
+\ Display format is:
+s"   Elapsed    Buttons" mytype
+\ "HHH:MM:SS.SSS  ssss "
+
+\ Switch icons: *****   *****
+\               *   *   *****
+\               *   *   *****
+\               *   *   *****
+\               *   *   *****
+\               *   *   *****
+\               *****   *****
+{{ hex }}
+
+create s_open   1F c, 11 c, 11 c, 11 c, 11 c, 11 c, 1F c, 0 c,
+create s_closed 1F c, 1F c, 1F c, 1F c, 1F c, 1F c, 1F c, 0 c,
+
+s_open   0 lcd_define                   \ define switch icons
+s_closed 1 lcd_define
+
+also app
+:: mystuff mystuff update_time ;        \ add to the to-do list
+previous
+
+
+end                                             \ end this block of code
+\ END also resolves the length and checksum laid down by PROGRAM.
+host
+bsave lcd_ctr.sb
+

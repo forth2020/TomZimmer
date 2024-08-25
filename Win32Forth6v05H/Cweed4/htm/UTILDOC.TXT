@@ -1,0 +1,385 @@
+\ Brief description of Win32Forth utility words         by Tom Zimmer
+
+: hide-cursor   ( -- )
+synonym cursor-off hide-cursor
+        Stop display of the cursor (actually the "caret") which is
+        normally shown during the execution of a word.
+
+: show-cursor   ( -- )
+synonym cursor-on show-cursor
+        Display the cursor (or "caret") during the execution of
+        a word.
+    
+: MS            ( n -- )
+        Delay for at least n milliseconds.  This may not give even the
+        minimum delay if operating under "Win32S".
+
+SCREENDELAY     ( -- n1 )
+        A VALUE that holds a number of Milli-Seconds to delay when
+        performing screen output using DUMP and WORDS. Pressing keys '0'
+        to '9' while these words are displaying, adjusts screen display
+        speed slower. 
+
+: SECONDS       ( n -- )
+        Delay for at least n seconds.  This may not give even the
+        minimum delay if operating under "Win32S".
+
+: pause-seconds ( n -- )
+        Delay for n seconds, but with certain operator controlled
+        options. A message is displayed with an invitation to press a
+        key.  A key press will allow a hold, then other options to
+        continue the delay, to pause, or to cancel the delay.
+
+: minimize-console ( -- )
+        Reduce the working Win32Forth window to an ICON.
+
+: screen-size   ( -- width height )     
+        Returns the Windows screen size.
+
+: is-default    ( cfa -<name>- ) 
+        Set the default field of a deferred word.
+
+: restore-default ( -<name>- )    
+        Reset name to its default function
+
+: .classes      ( -- )
+        Diplay a list of all the classes in Win32Forth.  Nove classes
+        will be displayed as HEX numbers, this is because some classes
+        are the headerless classes of individual objects, and cannot be
+        used directly.
+
+: .cur-file     ( -- )
+        Display the name of the current file.
+
+: .curfile      ( -- )
+        Display the name of the current file.
+
+: .deferred      ( -- )
+        Display all of the deferred words with their current and default
+        functions.
+
+: .file         ( -- )
+        Display the name of the current file.
+
+: "fpath+       ( a n -- )
+        Append a directory to forth path.
+
+: current-dir$  ( -- a )
+        Get the full path to the current directory.
+
+: $current-dir! ( a1 -- f1 )
+        Set the current directory, where a1 is a null terminated
+        directory string.
+
+: chdir         ( -<optional_new_directory>- )
+synonym cd chdir
+        Change the current directory.
+
+: .program      ( -- )
+        Display the path and name of the program being executed.
+
+: .fpath        ( -- )
+        Display the forth directory search path list
+
+: fpath+        ( -<directory>- )
+        Append a directory to forth path.
+
+: n"open        ( a1 n1 -- n2 f1 )
+        Open file a1,n1 with path search.
+
+' n"open is "open
+        Link multi-path open word into system.
+
+: "path-file    ( a1 n1 -- a2 n2 f1 )
+        Find file a1,n1 return full path
+           a2,n2 and f1=false, succeeded
+           else return a1,n1 and f1=true, failed
+
+: in-application ( -- )
+        Select the application dictionary for any following
+        compiled code.
+
+: in-system     ( -- )
+        Select the system dictionary for any following
+        compioled code.
+
+: "fsave        ( a1 n1 -- )
+        Save a Forth executable
+
+: fsave         ( -<name>- )
+        Save a Forth executable
+
+: "image-save   ( a1 n1 -- )
+        Save the .IMG portion of the Forth executable.
+
+: image-save   ( -<name>- )
+        Save the .IMG portion of the Forth executable.
+
+: turnkey       ( cfa -<name>- )
+        create application "name" with startup function "cfa", reserving
+        3000 bytes of application memory at HERE, and no system memory.
+        All headers and system memory is removed, saving about 200k
+        bytes out of the application.  A TURNKEYed application MUST NOT
+        USE ANY SYSTEM WORDS.
+
+: application   ( app-mem sys-mem cfa -<name>- )
+        create application "name" with startup function "cfa" reserving
+        "app-mem" application memory, and "sys-mem" system memory.
+        Headers are not removed from the saved application.
+
+: .loaded       ( -- )
+        Display a list of all of the files which have been loaded.
+
+: needs         ( -<name>- ) 
+        Conditionally load file "name" if not loaded.
+
+: $EXEC         ( a1 -- f1 )    
+        Invoke a DOS command string with preprocess for file and line 
+        parameters.  f1 = TRUE on error.
+
+: .editor       ( -- )  
+        Display the editor, browser, shell & dos strings
+
+: ?win-error    ( f1 -- )
+        Display the last error resulting from a Windows call.
+
+: shell         ( -<string>- )
+synonym `   shell
+synonym sys shell
+        Execute the DOS command specified, and wait for the user to
+        execute a keystroke before returning to Win32Forth.
+
+: dos           ( -<string>- )
+        Execute the DOS command specified in a DOS window.  Close the 
+        window when the command is finished.
+
+: copyfile      ( -<from to>- ) \ copy a file to a directory
+
+: where         ( -<name>- )
+synonym .v where
+        Display the file name and line number for the source definition
+        of the specified word.  If yo then type: 'E <enter>', the editor
+        will be started on 'name'.
+
+: locate        ( -<name>- )    
+synonym l  locate
+synonym ll locate
+        Show some source lines of word.
+
+: n             ( -- )          
+        Show the next bunch of lines.
+
+: b             ( -- )          
+        Show the previous bunch of lines.
+
+: linelist      ( n1 -- )
+        Display a number of lines from the currently open file, starting
+        at line n1.
+
+: view          ( -<name>- )    
+synonym v view                  
+        VIEW the source for a word
+        V is an synonym for VIEW
+
+: e             ( -<name>- )    
+synonym ed e                    
+        EDIT the source for a word
+        E is a synonym for EDIT
+
+: edit          ( -<filename>- ) 
+synonym z edit                  
+        EDIT a particular file
+        Z is a synonym for EDIT
+
+: #fload        ( n1 -<name>- )         
+        Load file "name" from line n1, 1 based
+
+: lineload      ( n1 -- )               
+        Load the current file from line n1
+
+: ftype         ( -<name>- )            
+synonym flist ftype
+        Type file "name" to the console
+
+: .free         ( -- )
+        Display the amount of used and available program memory
+
+: .mem          ( -- )
+        Same as .free .
+        
+: .mem-free     ( -- )
+        Display the amount of unused program memory.
+
+: .version      ( -- )
+        Display the version number of the current Win32Forth system.
+        
+: .cversion     ( -- )
+        Display the date and time of the generation of the current
+        Win32Forth system.
+
+: anew          ( -<name>- )    
+        If the <name> does not exist, create it.  If it does exist,
+        execute the word.  The word will cause the equivalent of a
+        FORGET to a point just past the word.  This construct may be
+        used to allow a file to be loaded repeatedly by FORGETting
+        previous loads.
+
+\       Compile time stack depth checking
+: nostack1      ( -- )
+synonym checkstack nostack1
+        Do not stack check the line on which the word NOSTACK1 appears.
+        Typically used at the end of a line in a source file.
+        
+: nostack       ( -- )
+: _stack-check  ( -- )
+nostack ' _stack-check is stack-check
+        While loading but not compiling, STACK-CHECK will verify that no
+        changes in the stack depth have occurred.
+
+: f:            ( -<name>- )    \ define a word in the FORTH vocabulary
+        A word to allow accessing a word from the Forth vocabulary
+        without changing the vocabulary search order
+
+: get-local-time ( -- )         
+        Get the local computer date and time
+
+: time&date     ( -- sec min hour day month year )
+        Returns the local time.  Note that this function may not give the
+        proper values when Win32Forth is run under Win32s.
+
+: .date         ( -- )
+        Displays the current date.  Note that this function may not
+        display the proper value when Win32Forth is run under Win32s.
+
+: .time         ( -- )
+        Display the current time.  Note that this function may not
+        display the proper value when Win32Forth is run under Win32s.
+
+
+: ms@           ( -- ms )
+        Returns the number of milliseconds that have occured since
+        midnight of the current day.   Note that this function may not
+        give the proper value when Win32Forth is run under Win32s.
+
+: time-reset    ( -- )
+        Start an elapsed time timer.
+
+: .elapsed      ( -- )
+        Display the time elapsed since time-reset.
+
+: .platform     ( -- )
+        Display the platform currently being used (NT, Windows95, or
+        WIN32s.
+
+: .help         ( -- )
+        Display the current help file string.
+
+: NT?           ( -- f1 )       
+        Return true if we are running on NT
+
+: Win95?        ( -- f1 )
+        Return true if we are running Windows 95
+
+: Win32s?        ( -- f1 )
+        Return true if we are running Win32s on Windows 3.1
+
+****** Note other utility words in file PRIMUTIL.F *******
+
+
+: f.s           ( f: f1 f2 ... fn -- f1 f2 ... fn )
+        Display the contents of the floating point stack.  The
+        floating point stack is unchanged by this operation.
+
+: s.            ( n1 n2 ... nk -- n1 n2 ... nk )
+        Display the contents of the data stack without changing
+        the contents.  
+
+: .fonts        ( -- )
+        Display the available Windows fonts.
+        
+: .exception    ( -- )
+        Display the cause of the most recent sytem exception.
+
+: .v            ( -<name>- )
+        Display the file name and line number for the source of the
+        user specified Win32For name.
+
+: .browse       ( -- )
+        Display the editor, browser, shell, and dos command line strings.
+
+: .dos          ( -- )
+        Display the editor, browser, shell, and dos command line strings.
+
+: .shell        ( -- )
+        Display the editor, browser, shell, and dos command line strings.
+
+: .editor       ( -- )
+        Display the editor, browser, shell, and dos command line strings.
+
+: .rstack       ( -- )
+        Display the contents of the return stack.  If possible, each
+        address n the stack is specified by the name of the calling
+        function with an offset.
+
+: .$              ( -x<string>x- )
+        Used in a colon definition to specify a string delimited by the
+        first character.  When later executed, the string will be
+        displayed (without the delimiters).  In the stack comment above,
+        the "x" is used as a delimiting character, but any other
+        character could be used.
+
+.ID             ( nfa -- )
+        Display the name of the forth word whose name field address is
+        given as nfa.
+
+.NAME           ( cfa -- )
+        Display the name of the forth word whose code field address is
+        given as cfa.
+
+: >BODY         ( cfa -- pfa )
+        Convert a code field address to a parameter field address (or
+        body).
+        
+: BODY>         ( pfa -- cfa )
+        Convert a parameter field address to a code field address.
+        
+: L>NAME        ( lfa -- nfa )
+        Convert a link field address to a name field address.
+        
+: N>LINK        ( nfa -- lfa )
+        Convert a name field address to a link field address.
+        
+: >NAME         ( cfa -- nfa )
+        Convert a code field address to a name field address.
+        
+: NAME>         ( nfa -- cfa )
+        Convert a name field address to a code field address.
+        
+: >VIEW         ( cfa -- vfa )
+        Convert a code field address to a view field address.
+        
+: VIEW>         ( vfa -- cfa )
+        Convert a view field address to a code field address.
+
+: BREAKER       ( -- )
+        A no-operation word that can be used to set break points in
+        colon definitions.  Insert the word BREAKER at the desired
+        point in the source.  Prior to loading the source, type:
+        
+                DEBUG BREAKER
+                
+        Then load the source file or execute the desired word.  You
+        may wish to use the un-nest character "U" to continue single-
+        step debugging of the desired word.
+
+: .COUNTS       ( -- )
+        Display the thread number and number of words in each thread for
+        the context vocabulary.
+
+: .WORDS        ( -- )
+        Display the total number of words in the system.
+
+: .THREADS      ( -- )
+        Display each thread number and the names of the words in each
+        thread for the context vocabulary.
+        

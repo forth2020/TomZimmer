@@ -1,0 +1,51 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="TOF" content="8051">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title>Coldfire/68K processor </title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><b>Coldfire/68K-based TOF
+implementation</b></font></p>
+
+<hr>
+
+<p>This model is a 32-bit, subroutine threaded Forth with
+inlining and peephole optimization.</p>
+
+<ul>
+    <li>Many Forth primitives are coded in assembly for speed. </li>
+    <li>It includes a single stepping machine code debugger that
+        lets you debug code words even while the main program
+        runs at full speed.</li>
+    <li>Variables and values are initialized from ROM upon
+        startup.</li>
+    <li>Only uses Coldfire instructions and addressing modes. Division uses
+      hardware when it's available.</li>
+</ul>
+
+<p>The 68331 SPIX demo board uses an 8-bit boot EPROM and contains 256K bytes of
+16-bit RAM. At startup, the boot memory is copied to RAM for speed. The memory
+footprint isn't very big, occupying about 20K of ROM and less than 32K of RAM.
+RAM usage is shown in Figure 1.</p>
+<p><font color="#BF0000" size="4"><b>Figure 1. RAM usage in a 68K/Coldfire TOF implementation.</b></font></p>
+<table border="1">
+  <tr>
+    <td width="100%"><img border="0" src="68000.gif" width="273" height="319"></td>
+  </tr>
+</table>
+<p>The SPIX331's ROM is built by FLOADing DEMOCF.FF in the SPIX331 folder. It
+creates a ROM image that will run at 80400 but needs a little help booting up.
+The file BOOT.FF creates a relocatable little boot program that sets up the
+memory spaces and copies ROM to RAM. It saves an S-Record file suitable for
+programming into an EPROM or Flash memory.</p>
+<p>&nbsp;</p>
+</body>
+</html>

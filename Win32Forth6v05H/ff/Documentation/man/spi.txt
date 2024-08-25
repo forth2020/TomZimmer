@@ -1,0 +1,33 @@
+SPI debugging interface
+
+The SPI interface is used for downloading code. For testing, we'd like to
+use some of the SPI pins for transfering data to/from the target.
+
+If we use the same SPI interface, a bit transaction can occur as follows:
+1. PC  drives SCK with data and raises MOSI
+2. AVR drives SCK with data and raises MISO 
+3. PC  floats SCK, reads it and lowers MOSI
+4. AVR floats SCK, reads it and lowers MISO 
+
+With this method, SCK is used for data and is assumed to have a 1K series resistor
+to allow contention. MOSI and MISO are the handshake lines. 
+
+The PC's parallel port has bidirectional data lines: use one of them as SCK. 
+
+The parallel port pins are can be wired to the AVR as follows:
+
+RESET  16 -initialize				37A.2
+MOSI   14 -autofeed				37A.1
+MISO   10 -ack					379.6
+SCK     9 D7 = output SCK (high floats)		378.7
+       11 -busy = input SCK			379.7
+GND    24 ground
+
+
+Atmel AT89 and AT90         
+-------------------
+   MOSI 1  2 VCC    
+   *LED 3  4 GND    
+ *RESET 5  6 GND    
+    SCK 7  8 GND       
+   MISO 9 10 GND       

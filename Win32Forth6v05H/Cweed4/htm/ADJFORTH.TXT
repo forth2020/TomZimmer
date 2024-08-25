@@ -1,0 +1,43 @@
+Adjusting the Win32Forth dictionary sizes.
+
+To increase the amount of dictionary space
+available for our application, follow these steps;
+
+1. Quit Win32Forth before proceeding.
+
+   Win32Forth must be terminated, so the modified
+   dictionary version can be written to disk with
+   the same name.
+
+   You can leave this editor window open for
+   reference if you have at least 8 megabytes of
+   ram, though it may cause the following steps
+   to take somewhat longer to complete.
+
+2. Double click "Meta Compile Kernel".
+
+   This will begin the process of building a new
+   Forth kernel with the adjusted dictionary sizes.
+
+3. Type in the new dictionary sizes and click 'OK'.
+
+   The dictionary sizes you enter into the "Saved
+   Image Memory" dialog, need to include the size
+   of Win32Forth's base dictionaries. Add 200,000
+   to the desired number of available dictionary
+   bytes for both Application and System
+   dictionaries.
+
+4. Double click "Make Win32Forth".
+
+   When you have completed these operations, you
+   will have created a modified copy of Win32Forth
+   with the new dictionary sizes.
+
+5. Double click "Win32Forth" to run with the new
+   dictionary sizes.
+
+   You can type .FREE into the Win32Forth console
+   window to see the new sizes of the dictionaries.
+
+

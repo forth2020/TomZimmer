@@ -1,0 +1,149 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>Firmware Studio
+Development Environment</strong></font></p>
+
+<table border="1">
+    <tr>
+        <td bgcolor="#FFFFFF"><a href="hostint.html"><strong>Host</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="buildint.html"><strong>Builder</strong></a></td>
+        <td bgcolor="#FFFFFF"><strong>Tester</strong></td>
+        <td bgcolor="#FFFFFF"><a href="tokenint.html"><strong>Tokenizer</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="forthint.html"><strong>Forthing</strong></a></td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Tester Interpreter</strong></font></p>
+
+<p><font color="#000000">Tester mode is for interactive testing
+of machine code resident on target hardware. You can't define new
+definitions in this mode, since it's not set up to extend target
+code. Forthing mode is for doing that. The interpreter in tester
+mode calls words via a debug monitor running on the target board.</font></p>
+
+<p><font color="#000000"><img src="snaptest.gif" width="425"
+height="374"></font></p>
+
+<p><font color="#000000">You can enter tester mode by typing TE
+or TESTING, or by invoking the high level debugger.</font></p>
+
+<p><font color="#000000">In tester mode, the left margin displays
+target parameters below the search order. </font><font
+color="#C00000"><strong>Here</strong></font><font color="#000000">
+is the next available code byte on the target system. </font><font
+color="#C00000"><strong>Tok#</strong></font><font color="#000000">
+is the next available token number used by the host. </font><font
+color="#C00000"><strong>Rel#</strong></font><font color="#000000">
+is the lowest unused token on the target system. These last two
+parameters aren't of much interest in this mode. See Forthing
+mode (next section).</font></p>
+
+<p><font color="#000000">The type of call indirection is
+important. The tester's interpreter calls a word's physical
+address in </font><font color="#808080"><strong>static</strong></font><font
+color="#000000"> mode, or computes its address from it's <em>xt</em>
+and calls into the binding table in </font><font color="#808080"><strong>dynamic
+</strong></font><font color="#000000">mode. If addresses are
+unknown, you have to use </font><font color="#808080"><strong>dynamic
+</strong></font><font color="#000000">mode. If you're working
+without a binding table (as in regular Forth) you use </font><font
+color="#808080"><strong>static</strong></font><font
+color="#000000"> mode.</font></p>
+
+<p><font color="#000000">The contents of both stacks are
+displayed, which is very convenient for single stepping. The high
+level debugger uses Tester mode. A text window displays source
+code of a word and highlights the next word to be executed:</font></p>
+
+<p><font color="#000000"><img src="snapbug.gif" width="597"
+height="197"></font></p>
+
+<p><font color="#000000">In this example, pressing the space bar
+will cause the target's debugger to execute <strong>dup</strong>
+and will move the yellow cursor to <strong>abs</strong>. This
+example was invoked by <strong>BUG (.)</strong>.</font></p>
+
+<p>&nbsp;</p>
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Tester Wordlist</strong></font></p>
+
+<hr>
+
+<p>The following words are in the TESTER wordlist. Their
+definitions are in TAR.G. In Testing mode, the interpreter
+searches this wordlist first. The interpreter executes the word
+if it's found. If the word was a target word, the interpreter
+uses the debugger link to call the word. A word that's not found
+is converted to a number and pushed onto the target's stack.. </p>
+
+<p>The search order during building generally goes something like
+TESTER ... CORE ... HOME. The HOME vocabulary is a catch-all for
+words that execute on the host PC. If you define a target word
+that has the same name as a word in the HOME wordlist, that word
+will mask the home wordlist's version. If this causes a problem,
+you can place the desired HOME wordlist words within {{ }}
+brackets.</p>
+
+<hr>
+
+<table border="0" width="100%">
+    <tr>
+        <td><strong>'</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Pushes xt of <em>name</em> onto the
+        target's data stack.</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td nowrap><em>( -- xt )</em></td>
+        <td width="100%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td><strong>TO</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Executes <em>name</em> and (%TO!)</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td nowrap><em>( x -- )</em></td>
+        <td width="100%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td><strong>IF</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Get flag from target, skip source until
+        next THEN or ELSE if it's 0.</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td nowrap><em>( flag -- )</em></td>
+        <td width="100%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td><strong>ELSE</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Skip source until next THEN</td>
+    </tr>
+    <tr>
+        <td><strong>THEN</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Do nothing.</td>
+    </tr>
+</table>
+</body>
+</html>

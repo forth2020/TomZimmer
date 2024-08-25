@@ -1,0 +1,1016 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong>Builder Wordlist</strong></font></p>
+
+<hr>
+
+<p>The following words are in the BUILDER wordlist. In Building
+mode, the <a href="buildint.html">interpreter</a> searches this
+wordlist first. The interpreter executes the word if it's an
+immediate word or if the interpreter is not in compile mode.
+Otherwise, the interpreter does another search without BUILDER in
+the search order. This keeps the execution semantics of Forth
+words that are expected to execute on the host PC.</p>
+
+<p>The search order during building generally goes something like
+BUILDER ... CORE ... HOME. For example: DECIMAL will always set
+the base to 10 on the host PC because it's at the top of the
+search order, even when DECIMAL has been defined as a target word
+in the CORE vocabulary. The HOME vocabulary is a catch-all for
+words that execute on the host PC. If you define a target word
+that has the same name as a word in the HOME wordlist, that word
+will mask the home wordlist's version. If this causes a problem,
+you can place the desired HOME wordlist words within {{ }}
+brackets.</p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Defining words:</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>NAME </strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>stack effect</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Compilation semantics
+        (what the compiler does)</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>stack effect</em></td>
+        <td bgcolor="#E0E0FF">Execution semantics (what the
+        resulting code does)</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td nowrap>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>:</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- f )</em></td>
+        <td width="100%">Begins a definition. Sets <em>state</em>
+        to 1.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>code</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- f )</em></td>
+        <td width="100%">Begins a definition. Sets search order
+        to ASSEM.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>loco</strong></td>
+        <td valign="top" nowrap><em>( &lt;name&gt; -- f )</em></td>
+        <td width="100%">Begins a code definition with no header.
+        Like CODE but saves the address as an assembler label.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>BEFORE:</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- f )</em></td>
+        <td width="100%">Chains new code to the beginning of an
+        existing definition. Similar to : .</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>AFTER:</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- f )</em></td>
+        <td width="100%">Chains new code to the end of an
+        existing definition. Similar to : .</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>VARIABLE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>(
+        &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        points to data space. Allocates a cell. In TOF, lays down
+        0 to initialized data space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Points to a cell in
+        data space.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>CVARIABLE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>(
+        &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        points to data space. Allocates a byte. In TOF, lays down
+        0 to initialized data space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Points to a byte in
+        data space.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>SEMAPHORE</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Same as VARIABLE</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>2VARIABLE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>(
+        &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        points to data space. Allocates a double cell. In TOF,
+        lays down 0 to initialized data space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Points to a double
+        cell in data space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>CONSTANT</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( x &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        returns a constant.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- x )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Pushes <em>x</em> onto
+        the stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>2CONSTANT</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( d &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        returns a double constant.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- d )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Pushes <em>d</em> onto
+        the stack.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>ARRAY</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( len
+        &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        points to data space. Allocates <em>len</em> bytes. In
+        TOF, lays down 0 to initialized data space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Points to an array of
+        bytes.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>STRING</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( len &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        points to a string. Allocates <em>len</em> bytes. </td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr len )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Returns address and
+        length of the string</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>CREATE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>(
+        &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a pointer for
+        a data structure in data space. Switches to RAM mode.
+        Note: does&gt; is not supported by builder. </td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Points to data in data
+        space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>PCREATE</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a pointer for
+        a data structure in program space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Points to data in
+        program space.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>VALUE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( x
+        &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a word that
+        points to data space. Allocates a cell, lays down <em>x</em>
+        to initialized data space.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- x )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Pushes the value of <em>x</em>
+        onto the stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>VOCABULARY</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Creates a new target
+        vocabulary.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Overwrites the top of
+        the search order with this vocabulary.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>DEFER</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Defines a deferred word. Use IS
+        &lt;name&gt; to assign a cfa to it.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Data compilation:</strong></font></p>
+
+<table border="0">
+    <tr>
+        <td valign="top" nowrap><strong>ORG</strong></td>
+        <td valign="top" nowrap><em>( a -- )</em></td>
+        <td width="100%">Sets the HERE value for code or data
+        space depending on whether destination is RAM or ROM.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ALLOT</strong></td>
+        <td nowrap><em>( n -- )</em></td>
+        <td width="100%">Increase HERE by <em>n</em>.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>HERE</strong></td>
+        <td nowrap><em>( -- a )</em></td>
+        <td width="100%">Points to the next available byte in the
+        target image.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ALIGN</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Allots enough bytes to bring the address
+        to an instruction or cell boundary. </td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ALIGNED </strong></td>
+        <td nowrap><em>( a1 -- a2 ) </em></td>
+        <td width="100%"><em>a2</em> is the next aligned address
+        past <em>a1</em>.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>,</strong></td>
+        <td nowrap><em>( x -- )</em></td>
+        <td width="100%">Lays down a cell</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>w,</strong></td>
+        <td nowrap><em>( w -- )</em></td>
+        <td width="100%">Lays down a 16-bit value.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>lw,</strong></td>
+        <td nowrap><em>( w -- )</em></td>
+        <td width="100%">Lays down a 16-bit value, little endian.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>bw,</strong></td>
+        <td nowrap><em>( w -- )</em></td>
+        <td width="100%">Lays down a 16-bit value, big endian.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ll,</strong></td>
+        <td nowrap><em>( n -- )</em></td>
+        <td width="100%">Lays down a 32-bit value, little endian.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>bl,</strong></td>
+        <td nowrap><em>( n -- )</em></td>
+        <td width="100%">Lays down a 32-bit value, big endian.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>,&quot;</strong></td>
+        <td nowrap><em>( string&quot; -- )</em></td>
+        <td width="100%">Appends a counted string to the target
+        image.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>DB&quot;</strong></td>
+        <td nowrap><em>( string&quot; -- )</em></td>
+        <td width="100%">Appends a string to the target image.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>USB&quot;</strong></td>
+        <td nowrap><em>( n string&quot; -- )</em></td>
+        <td width="100%">Lays down unicode string with 1-byte
+        embedded descriptor, n is usually 3.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>bindings,</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Creates a table of binding data. See
+        IMAGE.G.</td>
+    </tr>
+    <tr>
+        <td valign="top" nowrap><strong>values,</strong></td>
+        <td valign="top" nowrap><em>( -- )</em></td>
+        <td width="100%">Creates a run-length encoded table of
+        RAM initialization data. See IMAGE.G.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Code Compilation:</strong></font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>;</strong></td>
+        <td nowrap><em>( -- ) </em></td>
+        <td width="100%">Compile RET or convert the last call to
+        a jump.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>assemble</strong></td>
+        <td nowrap><em>( -- f )</em></td>
+        <td width="100%">Enters assembler mode for macros.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>c[</strong></td>
+        <td nowrap><em>( -- f )</em></td>
+        <td width="100%">Enters assembler mode for inline
+        assembly. End with <strong>]c</strong>.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>C&quot;</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;string&gt; -- ) </em></td>
+        <td width="100%" bgcolor="#E0E0FF">Compiles string to
+        data space and code for a literal.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Pushes address of
+        counted string onto stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>S&quot;</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;string&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Compiles string to
+        data space and code for literals.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr len )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Pushes address and
+        length of string onto stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>.&quot;</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;string&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Compiles string to
+        data space and code to TYPE it.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Types string.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>[COMPILE] </strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Compiles code to
+        compile <em>&lt;name&gt;.</em></td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap>( -- )</td>
+        <td bgcolor="#E0E0FF">Compiles a call to <em>&lt;name&gt;.</em></td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[</strong></td>
+        <td nowrap><em>( -- ) </em></td>
+        <td width="100%">Terminates compile mode. Sets <em>state</em>
+        = 0.</td>
+    </tr>
+    <tr>
+        <td><strong>]</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td>Resumes compile mode. Sets <em>state</em> = 1.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>TO</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( x &lt;name&gt; -- ) </em></td>
+        <td width="100%" bgcolor="#E0E0FF">State=0 (interpret):
+        store <em>x</em> to value <em>&lt;name&gt;</em>.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( &lt;name&gt; -- ) </em></td>
+        <td width="100%" bgcolor="#E0E0FF">State=1 (compile):
+        compile code to store to <em>&lt;name&gt;</em>.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- x )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">TO XYZ compiles to XYZ
+        (%TO!)</td>
+    </tr>
+</table>
+
+<p><font color="#BF0000" size="4">These set flags in the last
+header defined:</font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>immediate</strong></td>
+        <td nowrap><em>( -- ) </em></td>
+        <td width="100%">This word is an immediate word</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>call-only</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">A call to this word must not be
+        converted to a jump.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>macro</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">This word may be copied as inline code.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>nobind</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">When calling this word, don't use the
+        binding table.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>optim</strong></td>
+        <td nowrap><em>( n -- )</em></td>
+        <td width="100%">Put a nonzero value in this word's
+        optimization field.</td>
+    </tr>
+    <tr>
+        <td><strong>C(</strong></td>
+        <td nowrap><em>( -- string) -- ) </em></td>
+        <td>Copy 32 bytes to the summary comment of this word.</td>
+    </tr>
+</table>
+
+<p>&nbsp;</p>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Control Structures:</strong></font></p>
+
+<table border="0" cellspacing="1" width="100%">
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>NAME</strong></td>
+        <td bgcolor="#E0E0FF"><em>stack effect</em></td>
+        <td bgcolor="#E0E0FF">Compilation semantics (what the
+        compiler does)</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>stack effect</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Execution semantics
+        (what the resulting code does)</td>
+    </tr>
+    <tr>
+        <td colspan="3">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>IF</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( -- addr f
+        )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to test a flag and
+        jump forward if <em>flag</em> is zero. Leaves a pointer
+        to the jump instruction's address field.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( flag -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Executes code between
+        IF and THEN if <em>flag</em> is nonzero.</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><em>Usage: IF...THEN, IF...ELSE...THEN,
+        IF...ELSE...ENDIF</em></td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>IF</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( -- addr f
+        )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to test a flag and
+        jump forward if <em>n</em> &gt;= 0. Leaves a pointer to
+        the jump instruction's address field.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( n -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Executes code between
+        IF and THEN if <em>n </em>&lt; 0.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>THEN</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( addr f -- )</em></td>
+        <td bgcolor="#E0E0FF">Resolves the jump instruction's
+        address field left by IF.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>ENDIF</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( addr f -- )</em></td>
+        <td bgcolor="#E0E0FF">Resolves the jump instruction's
+        address field left by IF. Same as THEN.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>ELSE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( addr f --
+        addr' f' )</em></td>
+        <td bgcolor="#E0E0FF">Resolves the jump instruction's
+        address field left by IF, compiles a forward jump and
+        leaves a pointer to it.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>AHEAD</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- addr f )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Same effect as
+        0 IF</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>BEGIN</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( -- addr f
+        )</em></td>
+        <td bgcolor="#E0E0FF">Marks the beginning of a looping
+        control structure: A future jump instruction will jump to
+        the address left on the stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><em>Usage: BEGIN..AGAIN, BEGIN..UNTIL,
+        BEGIN..WHILE..REPEAT</em></td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>UNTIL</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( addr f -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to test a flag and
+        jump backward.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( flag -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Quits loop if <em>flag
+        </em>is nonzero.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>-UNTIL</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( addr f -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to test <em>n</em>
+        and jump backward.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( n -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Quits loop if <em>n</em>
+        &lt; 0.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>AGAIN</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( addr f -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down an unconditional backward
+        branch</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Loops forever.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>WHILE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( a f -- a
+        f a' f' )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to test a flag and
+        jump forward. Leaves a pointer to the jump instruction's
+        address field.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( flag -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Tests <em>flag</em>,
+        quits loop if zero. Executes words between WHILE and
+        REPEAT if nonzero.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>-WHILE</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( a f -- a
+        f a' f' )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to test a flag and
+        jump forward. Leaves a pointer to the jump instruction's
+        address field.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( n -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Tests <em>flag</em>,
+        quits loop if <em>n</em> &gt;= 0. Executes words between
+        WHILE and REPEAT if <em>n</em>&lt; 0..</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>REPEAT</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( a f a' f' -- )</em></td>
+        <td bgcolor="#E0E0FF">Resolves WHILE's jump address and
+        compiles a jump to BEGIN.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Jump back to BEGIN.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>MULTI</strong></td>
+        <td bgcolor="#E0E0FF"><em>( -- a f a' f' )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to bump the top of
+        the return stack and jump if negative.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( -- | R: x
+        -- x-1 )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Decrements the top of
+        the return stack by 1 and quit the loop if it's negative.</td>
+    </tr>
+    <tr>
+        <td nowrap>&nbsp;</td>
+        <td colspan="2"><em>Usage: MULTI ... REPEAT is equivalent
+        to BEGIN R&gt; 1- DUP &gt;R 0&gt;= WHILE ... REPEAT</em></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><em>Non-ANS. Uses to do something zero or
+        more times. More efficient than DO..LOOP.</em></td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>DO</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- a1 a2 f )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code for DO, leaves
+        pointers for LOOP to resolve later.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( n1 n2 -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Sets up loop control
+        parameters with index n2 and limit n1, usually on the
+        return stack.</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><em>Usage: DO..LOOP, DO..+LOOP,
+        ?DO..LOOP, ?DO..+LOOP</em></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><em>Note: In this implementation, LEAVE
+        and UNLOOP are usually not compilation words, so they
+        aren't defined in the BUILDER vocabulary.</em></td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>?DO</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- a1 a2 f )</em></td>
+        <td bgcolor="#E0E0FF">Same as DO except that the loop
+        doesn't execute at all if n1 = n2.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( n1 n2 -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Sets up loop control
+        parameters with index n2 and limit n1, usually on the
+        return stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><b>LOOP</b></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( a1 a2 f -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to perform LOOP,
+        resolves DO's jumps.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Add one to the loop
+        index. If the loop index is then equal to the loop limit,
+        discard the loop parameters and continue execution
+        immediately following the loop. Otherwise continue
+        execution at the beginning of the loop.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>+LOOP</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( a1 a2 f -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down code to perform +LOOP,
+        resolves DO's jumps.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( n -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Add n to the loop
+        index. If the loop index did not cross the boundary
+        between the loop limit minus one and the loop limit,
+        continue execution at the beginning of the loop.
+        Otherwise, discard the current loop control parameters
+        and continue execution immediately following the loop.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>CASE</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- 0 )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Marks the beginning of
+        a CASE structure</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><em>Usage:
+        CASE...OF...ENDOF...OF...ENDOF...ENDCASE</em></td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>OF</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( ... -- ... a f )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Lays down code that
+        compares <em>n1</em> to <em>n2</em> and jumps forward if
+        they match.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( n1 n2 -- n1 )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">If <em>n1=n2</em>,
+        execute words between <em>n1</em> and <em>n2</em> and
+        exit case structure.</td>
+    </tr>
+    <tr>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><strong>ENDOF</strong></td>
+        <td valign="top" bgcolor="#E0E0FF" nowrap><em>( a f -- a'
+        f' )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Compiles a forward
+        branch to ENDCASE, resolves the forward branch left by
+        OF.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>ENDCASE</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( 0 ... -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Resolves all of
+        ENDOF's forward branches.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( x -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF">Drop.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>LITERAL</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( x -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Compiles code
+        to push a number onto the stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- x )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Pushes a number
+        onto the stack.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>EXIT</strong></td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Compiles a
+        return instruction or compiles the last call to a jump.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap>&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Exits a
+        definition.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>RECURSE</strong></td>
+        <td bgcolor="#E0E0FF"><em>( -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down an unconditional call to
+        this word.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Compiles a
+        static call to the word being defined.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF" nowrap><strong>RETRY</strong></td>
+        <td bgcolor="#E0E0FF"><em>( -- )</em></td>
+        <td bgcolor="#E0E0FF">Lays down an unconditional jump to
+        this word.</td>
+    </tr>
+    <tr>
+        <td bgcolor="#E0E0FF">&nbsp;</td>
+        <td bgcolor="#E0E0FF" nowrap><em>( -- )</em></td>
+        <td width="100%" bgcolor="#E0E0FF" nowrap>Jumps to the
+        beginning of the word being defined</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[static]</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Same as STATIC but immediate. No code
+        generated.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[dynamic]</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Same as DYNAMIC but immediate. No code
+        generated.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Image and mode setup:</strong></font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>RAM</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Causes c, , etc. to compile to and HERE
+        to point to data space.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ROM</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Causes c, , etc. to compile to and HERE
+        to point to program space.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>static</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Switches to static mode: calls will
+        bypass binding table.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>dynamic</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Switches to dynamic mode: calls will be
+        into binding table.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>decimal</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Set base to 10 on host.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>hex</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Set base to 16 on host.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>headers-on</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Turns on header creation. The evaluator
+        needs header info.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>headers-off</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Turns off headers. Code outside TOF
+        sometimes doesn't need headers.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Word characteristics:</strong></font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>IS</strong></td>
+        <td nowrap><em>( xt &lt;name&gt; -- ) </em></td>
+        <td width="100%">Assigns xt to <em>&lt;name&gt;</em>.
+        Used with DEFERed words.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>ISA</strong></td>
+        <td nowrap><em>( cfa &lt;name&gt; -- ) </em></td>
+        <td width="100%">Assigns cfa to <em>&lt;name&gt;</em>.
+        Use ISA with :NONAME, which returns a CFA not an XT</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>CFA</strong></td>
+        <td nowrap><em>( &lt;name&gt; - cfa )</em></td>
+        <td width="100%">Gets the cfa (physical address) of a
+        word.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[CFA]</strong></td>
+        <td nowrap><em>( &lt;name&gt; - cfa ) </em></td>
+        <td width="100%">Gets the cfa of a word while in compile
+        mode.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>'</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- xt )</em></td>
+        <td width="100%">Gets the xt (execution token) of a word.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[']</strong></td>
+        <td nowrap><em>( &lt;name&gt; -- )</em></td>
+        <td width="100%">Gets the xt of a word while in compile
+        mode.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>[CHAR]</strong></td>
+        <td nowrap><em>( &lt;c&gt; -- ) </em></td>
+        <td width="100%">Gets the following ASCII character while
+        in compile mode.</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Other:</strong></font></p>
+
+<table border="0" width="100%">
+    <tr>
+        <td nowrap><strong>H#</strong></td>
+        <td nowrap><em>( &lt;hex_number&gt; -- # ) </em></td>
+        <td width="100%">OFW word to represent a hex number.
+        Split for target's cell width if it's a double.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>RESET </strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Asserts the target board's reset line
+        for ½ second. Typically by dropping the DTR line.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>end*code</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">Does nothing. See tokenizer.</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>test{</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td nowrap><strong>}test</strong></td>
+        <td nowrap><em>( -- )</em></td>
+        <td width="100%">&nbsp;</td>
+    </tr>
+</table>
+</body>
+</html>

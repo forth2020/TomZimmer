@@ -1,0 +1,14 @@
+:
+# modifies HTML files to use relative URLs for a local only
+# version of the WWW site
+#
+# usage:
+# local file1 [file2 ...]
+#
+for arg; do
+    echo $arg;
+	mv $arg $arg.tmp
+	sed s/"ftp:\/\/taygeta.com\/"/"ftp:\/\/ftp.taygeta.com\/"/g < $arg.tmp > $arg
+	rm $arg.tmp
+done
+

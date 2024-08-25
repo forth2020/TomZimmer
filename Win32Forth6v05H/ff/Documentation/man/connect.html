@@ -1,0 +1,51 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title>Connect Button</title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong><img border="0" src="butplug.gif" width="24" height="22"><img border="0" src="butunplug.gif" width="24" height="22"><img border="0" src="butreset.gif" width="24" height="22">
+</strong><b>Target Connection</b></font></p>
+
+<hr>
+
+<p><font size="3">The </font><font color="#C00000" size="5"><strong><img border="0" src="butplug.gif" width="24" height="22"></strong></font><font size="3">
+button</font><font color="#C00000" size="5"><strong> </strong></font><font size="3">attempts
+to establish communication with the target board. The <img border="0" src="butunplug.gif" width="24" height="22">
+button disconnects communication.</font></p>
+<p><font size="3">If the target board crashes, you can often push the </font><font color="#C00000" size="5"><strong><img border="0" src="butreset.gif" width="24" height="22">
+</strong></font><font size="3">reset button.</font></p>
+<p><font size="4" color="#C00000"><b>Simple Serial</b></font></p>
+<p><font size="3">This is the default mode. Firmware Studio tests each COM port
+for the presence of a target board running at 115K, 57K, 38K or 19K. If no board
+is found, it tries 14.4K, 4.8K and 2.4K bps. </font>The communication link to
+the target is self-timed. The PC sends out a one-byte command and waits for a
+1-byte response. So, you don't need handshaking lines. The UART on the target
+board is polled at the application's leisure, not interrupt driven.</p>
+<p>Hard reset is accomplished by dropping the DTR line for 1/2 second. The
+target board needs to support this for the reset button to work.</p>
+<p>This method of communication has been working great for years. There are some
+experimental communication setups that I haven't extensively tested but they
+seem to work.</p>
+<p><font size="4" color="#C00000"><b>TCP/IP</b></font></p>
+<p>A program called HOST.EXE is a Win32 utility that I wrote to act as a gateway
+to a target board. HOST.EXE runs on a PC at a remote location and uses the
+serial connection to the target board. As before, it uses DTR for hard reset.
+You can start up HOST.EXE, write down the IP address, and use IP= command in
+Firmware Studio to set the remote unit's address. TCP/<u>I</u>P in the <u>T</u>arget
+menu selects this communication mode.</p>
+<p><font size="4" color="#C00000"><b>SPI</b></font></p>
+<p>This method is fairly new. It bit bangs lines on the PC's parallel port to
+talk to the target board. The cable used to do this doubles as a download cable
+for AVR processors. On a 300 MHz Pentium, I get about 30K bps throughput. The
+protocol used is timed by handshaking, so timing isn't critical on either end of
+the interface. See the <a href="avr.html">AVR</a> page for details on the cable.</p>
+</body>
+</html>

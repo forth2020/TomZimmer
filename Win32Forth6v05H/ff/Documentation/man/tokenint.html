@@ -1,0 +1,89 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#C00000" size="5"><strong>Firmware Studio
+Development Environment</strong></font></p>
+
+<table border="1">
+    <tr>
+        <td bgcolor="#FFFFFF"><a href="hostint.html"><strong>Host</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="buildint.html"><strong>Builder</strong></a></td>
+        <td bgcolor="#FFFFFF"><a href="testint.html"><strong>Tester</strong></a></td>
+        <td bgcolor="#FFFFFF"><strong>Tokenizer</strong></td>
+        <td bgcolor="#FFFFFF"><a href="forthint.html"><strong>Forthing</strong></a></td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font color="#BF0000" size="4"><strong>Tokenizer Interpreter</strong></font></p>
+
+<p><font color="#000000">Tokenizer mode is for appending
+tokenized code to the target image. In the example below I
+launched Firmware Studio, loaded a token assignment file, and
+loaded the driver code for an LCD module. The resulting <strong>lcd_emit.sb</strong>
+file is the ROM image (tokenized code with a boilerplate) that
+gets loaded into the LCD module's serial EEPROM.</font></p>
+
+<p><font color="#000000">All this was done without source code
+for the system's ROM. An end user can write add-on code given
+only the token assignment file and some guidance as to how to use
+the language.</font></p>
+
+<p><img src="snaptoke.gif" width="426" height="261"></p>
+
+<p><font color="#000000">You can enter tokenizer mode by typing
+TI or TOKENIZING. In tokenizer mode, the left margin displays the
+same as in host mode.</font></p>
+
+<p><font color="#000000">The tokenizer interpreter is the
+simplest of all the interpreters:</font></p>
+
+<table border="2" cellspacing="1" bordercolor="#C00000">
+    <tr>
+        <td><font face="Arial">Search the search order for the
+        word<br>
+        Found?<br>
+        IF Execute it<br>
+        <img src="tab.gif" width="24" height="11">Was this a
+        target word?<br>
+        <img src="tab.gif" width="24" height="11">IF compile a
+        token for it<br>
+        <img src="tab.gif" width="24" height="11">ENDIF<br>
+        ELSE<br>
+        <img src="tab.gif" width="24" height="11">Try to convert
+        the word to a number<br>
+        <img src="tab.gif" width="24" height="11">Converted ok?<br>
+        <img src="tab.gif" width="24" height="11">IF Compile the
+        token for literal<br>
+        <img src="tab.gif" width="24" height="11">ELSE Error:
+        word is unrecognized<br>
+        <img src="tab.gif" width="24" height="11">ENDIF<br>
+        ENDIF</font></td>
+    </tr>
+</table>
+
+<p>Token values are represented by either one or two bytes. The
+most-used tokens are 1-byte values between 32 and 255. Values
+between 1 and 31 cause a second byte to be fetched and combined
+with the first to form a number between 256 and 8191. If the
+first byte is zero, two bytes are fetched to form all remaining
+16-bit values.</p>
+
+<p>Token value zero and any other three-byte tokens are included
+for future expansion. Currently, TOF doesn't use and probably
+won't work with three-byte tokens.</p>
+
+<p>&nbsp;</p>
+</body>
+</html>

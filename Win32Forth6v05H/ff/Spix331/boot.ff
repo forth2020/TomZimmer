@@ -1,0 +1,71 @@
+host decimal
+anew Boot331
+homeorder
+1 constant hardware             \ hardware configuration (see below)
+
+8 >addrnibbles
+
+{{ hardware 1 = }} [IF]
+    1           constant family        \ CPU: 0=68K 1=CPU32 2=Coldfire
+    0x68331     constant chiptype      \ processor part#
+    14745600    constant xtalfreq      \ clock frequency in Hz
+    0           constant RomBase       \ ROM code's base address (test area)
+    0x7C00      constant RomSize       \ bytes of ROM
+    0           constant RamBase       \ base address of main system RAM
+    0x8000      constant RamSize       \ bytes of RAM
+    50          constant RamPartition  \ percentage of RAM for data
+                include BEGIN.FCF      \ 68K/Coldfire basic register assignments
+
+hex
+[THEN]
+
+\ Boot procedure:
+\ 1. Set up the SIM to handle RAM at 0x80000
+\ 2. Copy included binary file to RAM at 0x80400
+\ 3. Jump to 0x80400
+
+\ The boot ROM starts with some vectors. No exceptions are supported yet.
+headers-off
+0 org
+8FF00 , \ initial SP
+8 org code raw c;
+include-binary 68331COD.BIN             \ image to run after mem is configured
+
+\ The BCC grounds the CS lines of the SRAMs. CS2 goes to both RD* lines.
+\ CS0 and CS1 go the WR* lines of the MSB and LSB respectively.
+code table c;   0006 w,                 \ CSBOOT: 00000..7FFFF (29F040)
+                0805 w, 503E w,         \ CS0: Upper Write 0wait
+                0805 w, 303E w,         \ CS1: Lower Write 0wait
+                0805 w, 683E w,         \ CS2: Both Read 0wait
+here {{ 8 / }} >@@0
+code startup
+\ Some early masks (like my old BCC board) don't initialize SP. So, do it now.
+                lea.l 8FF00,sp
+                move.w #60CF,d0  move.w d0,MCR  \ keep dibug BDM tool happy
+                moveq  #6,d0   move.w d0,SYPCR  \ disable watchdog timer
+\ Configure memory. Default settings are okay for the ROM. Need to set up RAM.
+\ The M68331BCC has a pair of 8-bit SRAMs
+                lea.l table,a0
+                lea.l CSBARBT,a1
+                move.w (a0)+,(a1)+      \ set up boot memory size
+                addq.l #2,a1
+                moveq #6,d0
+        begin   move.w (a0)+,(a1)+      \ set up memory chip selects
+                subq.l #1,d0
+        until_eq
+\ Copy the ROM program to RAM and jump there. The ROM program must have been
+\ compiled to start at 80400.
+                movea.l #8,a0           \ ROM image
+                movea.l #80400,a1       \ RAM
+                move.l  #@@0,d0
+                begin   move.l (a0)+,(a1)+ \ 8 bytes per pass
+                        move.l (a0)+,(a1)+
+                        subq.l #1,d0
+                until_eq
+                nop nop nop
+                jmp 80400 c;
+code nada c;
+
+here 4 org cfa startup , org    \ resolve reset vector
+bsave rom.bin
+

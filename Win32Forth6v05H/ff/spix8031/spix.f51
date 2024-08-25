@@ -1,0 +1,122 @@
+\ Interface between generic expansion bus and hardware
+
+\ pin labels needed: cc, sck, mosi, miso
+
+\ Timing rules:
+\ 1. Minimum high/low time of 5 usec on any line.
+\ 2. When clocking data, allow a setup/hold time of 3 usec. This is to
+\    compensate for differences in wire delays caused by uneven wire
+\    capacitance.
+
+\ In this code, we assume 6 machine cycles amounts to 5 usec.
+
+
+/iram/ asmbyte spi_node
+       asmbyte spi_port
+/iram/
+
+SYSTEM DEFINITIONS main-tokens  \ ----------------------------------------
+
+code X_NODE     ( node# -- )            c( selects a new node)
+                mov spi_node, dpl  goto DROP c;
+
+code X_PORT     ( port# -- )            c( selects a port within a node)
+                mov spi_port, dpl  goto DROP c;
+
+code X_TRANSFER ( addr len -- )         c( xfer current port to/from memory)
+\ Shift an active SS to the desired node, then transfer the data.
+\ First, we assume all SS lines are inactive. As long as this is the case, it's
+\ safe to clock the port-select counter. Upon entry, the port# is indeterminate.
+                setb  mosi  mul ab              \ assume SCK is already '1'
+                clr   sck   mul ab              \ clear the port (row) counter
+                clr   mosi  mul ab
+                mov R7, spi_port                \ SCK  X--___--
+                setb  mosi  mul ab              \ MOSI XX--_---
+                setb  sck   mul ab
+        begin   mov a, R7
+        while_nz dec R7
+                clr   sck   mul ab              \ clock the row counter
+                clr   mosi  mul ab              \ SCK  -__--
+                setb  sck   mul ab              \ MOSI --__-
+                setb  mosi  setb ss
+        repeat
+\ Now that the port selector is set up, prepare to clock a '0' bit to the /SS
+\ line of the selected node.
+                clr  mosi  mul ab               \ MOSI XX-_--____
+                clr  ss                         \ SS   --------__
+                mov a, spi_node                 \ select node 0
+\ If node is nonzero, raise SCK to clear the column clock and pulse MOSI
+\ ss   -________----------- waveform for 2 x_node
+\ sck  ---____----____-----
+\ mosi _____----____----___
+\      _____--______--_____ column clock inside PLD, falling edge clocks column
+\ ss'  -------________----- wire delay gives SS to next module some setup time
+\ ss"  ---------------_____
+        begin
+        while_nz clr  sck  nop nop  dec acc     \ propagate SS to the right node
+                 setb mosi nop nop nop
+                 setb sck  nop nop nop
+                 clr  mosi  setb ss
+        repeat
+\ At this point, the SS line for spi_node has been activated.
+\ SPI clocking:
+\ sck  --____----____----____      note: don't change mosi while sck=0
+\ mosi 0000001111111122222222  <-- SPI device latches this at rising edge
+\ miso 0011111111222222223333  <-- SPI device provides next bit at falling edge
+                push dpl  call DROP  pop reg7   \ R7 = length, DPTR = address
+        begin   mov a, R7
+        while_nz dec R7  mov r6, #8             \ loop = 95 kHz with 14.75M xtal
+                movx a, @dptr                   \ _____________________________
+                for                             \ MOSI should change mid-clk  1
+                        mov c, miso             \ get incoming bit            1
+                        rlc a  mov mosi, c      \ set next output bit         3
+                        nop nop clr sck         \ request next incoming bit   1_
+                        nop nop nop nop nop     \                             5
+                        setb sck                \ clock output bit            1_
+                next R6                         \ ____________________________2
+\ miso -@------------@--------------
+\ mosi ----!------------!-----------            \ cycle by cycle bus activity
+\ sck  --------______-------______--
+\              ^request next bit from slave (setup = 7 cycles)
+\                    ^latch the outgoing bit into the slave (setup = 10 cycles)
+\ Note: MOSI gets 5 usec setup time, which is a 250m round trip through cable.
+\ The speed of light limits the longest possible extension cable to about 200m.
+                mov c, miso  rlc a
+                cpl a                           \ MOSI is inverted so CPL input
+                movx @dptr, a  inc dptr
+        repeat  clr  mosi  nop setb ss nop      \ inactivate SS
+                clr  sck   mul ab
+                setb mosi  mul ab nop           \ SCK  X--___--
+                clr  mosi  mul ab               \ MOSI XX__-___
+                setb sck  goto DROP c;
+
+: X_RESET       ( -- )  0 X_NODE 0 X_PORT       c( clears the bus logic)
+                pad 0 X_TRANSFER ;              \ clear the bus
+
+\ USAGE:
+\       X_RESET is called at startup.
+
+\       A word accessing a port in a device selects its node# as determined
+\       at startup using X_NODE. Then it uses X_PORT to select the port. It
+\       must use X_PORT after any X_NODE change.
+
+\       X_TRANSFER serves to both read and write to a port.
+
+{{ hex }}
+
+code X_SVC?     ( -- f )                c( looks for service plug)
+\ A service plug disables bootup. On the SPIX bus, short
+\ pins 5 & 6 together to indicate a service plug.
+                setb sck
+                mov a, #55  mov r7, #8
+        for     mov c, miso  rlc a
+                mov sck, c
+                nop nop nop nop
+        next r7 setb sck
+                xrl a, #AA
+        if_z    goto true
+        then    goto false
+                c;
+
+{{ decimal }}
+

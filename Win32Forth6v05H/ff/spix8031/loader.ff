@@ -1,0 +1,114 @@
+\ Boot loader for external devices on the SPIX bus
+
+\ Boot sequence:
+\       Evaluate primary boot code (in target board's EEPROM)
+\       Initialize the expansion interface
+\       Select node 0
+\       BEGIN   Attempt to evaluate boot code from the node.
+\               If valid boot code, append the node number to the active list.
+\               Select the next node
+\       UNTIL four consecutive invalid boot devices are found.
+\       Evaluate secondary boot code (in target board's EEPROM)
+
+\ External devices contain the following boilerplate in their boot EEPROMs:
+\ byte  contents (big endian)
+\ 000   0xC0DE indicates that this EEPROM contains code
+\ 002   Vendor key (00=generic)
+\ 003   0x07C9
+\ 005   16-bit checksum
+\ 007   24-bit length
+\ 00A   code...
+\ 7FF   last usable byte in 25C160 EEPROM
+
+\ Hot plugging (proposed):
+\       The easy way: x_test the last loaded device, reboot if it's missing.
+\       Poll the first free non-device, add it on if found.  Works for SPIX.
+\       More elaborate polling will be needed for a multidrop-type bus.
+
+decimal
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+   1 constant BootKey                   c( boot ROM must contain 0 or this key)
+\ If you have multiple products with TOF, this provides an optional second level
+\ of protection. A generic add-on device (key 00) will work with any product.
+\ A product-specific add-on device will only work in a product that has a
+\ matching Vendor Key value.
+
+create Password 0xC0 c, 0xDE c,         c( password for add-on devices)
+\ The first two bytes of any add-on device's boot EEPROM must contain these two
+\ bytes. Tinyboot uses this password, you may use a different one to ensure that
+\ only your devices work with your products.
+
+variable plugtally      \ need several consecutive errors before doing a reboot
+
+system definitions  main-tokens \ =========================================
+
+2048 array BootImage                    c( 2K boot ROM image)
+\ The BootImage array is for temporary storage of boot code. We can't boot
+\ directly from EEPROM because of possible communication errors. So, we copy it
+\ to RAM and then evaluate it. You can define this as a constant if you know of
+\ a free area of RAM that nobody will bother.
+
+variable CurrentNode                    c( next free node)
+\ Points to the next empty node, the one after the end of the SPIX chain.
+\ This is bumped upward during ennumeration of the SPIX devices.
+
+variable deadbus                        c( T if booting has been disabled)
+
+also hidden
+: my            ( -- ) ( -- node# )     c( current node number)
+\ state smart: compile a literal or return the number.
+\ The interpret action only makes sense when evaluating boot code.
+\ Sample Usage : emit my x_node lcd_emit ;
+                CurrentNode @ (number) ; immediate
+
+: x_test        ( node -- ior )         c( test boot ROM   ior: 0=valid)
+\ Get data from the bottom of the boot EEPROM
+\ Expecting: C0 DE ?? 07 C9 csum16 length24
+                x_node 0 x_port         \ select the EEPROM for this node
+                5                       \ try to read it 5 times:
+        begin   pause 1-  dup 7 and
+        while   0 eepad     10 x_read   \ get a solid read of the boot device
+                0 BootImage 10 x_read
+                eepad BootImage 10 comp 0=
+                if drop 9 then          \ ok: terminate loop
+        repeat                          \ read result = 8 or 0
+        if      eepad Password 2 comp   \ bad password?
+                if      1               \ error 1: invalid password
+                else    eepad 2 + c@
+                        dup BootKey <>  \ error -1: key doesn't match
+                        swap 0<> and    \ accept it anyway if the key is 0
+                then
+        else    2                       \ error 2: error reading device
+        then    ;
+
+: eval_ext      ( -- )                  c( evaluate external SIP boot code)
+                3 BootImage             ( src dest )
+                BootImage 8 +           \ get big-endian length
+                count >r c@ r> byte-join 7 + ( length )
+                x_read                          \ read into RAM
+                eval=mem  BootImage evaluate    \ evaluate it
+        ?dup    if ." SIP #" CurrentNode @ .    \ an evaluation error occured
+                   ." load error " . cr
+                then
+                CurrentNode incr ;
+
+2variable HPtimer       \ timer to limit polling bandwidth
+
+: HotPlugPoll   ( -- )                  c( Test for change in bus config )
+                deadbus @ ?exit         \ nothing to do to a dead bus
+                HPtimer premature? ?exit \ too soon to poll yet
+                CurrentNode @
+                dup>r x_test 0=         \ have a new device?
+                r> ?dup if 1- x_test or then \ or missing the last device?
+        if      plugtally incr
+                plugtally @ 4 >
+                if      reboot
+                then
+        else    plugtally off
+        then    ;
+
+previous
+
+
+

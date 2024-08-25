@@ -1,0 +1,119 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<title></title>
+</head>
+
+<body bgcolor="#C0FFFF">
+
+<hr>
+
+<p><font color="#BF0000" size="5"><strong><img src="butwatch.gif"
+width="24" height="22"> Watch Window</strong></font></p>
+
+<hr>
+
+<p>The watch window monitors data on the target board, and it
+updates itself as often as the debugger link will permit. It can
+call any Forth word with a known data type. A word can be
+assigned a data type with the DATATYPE directive.</p>
+
+<hr>
+
+<p>A word with an associated data type can be added to the watch
+window by clicking on its datatype field in the <a
+href="tokenbrowser.html">token browser</a> window. In the example
+below, I clicked on the datatype fields of COUNTER@ and HERE.</p>
+
+<p><img src="snapwatch.gif" width="642" height="122"></p>
+
+<p><font color="#BF0000"><strong>Forth word watching:</strong></font></p>
+
+<table border="0">
+    <tr>
+        <td><b>ADDWATCH</b></td>
+        <td nowrap><em>( &lt;name&gt; -- ) </em></td>
+        <td width="100%">Adds a word to the watch list</td>
+    </tr>
+    <tr>
+        <td><b>CLEARWATCH</b></td>
+        <td nowrap><em>( -- ) </em></td>
+        <td width="100%">Clears the watch list</td>
+    </tr>
+</table>
+
+<p><font color="#BF0000"><strong>Generic memory watching:</strong></font></p>
+
+<table border="0">
+    <tr>
+        <td><strong>WATCHDATA&quot; </strong></td>
+        <td nowrap><em>( addr format string&quot; -- ) </em></td>
+        <td width="100%">Adds watch parameter for data memory</td>
+    </tr>
+    <tr>
+        <td><strong>WATCHCODE&quot; </strong></td>
+        <td nowrap><em>( addr format string&quot; -- ) </em></td>
+        <td width="100%">Adds watch parameter for code memory</td>
+    </tr>
+    <tr>
+        <td><strong>WATCHREG&quot;</strong></td>
+        <td nowrap><em>( addr format string&quot; -- ) </em></td>
+        <td width="100%">Adds watch parameter for register space</td>
+    </tr>
+    <tr>
+        <td><strong>WATCHEE&quot;</strong></td>
+        <td nowrap><em>( addr format string&quot; -- ) </em></td>
+        <td width="100%">Adds watch parameter for EEPROM</td>
+    </tr>
+    <tr>
+        <td><strong>CLEARWATCH</strong></td>
+        <td><em>( -- )</em></td>
+        <td>Clears the watch list</td>
+    </tr>
+</table>
+
+<p>Addr = address of data to watch</p>
+
+<p>Format is two bytes: the upper byte is the display format and
+the lower byte is the byte count. </p>
+
+<table border="1">
+    <tr>
+        <td colspan="2" bgcolor="#FFFF00"><strong>Formats:</strong></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">0 </td>
+        <td bgcolor="#FFFFFF">byte value</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">1</td>
+        <td bgcolor="#FFFFFF">16-bit little-endian</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">2</td>
+        <td bgcolor="#FFFFFF">16-bit big-endian</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">3</td>
+        <td bgcolor="#FFFFFF">32-bit little-endian</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">4</td>
+        <td bgcolor="#FFFFFF">32-bit big-endian</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFFF">5</td>
+        <td bgcolor="#FFFFFF">ASCII</td>
+    </tr>
+</table>
+
+<p>Example: 0xC000 0x102 WATCHDATA&quot; Location C000 = &quot;<br>
+adds an item to the watch list that fetches 2 bytes from data
+memory location<br>
+0xC000 and displays the data as a 16-bit little-endian number.<br>
+</p>
+</body>
+</html>

@@ -1,0 +1,465 @@
+\ Color configuration for winview
+\ n1 n2 name:  n1 = action  n2 = color  name = blank-delimited string
+
+\ 1 = colorize single word              n1=non-number is a comment
+\ 2 = same color to end of line
+\ 3 = same color to )
+\ 4 = same color to "
+\ 5 = same color to }
+\ 6 = same color to ]
+\ 7 = same color to >
+\ 8 = color the first word of a pair, the second word is black
+\ 9 = same color in a pair
+
+\  0 black      1 red         2 green      3 yellow
+\  4 blue       5 magenta     6 cyan       7 ltgray
+\  8 dkgray     9 ltred      10 ltgreen   11 ltyellow
+\ 12 ltblue    13 ltmagenta  14 ltcyan    15 gray
+
+\ Special parsing modes: command = 256..511
+\ lower bits of special mode number enable the following:
+\ b0 = ; marks comment to EOL
+\ b1 = * in 1st column marks comment to EOL
+\ b2 = $ in first char of string --> check if hex number
+\ b3 = ;?-- is a special comment line where ? sets the color
+\ b4 = number checking handles VHDL literals
+\ b5 = test for traditional string literals
+
+1  12   CODE            defining words that come in pairs
+1  12   CFA-CODE
+1  12   END-CODE
+1  12   C;
+1  12   :
+1  12   :NONAME
+1  12   ;
+1  12   :M
+1  12   ;M
+1  12   :CLASS
+1  12   ;CLASS
+1  12   :OBJECT
+1  12   ;OBJECT
+1  12   EXIT            unusual control things that should stand out
+1  12   ?EXIT
+1  12   LEAVE
+1  12   UNLOOP
+1  12   QUIT
+1  12   RECURSE
+1  12   IF              control structures
+1  12   ELSE
+1  12   THEN
+1  12   BEGIN
+1  12   WHILE
+1  12   REPEAT
+1  12   AGAIN
+1  12   UNTIL
+1  12   CONTINUE
+1  12   DO
+1  12   ?DO
+1  12   LOOP
+1  12   +LOOP
+1  12   CASE
+1  12   OF
+1  12   ENDOF
+1  12   ENDCASE
+1  6    HERE            dictionary and search order
+1  6    ORG
+1  6    ALLOT
+1  6    ALSO
+1  6    ONLY
+1  6    PREVIOUS
+1  6    DEFINITIONS
+1  6    IMMEDIATE
+1  6    COMPILE-ONLY
+1  6    ALIGN
+1  6    ENVIRONMENT?
+1  6    IN-APPLICATION
+1  6    IN-SYSTEM
+1  6    MARKER
+1  6    ANEW
+1  5    VALUE           single defining words
+1  5    CONSTANT
+1  5    VARIABLE
+1  5    2CONSTANT
+1  5    2VARIABLE
+1  5    USER
+1  5    INT
+9  3    LOCAL           local variable
+1  5    DEFER
+1  5    CREATE
+1  5    DOES>
+1  5    VOCABULARY
+5  3    {               locals between { and }
+2  2    \
+2  2    //
+3  2    (
+3  2    C(
+3  2    .(
+4  1    ."              string constants
+4  1    S"
+4  1    C"
+4  1    ABORT"
+4  1    Z"
+4  1    Z,"
+4  1    +Z,"
+9  1    H#              number follows, color both
+9  1    '
+9  1    [']
+9  1    [CHAR]
+1  1    FALSE           other constants
+1  1    TRUE
+1  1    BL
+9  13   POSTPONE
+9  13   [COMPILE]
+9  13   TO
+9  13   +TO
+9  13   IS
+1  9    #IF             conditional compilation
+1  9    #ELSE
+1  9    #THEN
+1  9    [IF]
+1  9    [ELSE]
+1  9    [THEN]
+9  9    INCLUDE
+9  9    FLOAD
+9  9    FSAVE
+9  9    NEEDS
+1  9    [
+1  9    ]
+1  9    ?[
+1  9    ]?
+9  9    IMAGE-SAVE
+9  9    TURNKEY
+1  9    \S
+
+\ Other ANS CORE
+
+1  4    !
+1  4    #
+1  4    #>
+1  4    #S
+1  4    *
+1  4    */
+1  4    */MOD
+1  4    +
+1  4    +!
+1  4    ,
+1  4    -
+1  4    .
+1  4    /
+1  4    /MOD
+1  4    0<
+1  4    0=
+1  4    1+
+1  4    1-
+1  4    2!
+1  4    2*
+1  4    2/
+1  4    2@
+1  4    2DROP
+1  4    2DUP
+1  4    2OVER
+1  4    2SWAP
+1  4    <
+1  4    <#
+1  4    =
+1  4    >
+1  4    >BODY
+1  4    >IN
+1  4    >NUMBER
+1  4    >R
+1  4    ?DUP
+1  4    @
+1  4    ABS
+1  4    ABORT
+1  4    ACCEPT
+1  4    ALIGNED
+1  4    AND
+1  4    BASE
+1  4    C!
+1  4    C,
+1  4    C@
+1  4    CELL+
+1  4    CELLS
+1  4    CHAR
+1  4    CHAR+
+1  4    CHARS
+1  4    COUNT
+1  4    CR
+1  4    DECIMAL
+1  4    DEPTH
+1  4    DROP
+1  4    DUP
+1  4    EMIT
+1  4    EVALUATE
+1  4    EXECUTE
+1  4    FILL
+1  4    FIND
+1  4    FM/MOD
+1  4    HOLD
+1  4    I
+1  4    INVERT
+1  4    J
+1  4    KEY
+1  4    LITERAL
+1  4    LSHIFT
+1  4    M*
+1  4    MAX
+1  4    MIN
+1  4    MOD
+1  4    MOVE
+1  4    NEGATE
+1  4    OR
+1  4    OVER
+1  4    R>
+1  4    R@
+1  4    ROT
+1  4    RSHIFT
+1  4    S>D
+1  4    SIGN
+1  4    SM/REM
+1  4    SOURCE
+1  4    SPACE
+1  4    SPACES
+1  4    STATE
+1  4    SWAP
+1  4    TYPE
+1  4    U.
+1  4    U<
+1  4    UM*
+1  4    UM/MOD
+1  4    WORD
+1  4    XOR
+
+\ Other ANS EXT
+
+1  15   #TIB
+1  15   .R
+1  15   0<>
+1  15   0>
+1  15   2>R
+1  15   2R>
+1  15   2R@
+1  15   <>
+1  15   COMPILE,
+1  15   CONVERT
+1  15   ERASE
+1  15   EXPECT
+1  15   HEX
+1  15   NIP
+1  15   PAD
+1  15   PARSE
+1  15   PICK
+1  15   QUERY
+1  15   REFILL
+1  15   RESTORE-INPUT
+1  15   ROLL
+1  15   SAVE-INPUT
+1  15   SOURCE-ID
+1  15   SPAN
+1  15   TIB
+1  15   TUCK
+1  15   U.R
+1  15   U>
+1  15   UNUSED
+1  15   WITHIN
+
+\ Other stuff used in Firmware Studio
+
+1  12   LOCO
+1  12   ASSEMBLE
+1  12   MACRO:
+1  12   MULTI           for MULTI..REPEAT
+1  12   NEVER           works like 0 IF  \ for processors with SKIP instruction
+1  12   NOWAY           works like 0 WHILE
+1  12   FOR
+1  12   NEXT
+1  6    RAM
+1  6    ROM
+1  6    {{
+1  6    }}
+1  6    LOW-TOKENS
+1  6    MAIN-TOKENS
+1  6    TEMP-TOKENS
+1  9    >TOKEN#
+1  5    ARRAY
+1  5    CVARIABLE
+1  5    ASMBYTE
+1  5    ASMWORD
+1  5    ASMLONG
+1  5    ASMARRAY
+1  5    ASMLABEL
+9  1    ASMLABEL?
+1  9    C[
+1  9    ]C
+1  9    ((
+1  9    ))
+4  1    ,"
+4  1    DB"
+
+1  4    }VECTOR
+1  4    VECTOR{
+
+\ Coldfire opcodes
+
+1  4    ADD.L
+1  4    ADDA.L
+1  4    ADDI.L
+1  4    ADDQ.L
+1  4    ADDX.L
+1  4    AND.L
+1  4    ANDI.L
+1  4    ASL.L
+1  4    ASR.L
+1  9    BCC
+1  9    BCS
+1  9    BEQ
+1  9    BGE
+1  9    BGT
+1  9    BHI
+1  9    BLE
+1  9    BLS
+1  9    BLT
+1  9    BMI
+1  9    BNE
+1  9    BPL
+1  9    BVC
+1  9    BVS
+1  9    BHI
+1  9    BLO
+1  9    BRA
+1  9    XBRA
+1  9    BSR
+1  9    XBSR
+1  4    BCHG.B
+1  4    BCHG.L
+1  4    BCLR.B
+1  4    BCLR.L
+1  4    BSET.B
+1  4    BSET.L
+1  4    BTST.B
+1  4    BTST.L
+1  4    CLR.B
+1  4    CLR.W
+1  4    CLR.L
+1  4    CMP.L
+1  4    CMPA.L
+1  4    CMPI.L
+1  4    DIVS.W
+1  4    DIVS.L
+1  4    DIVSL.L
+1  4    DIVU.W
+1  4    DIVU.L
+1  4    DIVUL.L
+1  4    EOR.L
+1  4    EORI.L
+1  4    EXT.W
+1  4    EXT.L
+1  4    EXTB.L
+1  9    JMP
+1  9    JSR
+1  4    LEA.L
+1  4    LINK
+1  4    LSL.L
+1  4    LSR.L
+1  4    MOVE
+1  4    MOVE.B
+1  4    MOVE.W
+1  4    MOVE.L
+1  4    MOVEA.W
+1  4    MOVEA.L
+1  4    MOVEM
+1  4    MOVEQ
+1  4    MULS.W
+1  4    MULS.L
+1  4    MULU.W
+1  4    MULU.L
+1  4    NEG.L
+1  4    NEGX.L
+1  4    NOP
+1  4    NOT.L
+1  4    OR.L
+1  4    ORI.L
+1  4    PEA.L
+1  4    RTS
+1  4    SCC
+1  4    SCS
+1  4    SEQ
+1  4    SGE
+1  4    SGT
+1  4    SHI
+1  4    SLE
+1  4    SLS
+1  4    SLT
+1  4    SMI
+1  4    SNE
+1  4    SPL
+1  4    SVC
+1  4    SVS
+1  4    SHI
+1  4    SLO
+1  4    SUB.L
+1  4    SUBA.L
+1  4    SUBI.L
+1  4    SUBQ.L
+1  4    SUBX.L
+1  4    TRAP
+1  4    TRAPF.W
+1  4    TRAPF.L
+1  4    TST.B
+1  4    TST.W
+1  4    TST.L
+1  4    UNLK
+
+1  9    GOTO
+
+1  12   IF_CC
+1  12   IF_CS
+1  12   IF_EQ
+1  12   IF_GE
+1  12   IF_GT
+1  12   IF_HI
+1  12   IF_LE
+1  12   IF_LS
+1  12   IF_LT
+1  12   IF_MI
+1  12   IF_NE
+1  12   IF_PL
+1  12   IF_VC
+1  12   IF_VS
+1  12   IF_HI
+1  12   IF_LO
+
+1  12   WHILE_CC
+1  12   WHILE_CS
+1  12   WHILE_EQ
+1  12   WHILE_GE
+1  12   WHILE_GT
+1  12   WHILE_HI
+1  12   WHILE_LE
+1  12   WHILE_LS
+1  12   WHILE_LT
+1  12   WHILE_MI
+1  12   WHILE_NE
+1  12   WHILE_PL
+1  12   WHILE_VC
+1  12   WHILE_VS
+1  12   WHILE_HI
+1  12   WHILE_LO
+
+1  12   UNTIL_CC
+1  12   UNTIL_CS
+1  12   UNTIL_EQ
+1  12   UNTIL_GE
+1  12   UNTIL_GT
+1  12   UNTIL_HI
+1  12   UNTIL_LE
+1  12   UNTIL_LS
+1  12   UNTIL_LT
+1  12   UNTIL_MI
+1  12   UNTIL_NE
+1  12   UNTIL_PL
+1  12   UNTIL_VC
+1  12   UNTIL_VS
+1  12   UNTIL_HI
+1  12   UNTIL_LO
+
