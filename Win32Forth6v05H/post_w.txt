@@ -1,0 +1,43 @@
+
+You can set up your DOS path to your new installation directory at this
+time or you can skip this now by pressing ALT-F/X
+
+
+                  ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+                  ³          Shortcut Keys             ³
+                  ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´
+                  ³  ALT-1 to get back here.           ³
+                  ³                                    ³
+                  ³  ALT-2 to get to AutoExec.BAT      ³
+                  ³                                    ³
+                  ³  ALT-F/X to quit.                  ³
+                  ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+
+In order to assure that your application can find the Win32For IMG and DLL
+without loading your already weary WINDOWS\SYSTEM directory it is recommended
+that you set your environment to include the directory where you just
+installed your new Win32Forth package.
+
+                                                        [MORE - PgDn]
+                                                        [MORE - PgUp]
+
+This will involve adding the following line to AutoExec.Bat.
+
+        PATH=%PATH%;C:\Win32For
+
+If you did not install in the default directory, modify the path and use the
+new string in your AutoExec.BAT file.  You can highlight the text with your
+mouse (or shift key and cursor keys) and you can copy and paste it into
+AutoExec.Bat (ALT-2).
+
+See the [Edit] menu up top for more information if you need it.
+
+
+==========================================================================
+If you are not sure what to do, you can skip this step for now and when/if
+you need to, you can click on Edit_Autoexec.EXE to run this program again
+later.
+
+Changes will take effect after reboot.
+==========================================================================
