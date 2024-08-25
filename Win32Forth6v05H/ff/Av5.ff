@@ -1,0 +1,224 @@
+\ ------------------------------------------------------------------------
+newscreen
+
+\ ------------------------------------------------------------------------
+s" TESTING  CASE OF ENDOF ENDCASE UNUSED " report
+: CASET   CASE  1 OF 111 ENDOF
+                2 OF 222 ENDOF
+                3 OF 333 ENDOF
+          ENDCASE ;
+{ 1 CASET -> 111 }
+{ 2 CASET -> 222 }
+{ 3 CASET -> 333 }
+{ 9 CASET -> }
+{ CPUTYPE DEPTH NIP -> 1 }
+
+{ RAM UNUSED  0 C, -> UNUSED CHAR+ }
+{ ROM UNUSED  0 C, -> UNUSED CHAR+ }
+
+\ ------------------------------------------------------------------------
+s" TESTING  :NONAME EXECUTECFA LAY" report
+
+{ 4 :NONAME OVER + ; DEPTH SWAP EXECUTECFA -> 4 6 }
+
+{ PAD 3 LAY 4 LAY 5 SWAP C! -> }
+{ PAD COUNT SWAP COUNT SWAP C@ -> 3 4 5 }
+
+\ ------------------------------------------------------------------------
+s" TESTING  ON? OFF? >DIGIT DIGIT" report
+
+{ VARIABLE TVAR -> TVAR OFF }
+{ TVAR OFF? -> TRUE }
+{ TVAR ON? -> FALSE }
+{ TVAR INCR -> }
+{ TVAR OFF? -> FALSE }
+{ TVAR ON? -> TRUE }
+{ TVAR ON -> }
+{ TVAR OFF? -> FALSE }
+{ TVAR ON? -> TRUE }
+{ 0 >DIGIT -> CHAR 0 }
+{ 9 >DIGIT -> CHAR 9 }
+{ 0A >DIGIT -> CHAR A }
+{ 23 >DIGIT -> CHAR Z }
+{ CHAR 0 1- 4 DIGIT -> CHAR 0 1- FALSE }
+{ CHAR 0    4 DIGIT -> 0 TRUE }
+{ CHAR 3    4 DIGIT -> 3 TRUE }
+{ CHAR 4    4 DIGIT -> CHAR 4 FALSE }
+{ FF        4 DIGIT -> FF FALSE }
+
+\ ------------------------------------------------------------------------
+s" TESTING  STRING ERASE BLANK " report
+
+{ 10 STRING XSTR -> }
+{ XSTR NIP -> 10 }
+{ XSTR 4 FILL -> }
+{ XSTR DROP 3 BLANK -> }
+{ XSTR DROP 2 ERASE -> }
+{ XSTR DROP 1 7 FILL -> }
+{ XSTR DROP 0 ERASE -> }
+{ XSTR DROP COUNT SWAP COUNT SWAP COUNT SWAP C@ -> 7 0 BL 4 }
+
+s" TESTING  -SCAN EMITS .R UD. D." report
+{ s"      "  BL -SCAN NIP -> 0 }
+{ s" ABXXX"  CHAR X -SCAN NIP -> 2 }
+
+{ : moreouttest
+        CR ." You should see 8 stars: " 8 [CHAR] * EMITS
+        CR ." 1234 right justified:   " 0 [CHAR] ? EMITS
+                                        1234 8 .R
+        CR ." The 4 should be under the rightmost star"
+        CR ." Max unsigned double: " -1. decimal ud. hex
+        CR ." Minus 1 is " -1 -1 d.
+        ; -> }
+{ moreouttest -> }
+
+s" TESTING  |COUNTER| U2/ UD2/ D2/ D2* " report
+s"     DNEGATE DABS " report
+
+{ -1. |COUNTER| -> FFFFFFFF. }
+
+{ 0 U2/ -> 0 }
+{ 1 U2/ -> 0 }
+{ 4000 U2/ -> 2000 }
+{ -1 U2/ -> MAX-INT }
+{ -1 1 XOR U2/ -> MAX-INT }
+
+{ 0 0 UD2/ -> 0 0 }
+{ 1 0 UD2/ -> 0 0 }
+{ 4444 4444 UD2/ -> 2222 2222 }
+{ -1 -1 UD2/ -> -1 MAX-INT }
+
+{ 0 0 D2/ -> 0 0 }
+{ 1 0 D2/ -> 0 0 }
+{ 4444 4444 D2/ -> 2222 2222 }
+{ -1 -1 D2/ -> -1 -1 }
+
+{ 0 0 D2* -> 0 0 }
+{ 1 0 D2* -> 2 0 }
+{ 4444 4444 D2* -> 8888 8888 }
+{ -1 -1 D2* -> -2 -1 }
+
+{ 0 0 DNEGATE -> 0 0 }
+{ 1 0 DNEGATE -> -1 -1 }
+{ -1 -1 DNEGATE -> 1 0 }
+{ 2 0 DNEGATE -> -2 -1 }
+{ -2 -1 DNEGATE -> 2 0 }
+
+{ 0 0 DABS -> 0 0 }
+{ 1 0 DABS -> 1 0 }
+{ -1 -1 DABS -> 1 0 }
+{ 0 -1 DABS -> 0 1 }
+
+s" TESTING  A! A@ !A @A !A+ @A+ @R @R+ " report
+s"     C!A C@A C!A+ C@A+ " report
+
+{ 8 CELLS ARRAY MYA -> }
+
+{ MYA 8 CELLS ERASE -> }
+{ : MYAA  MYA A! A@ ; -> }
+{ MYAA -> MYA }
+
+{ : MYAB  MYA A! 111 !A+ 222 !A+ A@ ; -> }
+{ MYAB 2 CELLS - -> MYA }
+{ MYA @ MYA CELL+ @ -> 111 222 }
+{ : PX1  MYA >R @R+ @R+ R> 2 CELLS - ; -> }
+{ PX1 -> 111 222 MYA }
+
+{ : MYAC  MYA A! 333 !A A@ ; -> }
+{ MYAC -> MYA }
+{ MYA @ -> 333 }
+
+{ : MYAD MYA A! 1 C!A 2 C!A+ 3 C!A+ 4 C!A A@ ; -> }
+{ MYAD 2 CHARS - -> MYA }
+{ : MYAE MYA A! C@A+ C@A+ C@A A@ ; -> }
+{ MYAE 2 CHARS - -> 2 3 4 MYA }  
+
+
+s" TESTING  CLEAR BOUNDS HERE ORG ?DO ?EXIT" report
+
+{ 1 2 3 CLEAR -> }
+{ 3 7 BOUNDS -> 0A 3 }
+
+{ HERE DUP CELL + ORG  HERE SWAP - -> CELL }
+
+{ : GD1X ?DO I LOOP ; -> }
+{ 3 3 GD1X -> }
+{ 4 1 GD1X -> 1 2 3 }
+{ 2 -1 GD1X -> -1 0 1 }
+{ MID-UINT+1 MID-UINT GD1X -> MID-UINT }
+
+{ : GD2X ?DO I -1 +LOOP ; -> }
+{ -1 -1 GD2X -> }
+{ 1 4 GD2X -> 4 3 2 1 }
+{ -1 2 GD2X -> 2 1 0 -1 }
+{ MID-UINT MID-UINT+1 GD2X -> MID-UINT+1 MID-UINT }
+
+{ : QEX  BEGIN DUP DUP 2 - 0= ?EXIT 1- AGAIN ; -> }
+{ 4 QEX -> 4 3 2 2 }
+
+
+s" TESTING  COMP SCAN SKIP /STRING" report
+
+{ S" FORTH" MYA SWAP MOVE -> }
+{ MYA  S" FORTH"  COMP -> 0 }
+{ MYA  S" FORTE"  COMP -> -1 }
+{ MYA  S" FORTX"  COMP -> 1 }
+{ MYA  PAD 0 COMP -> 0 }
+
+{ S" HELLO" 10 /STRING NIP -> 0 }
+{ S" HELLO" 3 /STRING NIP -> 2 }
+{ MYA S" GOFORTH" 2 /STRING COMP -> 0 }
+
+{ MYA S" WHEREFORTH" 'F' SCAN COMP -> 0 }
+{ S" HELLO" '?' SCAN NIP -> 0 }
+{ MYA 0 'F' SCAN NIP -> 0 }
+
+{ MYA S" ****FORTH" '*' SKIP COMP -> 0 }
+{ MYA S" FORTH" '?' SKIP COMP -> 0 }
+{ S" *****" '*' SKIP NIP -> 0 }
+
+{ 2 2 2 BETWEEN -> TRUE }
+{ 1 1 3 BETWEEN -> TRUE }
+{ 3 1 3 BETWEEN -> TRUE }
+{ 4 1 3 BETWEEN -> FALSE }
+
+{ 2 2 2 WITHIN -> FALSE }
+{ 1 1 3 WITHIN -> TRUE }
+{ 2 1 3 WITHIN -> TRUE }
+{ 3 1 3 WITHIN -> FALSE }   \ still need to check negative numbers
+
+s" TESTING  W@ W! W, UD* REBIND CPUTYPE " report
+s"     ,quote $TYPE " report
+
+{ CREATE MYB  HERE MYA !  123 W, 456 W, 789 W,  -> }
+{ MYB W@ -> 123 }
+{ HERE MYA @ - 3 /  MYB + W@  -> 456 }
+
+{ -1 -1 -1 UD* -> 1 -1 }
+{ 0 0 0 UD* -> 0 0 }
+
+{ : MSG1 123 ; -> }
+{ : MSG2 456 ; -> }
+{ MSG1 ' MSG2 ' MSG1 REBIND MSG1 -> 123 456 }
+
+{ : .CPUTYPE   CR ." CPU TYPE = " CPUTYPE . ; -> }
+{ .CPUTYPE -> }
+
+{ CREATE $TEST ," WORKING" -> }
+{ CR s" Should say WORKING --> " TYPE  $TEST $TYPE -> }
+
+s" TESTING  #IF #ELSE #ENDIF #THEN CELL CELL- " report
+
+{ 1 2 3 0 #IF DROP #THEN -> 1 2 3 }
+{ 1 2 3 1 #IF DROP #THEN -> 1 2 }
+{ 1 2 3 0 #IF DROP #ELSE SWAP #THEN -> 1 3 2 }
+{ 1 2 3 1 #IF DROP #ELSE SWAP #THEN -> 1 2 }
+{ 1 2 3 0 #IF DROP #ELSE SWAP #ENDIF -> 1 3 2 }
+{ 1 2 3 1 #IF DROP #ELSE SWAP #ENDIF -> 1 2 }
+
+{ 3 CELLS -> 3 CELL * }
+{ 0 CELL- -> 0 CELL - }
+{ 10 CELL- -> 10 CELL - }
+
+s" AV5" endreport
+

@@ -1,0 +1,237 @@
+((
+        Virtual UART Interrupt Service Routine (Half Duplex)
+
+        PORT BIT ASSIGNMENTS
+        Serial input =  __si  = INT0 pin (P3.3)
+        Serial output = __so
+        CTS in (0=ok) = __cts
+        Auxiliary serial output = __aso
+
+        CONSTANT ASSIGNMENTS (ASMLABELS)
+        sobuf = XRAM output buffer address / 256
+        sibuf = XRAM input buffer address / 256
+
+        Interrupt occurs at a rate of 9600 per second.
+        Receiver ISR and T0 ISR are both high priority.
+
+        Falling __si line triggers EXT0 interrupt
+
+))
+\ ----------------------------------------------------------------------
+
+ /bit/  asmbyte __vuartinhibit  \ T = don't replenish VUART from buffer
+ /bit/
+ /iram/ asmbyte _vstate         \ for vuart state machine
+        asmbyte _vstate1
+
+        asmbyte _soo    \ output pointer ------ output buffer --------
+        asmbyte _soi    \ input pointer
+        asmbyte _so     \ outgoing byte
+        asmbyte _aso    \ outgoing auxiliary byte, non-0xFF to trigger sending
+        asmbyte _iso    \ outgoing override byte, non-0xFF to trigger sending
+        asmbyte _sio    \ output pointer ------- input buffer --------
+        asmbyte _sii    \ input pointer
+        asmbyte _si     \ incoming byte
+ /iram/
+
+system definitions
+hex static
+loco T0timer    ( bump raw timer )
+                vector{ _vstate                         \ 4
+                push acc inc _time0  mov a, _time0      \ 4
+                if_z  inc _time1  mov a, _time1         \ 4
+                      if_z  inc _time2  mov a, _time2   \ 4
+                            if_z  inc _time3            \ 3
+                then  then  then
+                pop acc  reti c;                        \ 4 = 23
+
+\ Sending _so byte to __so pin
+loco T0send0    setb __so                               \ stop bit
+                mov _iso, #-1
+                vector _vstate, T0timer  reti c;
+loco T0send     push psw  push acc                      \ 4 + 6
+                mov a, _so  rrc a  mov _so, a           \ 3
+                mov __so, c                             \ 2
+                pop acc   pop psw  reti c;              \ 6 = 21
+loco T0send1    vector _vstate, T0send0  goto T0send c; \ bit7
+loco T0send2    vector _vstate, T0send1  goto T0send c; \ bit6
+loco T0send3    vector _vstate, T0send2  goto T0send c; \ bit5
+loco T0send4    vector _vstate, T0send3  goto T0send c; \ bit4
+loco T0send5    vector _vstate, T0send4  goto T0send c; \ bit3
+loco T0send6    vector _vstate, T0send5  goto T0send c; \ bit2
+loco T0send7    vector _vstate, T0send6  goto T0send c; \ bit1
+loco T0send8    vector _vstate, T0send7  goto T0send c; \ bit0
+loco T0send9    clr  __so                               \ start bit
+                vector _vstate, T0send8  reti c;
+
+\ Receiving _si byte from __si pin
+loco T0recv0    ( store incoming byte )
+                push acc  push dpl  push dph            \ 6
+                mov dph, #sibuf  mov dpl, _sii          \ 4
+                mov a, _si  movx @dptr, a  inc _sii     \ 4
+                pop dph  pop dpl  pop acc               \ 6
+                clr IE0  setb EX0                       \ 2
+                vector _vstate, T0timer  reti c;        \ 6 = 28
+loco T0recv     push psw  push acc                      \ 4 + 6
+                mov c, __si                             \ 1
+                mov a, _si  rrc a  mov _si, a           \ 3
+                pop acc   pop psw  reti c;              \ 6 = 20
+loco T0recv1    vector _vstate, T0recv0  goto T0recv c; \ bit7
+loco T0recv2    vector _vstate, T0recv1  goto T0recv c; \ bit6
+loco T0recv3    vector _vstate, T0recv2  goto T0recv c; \ bit5
+loco T0recv4    vector _vstate, T0recv3  goto T0recv c; \ bit4
+loco T0recv5    vector _vstate, T0recv4  goto T0recv c; \ bit3
+loco T0recv6    vector _vstate, T0recv5  goto T0recv c; \ bit2
+loco T0recv7    vector _vstate, T0recv6  goto T0recv c; \ bit1
+loco T0recv8    vector _vstate, T0recv7  goto T0recv c; \ bit0
+loco T0recv9    if_b    __si
+                        vector _vstate, T0timer  reti   \ false start bit
+                then    vector _vstate, T0recv8  reti   \ good start bit
+                c;
+
+\ Sending _aso byte to __aso pin
+loco T0asend0   setb __aso                              \ stop bit
+                mov _aso, #-1
+                vector _vstate, T0timer  reti c;
+loco T0asend    push psw  push acc                      \ 4 + 6
+                mov a, _aso  rrc a  mov _aso, a         \ 3
+                mov __aso, c                            \ 2
+                pop acc   pop psw  reti c;              \ 6 = 21
+loco T0asend1   vector _vstate, T0asend0  goto T0asend c;  \ bit7
+loco T0asend2   vector _vstate, T0asend1  goto T0asend c;  \ bit6
+loco T0asend3   vector _vstate, T0asend2  goto T0asend c;  \ bit5
+loco T0asend4   vector _vstate, T0asend3  goto T0asend c;  \ bit4
+loco T0asend5   vector _vstate, T0asend4  goto T0asend c;  \ bit3
+loco T0asend6   vector _vstate, T0asend5  goto T0asend c;  \ bit2
+loco T0asend7   vector _vstate, T0asend6  goto T0asend c;  \ bit1
+loco T0asend8   vector _vstate, T0asend7  goto T0asend c;  \ bit0
+loco T0asend9   clr  __aso                               \ start bit
+                vector _vstate, T0asend8  reti c;
+
+\ Neither sending nor receiving
+\ tasks include:
+\   bump raw timer
+\   test for next main output character
+\   test for next aux output character
+loco T0wait0    vector _vstate, T0timer  reti c;
+loco T0wait1    vector _vstate, T0wait0  reti c;
+loco T0wait2    vector _vstate, T0wait1  reti c;
+loco T0wait3    vector _vstate, T0wait2  reti c;
+loco T0wait4    vector _vstate, T0wait3  reti c;
+
+loco T0wait5    ( start override output if necessary )
+                push acc  mov a, _iso  inc a
+        if_nz   mov _so, _iso   pop acc
+                vector _vstate, T0send9  reti   \ start main transmission
+        then    pop acc
+                vector _vstate, T0wait4  reti c;
+
+loco T0wait6    ( start auxiliary output if necessary )
+                push acc  mov a, _aso  inc a
+        if_nz   pop acc
+                vector _vstate, T0asend9  reti  \ start aux transmission
+        then    pop acc
+                vector _vstate, T0wait5  reti c;
+
+loco T0wait7    ( restart output if necessary )
+                push acc  mov a, _soo  xrl a, _soi
+        if_b    __cts           clr a    \ CTS is inactive
+        then
+        if_b    __vuartinhibit  clr a    \ queued output is suspended
+        then
+        if_nz   push dpl  push dph       \ output buffer is not empty
+                mov dph, #sobuf  mov dpl, _soo
+                clr a  movc a, @a+dptr  inc _soo
+                mov _so, a               \ get next byte
+                vector _vstate, T0send9  \ start main transmission
+                pop dph  pop dpl
+                pop acc  reti
+        then    vector _vstate, T0wait6  \ nothing to send
+                pop acc  reti  c;
+
+                }vector T0wait7
+\ ----------------------------------------------------------------------
+
+code vuinit     ( -- )                  c( enable and reset VUART )
+\ sets T0 interrupt rate for 9600 bps
+                vector _vstate, T0wait0
+                {{ xtalfreq 0xE100 + 0x1C200 / negate 0xFF and }}
+                >a  mov TH0, a                  \ set T0 frequency
+                clr a
+                mov _soo, a  mov _soi, a        \ clear buffers
+                mov _sio, a  mov _sii, a
+                dec a
+                mov _aso, a  mov _iso, a
+                setb EX0   setb ET0             \ enable interrupts
+                clr __vuartinhibit              \ enable output buffer
+                setb PT0                        \ VUART has hi priority
+                ret c;
+
+before: sysinit vuinit ;                \ startup: enable VUART
+
+code atx        ( c -- )                c( send byte to aux port )
+        begin   call pause
+                mov a, _aso  inc a
+        until_z
+                mov _aso, dpl  goto drop c;
+
+code vtxj{      ( -- )                  c( disable output buffer )
+                setb __vuartinhibit  ret c; macro
+
+code }vtxj      ( -- )                  c( enable output buffer )
+                clr __vuartinhibit  ret c; macro
+
+code vtxj       ( c -- )                c( jam byte to main port )
+        begin   call pause
+                mov a, _iso  inc a
+        until_z
+                mov _iso, dpl  goto drop c;
+
+code vtx?       ( -- n )                c( # of bytes in output buffer)
+                clr c
+                mov a, _soi  subb a, _soo
+                goto lita c;
+
+code vtx        ( c -- )                c( send byte to main port )
+\ doesn't check for full buffer
+        begin   clr c                   \ wait for buffer to empty
+                mov a, _soi  subb a, _soo  inc a
+        while_z [dynamic] call pause [static]
+        repeat  mov a, dpl
+                mov dph, #sobuf  mov dpl, _soi
+                movx @dptr, a  inc _soi
+                goto drop c;
+
+code key?       ( -- n )                c( # of bytes in input buffer)
+                clr c
+                mov a, _sii  subb a, _sio
+                goto lita c;
+
+code nokeys     ( -- )                  c( clear input buffer)
+                clr a
+                mov _sii, a  mov _sio, a
+                ret c;
+
+code vrx        ( -- c )                c( get an incoming character)
+\ doesn't check for empty buffer
+                call DUP
+                mov dph, #sibuf  mov dpl, _sio
+                clr a  movc a, @a+dptr  inc _sio
+                mov dpl, a  clr a
+                mov dph, a  \32 mov r2, a  mov r3, a
+                ret c;
+
+loco EXT0isr    mov TL0, #-30           \ check mid-bit
+                vector _vstate, T0recv9  \ start bit received
+                clr EX0                 \ disable interrupt during reception
+                reti c;
+
+\ Place ISR at T0's vector location -----------------------------
+\               here 0x0B org  \ -> T0
+\ code =T0isr   push _vstate1  push _vstate  ret c;
+\               003 org        \ -> EXT0
+\ code =EXT0isr goto EXT0isr c;
+\               org
+
+decimal dynamic
+

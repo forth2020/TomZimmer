@@ -1,0 +1,365 @@
+((      Labels for AVR parts
+        ----------------------------------------------------------
+        Device assignments:
+        #   part        Data RAM    Code ROM      EEPROM
+        0 = AT90S2313   060..0DF    0016..07FF    0..07F
+        4 = AT90S4414   060..15F    001A..0FFF    0..0FF
+        6 = AT90S8515   060..25F    001A..1FFF    0..1FF
+        8 = ATmega103   060..F5F    0060..1FFFF   0..FFF
+))
+hex
+   00000 007FF rom-bounds       \ default memory allocation for AT90S2313
+   00060 000DF data-bounds      \ data starts at top of SRAM
+{{ device 3 > }} [IF]
+   00000 00FFF rom-bounds       \ default memory allocation for AT90S4414
+   00060 0015F data-bounds [THEN]
+{{ device 5 > }} [IF]
+   00000 01FFF rom-bounds       \ default memory allocation for AT90S8515
+   00060 0025F data-bounds [THEN]
+{{ device 7 > }} [IF]
+   00000 1FFFF rom-bounds       \ default memory allocation for ATmega103
+   00060 00F5F data-bounds [THEN]
+
+   08000 0FFFF code-bounds      \ user code, not used.
+
+\ byte addresses in code space:
+{{ device 0 = }} [IF]   \ 90S2313
+002 constant INT_INT0   \ External Interrupt0
+004 constant INT_INT1   \ External Interrupt1
+006 constant INT_T1CAP  \ Timer1 capture
+008 constant INT_T1COMA \ Timer1 compare A
+00A constant INT_T1OV   \ Timer1 overflow
+00C constant INT_T0OV   \ Timer0 overflow
+00E constant INT_URC    \ UART Receive Complete
+010 constant INT_UTE    \ UART Data Register Empty
+012 constant INT_UTC    \ UART Transmit Complete
+014 constant INT_ANA    \ Analog Comparator
+016 constant ROM_FREE   \ code starts here
+[THEN]
+{{ device 4 7 between }} [IF]   \ 90S4414 or 90S8515
+002 constant INT_INT0   \ External Interrupt0
+004 constant INT_INT1   \ External Interrupt1
+006 constant INT_T1CAP  \ Timer1 capture
+008 constant INT_T1COMA \ Timer1 compare A
+00A constant INT_T1COMB \ Timer1 compare B
+00C constant INT_T1OV   \ Timer1 overflow
+00E constant INT_T0OV   \ Timer0 overflow
+010 constant INT_SPI    \ SPI  Serial Transfer Complete
+012 constant INT_URC    \ UART Receive Complete
+014 constant INT_UTE    \ UART Data Register Empty
+016 constant INT_UTC    \ UART Transmit Complete
+018 constant INT_ANA    \ Analog Comparator
+01A constant ROM_FREE   \ code starts here
+[THEN]
+{{ device 8 = }} [IF]   \ ATmega103
+004 constant INT_INT0   \ External Interrupt0
+008 constant INT_INT1   \ External Interrupt1
+00C constant INT_INT2   \ External Interrupt2
+010 constant INT_INT3   \ External Interrupt3
+014 constant INT_INT4   \ External Interrupt4
+018 constant INT_INT5   \ External Interrupt5
+01C constant INT_INT6   \ External Interrupt6
+020 constant INT_INT7   \ External Interrupt7
+024 constant INT_T2COM  \ Timer2 compare
+028 constant INT_T2OV   \ Timer2 overflow
+02C constant INT_T1CAP  \ Timer1 capture
+030 constant INT_T1COMA \ Timer1 compare A
+034 constant INT_T1COMB \ Timer1 compare B
+038 constant INT_T1OV   \ Timer1 overflow
+03C constant INT_T0COM  \ Timer0 compare
+040 constant INT_T0OV   \ Timer0 overflow
+044 constant INT_SPI    \ SPI  Serial Transfer Complete
+048 constant INT_URC    \ UART Receive Complete
+04C constant INT_UTE    \ UART Data Register Empty
+050 constant INT_UTC    \ UART Transmit Complete
+054 constant INT_ADC    \ ADC Conversion Complete
+058 constant INT_EEW    \ EEPROM Write Complete
+05C constant INT_ANA    \ Analog Comparator
+060 constant ROM_FREE   \ code starts here
+[THEN]
+
+
+\ ***** I/O Register Definitions
+03f asmlabel SREG       \ common registers
+03e asmlabel SPH
+03d asmlabel SPL
+{{ device 8 < }} [IF]
+03b asmlabel GIMSK
+03a asmlabel GIFR
+039 asmlabel TIMSK
+038 asmlabel TIFR
+[ELSE]
+03c asmlabel XDIV
+03b asmlabel RAMPZ
+03a asmlabel EICR
+039 asmlabel EIMSK
+038 asmlabel EIFR
+037 asmlabel TIMSK
+036 asmlabel TIFR
+034 asmlabel MCUSR
+[THEN]
+035 asmlabel MCUCR
+033 asmlabel TCCR0
+032 asmlabel TCNT0
+{{ device 8 < }} [IF]
+025 asmlabel ICR1H
+024 asmlabel ICR1L
+[ELSE]
+031 asmlabel OCR0
+030 asmlabel ASSR0
+027 asmlabel ICR1H
+026 asmlabel ICR1L
+025 asmlabel TCCR2
+024 asmlabel TCNT2
+023 asmlabel OCR2
+007 asmlabel ADMUX
+006 asmlabel ADCSR
+005 asmlabel ADCH
+004 asmlabel ADCL
+003 asmlabel PORTE
+002 asmlabel DDRE
+001 asmlabel PINE
+000 asmlabel PINF
+[THEN]
+02f asmlabel TCCR1A
+02e asmlabel TCCR1B
+02d asmlabel TCNT1H
+02c asmlabel TCNT1L
+02b asmlabel OCR1AH
+02a asmlabel OCR1AL
+021 asmlabel WDTCR
+01f asmlabel EEARH
+01e asmlabel EEARL
+01d asmlabel EEDR
+01c asmlabel EECR
+018 asmlabel PORTB
+017 asmlabel DDRB
+016 asmlabel PINB
+012 asmlabel PORTD
+011 asmlabel DDRD
+010 asmlabel PIND
+00c asmlabel UDR
+00b asmlabel USR
+00a asmlabel UCR
+009 asmlabel UBRR
+008 asmlabel ACSR
+{{ device 3 > }} [IF]
+029 asmlabel OCR1BH     \ 4414, 8515 and Mega
+028 asmlabel OCR1BL
+00f asmlabel SPDR
+00e asmlabel SPSR
+00d asmlabel SPCR
+01b asmlabel PORTA
+01a asmlabel DDRA
+019 asmlabel PINA
+015 asmlabel PORTC
+014 asmlabel DDRC
+013 asmlabel PINC
+[THEN]
+
+\ ***** Bit Definitions for all processors
+
+\ MCUCR
+07 asmlabel SRE         \ T = enable external SRAM using PortA and PortC
+06 asmlabel SRW         \ T = insert one wait state during SRAM access
+05 asmlabel SE          \ T = enable the SLEEP instruction
+{{ device 7 > }} [IF]
+04 asmlabel SM1         \ Sleep modes:  00 = idle       01 = reserved
+03 asmlabel SM0         \               10 = power down 11 = power save
+[ELSE]
+04 asmlabel SM          \ Sleep modes:  0 = idle       1 = power down
+03 asmlabel ISC11       \ INT1 trigger  00 = low level     01 = reserved
+02 asmlabel ISC10       \               10 = falling edge  11 = rising edge
+01 asmlabel ISC01       \ INT0 trigger  00 = low level     01 = reserved
+00 asmlabel ISC00       \               10 = falling edge  11 = rising edge
+[THEN]
+
+{{ device 7 > }} [IF]
+\ MCUSR
+01 asmlabel EXTRF       \ set by an external reset, watchdog doesn't modify
+00 asmlabel PORF        \ set by a power-on reset
+
+\ EIMSK
+07 asmlabel INT7        \ T = enable external interrupt
+06 asmlabel INT6        \     7:4 and 3:0 have slightly different features
+05 asmlabel INT5        \     see data sheet
+04 asmlabel INT4
+03 asmlabel INT3
+02 asmlabel INT2
+01 asmlabel INT1
+00 asmlabel INT0
+
+\ EIFR
+07 asmlabel INTF7       \ T = INT7 is pending
+06 asmlabel INTF6
+05 asmlabel INTF5
+04 asmlabel INTF4
+
+\ EICR
+07 asmlabel ISC71       \ edge control for ext interrupts 7:4
+06 asmlabel ISC70       \ 00 = low level
+05 asmlabel ISC61       \ 01 = reserved
+04 asmlabel ISC60       \ 10 = falling edge
+03 asmlabel ISC51       \ 11 = rising edge
+02 asmlabel ISC50
+01 asmlabel ISC41
+00 asmlabel ISC40
+
+\ TIMSK
+07 asmlabel OCIE2       \ T = enable T2 output compare interrupt
+06 asmlabel TOIE2       \ T = enable T2 overflow interrupt
+05 asmlabel TICIE1      \ T = enable T1 input capture interrupt
+04 asmlabel OCIE1A      \ T = enable T1 output compareA match interrupt
+03 asmlabel OCIE1B      \ T = enable T1 output compareB match interrupt
+02 asmlabel TOIE1       \ T = enable T1 overflow interrupt
+01 asmlabel OCIE0       \ T = enable T0 output compare interrupt
+00 asmlabel TOIE0       \ T = enable T0 overflow interrupt
+
+\ TIFR
+07 asmlabel OCF2        \ T = T2 has matched OCR2
+06 asmlabel TOV2        \ T = T2 has overflowed
+05 asmlabel ICF1        \ T = T1 has been latched in ICR1
+04 asmlabel OCF1A       \ T = T2 has matched OCR1A
+03 asmlabel OCF1B       \ T = T2 has matched OCR1B
+02 asmlabel TOV1        \ T = T1 has overflowed
+01 asmlabel OCF0        \ T = T0 has matched OCR0
+00 asmlabel TOV0        \ T = T0 has overflowed
+
+\ TCCR0
+06 asmlabel PWM0        \ T = enable PWM mode for T0
+05 asmlabel COM01       \ compare mode: 00 = disconnect  01 = toggle PB4
+04 asmlabel COM00       \               10 = clear PB4   11 = set PB4
+03 asmlabel CTC0        \ T = clear timer on compare match
+02 asmlabel CS02        \ T0 clock src: 000 = stopped    001 = PCK0
+01 asmlabel CS01        \               010 = PCK0/8     011 = PCK0/32
+00 asmlabel CS00        \               100 = PCK0/64    101 = PCK0/128
+                        \               110 = PCK0/256   111 = PCK0/1024
+\ TCCR2
+06 asmlabel PWM2        \ T = enable PWM mode for T2
+05 asmlabel COM21       \ compare mode: 00 = disconnect  01 = toggle PB7
+04 asmlabel COM20       \               10 = clear PB7   11 = set PB7
+03 asmlabel CTC2        \ T = clear timer on compare match
+02 asmlabel CS22        \ T2 clock src: 000 = stopped    001 = CK
+01 asmlabel CS21        \               010 = CK/8       011 = CK/64
+00 asmlabel CS20        \               100 = CK/256     101 = CK/1024
+                        \               110 = PD7 fall   111 = PD7 rise
+\ ADCSR
+07 asmlabel ADEN        \ ADC enable
+06 asmlabel ADSC        \ ADC start conversion
+05 asmlabel ADFR        \ reserved, must always be 0
+04 asmlabel ADIF        \ ADC interrupt pending
+03 asmlabel ADIE        \ ADC interrupt enable
+02 asmlabel ADPS2       \ ADC clock:    000 = invalid   001 = xtal/2
+01 asmlabel ADPS1       \               010 = xtal/4    011 = xtal/8
+00 asmlabel ADPS0       \               100 = xtal/16   101 = xtal/32
+                        \               110 = xtal/64   111 = xtal/128
+\ ADMUX
+02 asmlabel MUX2        \ ADC channel select 0..7
+01 asmlabel MUX1
+00 asmlabel MUX0
+
+[ELSE]
+\ GIMSK
+07 asmlabel INT1        \ T = enable external interrupt
+06 asmlabel INT0
+
+\ GIFR
+07 asmlabel INTF1       \ T = INT7 is pending
+06 asmlabel INTF0
+
+\ TIMSK
+07 asmlabel TOIE1       \ T = enable T1 overflow interrupt
+06 asmlabel OCIE1A      \ T = enable T1 output compareA match interrupt
+05 asmlabel OCIE1B      \ T = enable T1 output compareB match interrupt
+03 asmlabel TICIE1      \ T = enable T1 input capture interrupt
+01 asmlabel TOIE0       \ T = enable T0 overflow interrupt
+
+\ TIFR
+07 asmlabel TOV1        \ T = T1 has overflowed
+06 asmlabel OCF1A       \ T = T2 has matched OCR1A
+05 asmlabel OCF1B       \ T = T2 has matched OCR1B
+03 asmlabel ICF1        \ T = T1 has been latched in ICR1
+01 asmlabel TOV0        \ T = T0 has overflowed
+
+\ TCCR0
+02 asmlabel CS02        \ T0 clock src: 000 = stopped    001 = CK
+01 asmlabel CS01        \               010 = CK/8       011 = CK/64
+00 asmlabel CS00        \               100 = CK/256     101 = CK/1024
+                        \               110 = ExtT0 fall 111 = ExtT0 rise
+[THEN]
+
+\ TCCR1A
+07 asmlabel COM1A1      \ OC1A mode:    00 = disconnect  01 = toggle OC1A
+06 asmlabel COM1A0      \               10 = clear OC1A  11 = set OC1A
+05 asmlabel COM1B1      \ OC1B mode:    00 = disconnect  01 = toggle OC1B
+04 asmlabel COM1B0      \               10 = clear OC1B  11 = set OC1B
+01 asmlabel PWM11       \ PWM modulate: 00 = off         01 = T1 is 8-bit
+00 asmlabel PWM10       \               10 = T1 is 9-bit 11 = T1 is 10-bit
+
+\ TCCR1B 
+07 asmlabel ICNC1       \ T = enable input capture 1 noise canceller
+06 asmlabel ICES1       \ F = falling, T = rising edge input capture 1
+03 asmlabel CTC1        \ T = clear T1 on compareA match
+02 asmlabel CS12        \ T1 prescaler: 000 = stopped    001 = CK
+01 asmlabel CS11        \               010 = CK/8       011 = CK/64
+00 asmlabel CS10        \               100 = CK/256     101 = CK/1024
+                        \               110 = ExtT1 fall 111 = ExtT1 rise
+\ WDTCR  
+04 asmlabel WDTOE       \ watchdog turn-off enable
+03 asmlabel WDE         \ watchdog enable
+02 asmlabel WDP2        \ wdog prescale 000 = .015       001 = .03
+01 asmlabel WDP1        \               010 = .06        011 = .12
+00 asmlabel WDP0        \               100 = .24        101 = .49
+                        \               110 = .97        111 = 1.9
+                        \ times are typical for 5.0V, triple for 3.0V
+\ EECR
+{{ device 7 > }} [IF]
+03 asmlabel EERIE       \ T = enable EEPROM ready interrupt
+[THEN]
+02 asmlabel EEMWE       \ T = EEPROM master write enable
+01 asmlabel EEWE        \ T = EEPROM write enable
+00 asmlabel EERE        \ T = EEPROM read enable
+
+\ USR
+07 asmlabel RXC         \ UART receive complete
+06 asmlabel TXC         \ UART transmit complete
+05 asmlabel UDRE        \ UART data register empty
+04 asmlabel FE          \ Framing error
+03 asmlabel OR          \ Overrun
+
+\ UCR
+07 asmlabel RXCIE       \ RX complete interrupt enable
+06 asmlabel TXCIE       \ TX complete interrupt enable
+05 asmlabel UDRIE       \ UART data reg empty interrupt enable
+04 asmlabel RXEN        \ Receiver enable
+03 asmlabel TXEN        \ Transmitter enable
+02 asmlabel CHR9        \ 9-bit characters
+01 asmlabel RXB8        \ 9th received data bit
+00 asmlabel TXB8        \ 9th bit to be transmitted
+
+\ ACSR
+07 asmlabel ACD         \ T = disable analog comparator
+05 asmlabel ACO         \ comparator output
+04 asmlabel ACI         \ analog comparator interrupt pending
+03 asmlabel ACIE        \ analog comparator interrupt enable
+02 asmlabel ACIC        \ T = T1 input-capture uses comparator
+01 asmlabel ACIS1       \ interrupt on: 00 = toggle     01 = reserved
+00 asmlabel ACIS0       \               10 = falling    11 = rising
+
+{{ device 3 > }} [IF]   \ 4414, 8515 and Mega
+
+\ SPSR
+07 asmlabel SPIF        \ T = SPI interrupt is pending
+06 asmlabel WCOL        \ SPI write-collision flag
+
+\ SPCR
+07 asmlabel SPIE        \ T = enable SPI interrupts (SPIF must be set)
+06 asmlabel SPE         \ T = PB3:0 are used as SPI pins
+05 asmlabel DORD        \ T = send LSB first, F = send MSB first
+04 asmlabel MSTR        \ T = master, F = slave
+03 asmlabel CPOL        \ clock polarity, T=hi/F=lo when idle
+02 asmlabel CPHA        \ clock phase
+01 asmlabel SPR1        \ clock rate:   00 = xtal/4     01 = xtal/16
+00 asmlabel SPR0        \               10 = xtal/64    11 = xtal/128
+[THEN]
+

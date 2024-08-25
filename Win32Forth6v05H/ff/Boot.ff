@@ -1,0 +1,23 @@
+\ Primary boot program
+
+\ This resides in the on-board I2C EEPROM. There is a small data structure at
+\ the beginning of the EEPROM that points to code at the end of the EEPROM.
+\ ~BOOT0 initializes this data structure and loads the primary boot code to the
+\ end of the EEPROM.
+
+\ The primary boot code must be resident for ~BOOT1 to work, which modifies the
+\ boot data structure to point to the secondary boot program.
+
+host decimal
+0 0x3FF rom-bounds
+anew demo_program
+homeorder tokenizing                    \ TOKENIZED CODE
+also core also app definitions
+{{ 0x1000 >token#  0 org }}             \ use relative tokens
+program autoexec                        c( tokenized boot program)
+." Preliminary Boot" cr                 \ display on virtual console
+
+end
+host
+~boot0                                  \ download to target
+

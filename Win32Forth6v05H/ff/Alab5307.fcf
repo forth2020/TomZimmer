@@ -1,0 +1,147 @@
+\ Labels for ColdFire 5307 registers
+
+\ Set MBAR using  MOVE.L #RSR+1,D0  MOVEC D0,MBAR  for maximum access
+\ These may be accessed via absolute short addressing.
+
+hex
+FFFFF000 asmlabel RSR     \  8  Reset status register
+FFFFF001 asmlabel SYPCR   \  8  System protection control register
+FFFFF002 asmlabel SWIVR   \  8  Software watchdog interrupt vector register
+FFFFF003 asmlabel SWSR    \  8  Software watchdog service register (w)
+FFFFF004 asmlabel PAR     \ 16  Pin assignment register
+FFFFF006 asmlabel IRQPAR  \  8  Interrupt assignment register
+FFFFF008 asmlabel PLLCR   \  8  PLL control register
+FFFFF00C asmlabel MARBCR  \  8  MARB control register
+
+FFFFF040 asmlabel IPR     \ 32  Interrupt pending register
+FFFFF044 asmlabel IMR     \ 32  Interrupt mask register
+FFFFF04B asmlabel AVCR    \  8  Autovector control register
+FFFFF04C asmlabel ICR0    \  8  Interrupt control register 0
+FFFFF04D asmlabel ICR1    \  8  Interrupt control register 1
+FFFFF04E asmlabel ICR2    \  8  Interrupt control register 2
+FFFFF04F asmlabel ICR3    \  8  Interrupt control register 3
+FFFFF050 asmlabel ICR4    \  8  Interrupt control register 4
+FFFFF051 asmlabel ICR5    \  8  Interrupt control register 5
+FFFFF052 asmlabel ICR6    \  8  Interrupt control register 6
+FFFFF053 asmlabel ICR7    \  8  Interrupt control register 7
+FFFFF054 asmlabel ICR8    \  8  Interrupt control register 8
+FFFFF055 asmlabel ICR9    \  8  Interrupt control register 9
+FFFFF056 asmlabel ICR10   \  8  Interrupt control register 10
+FFFFF057 asmlabel ICR11   \  8  Interrupt control register 11
+
+FFFFF080 asmlabel CSAR0   \ 16  Chip-select 0 base address register
+FFFFF084 asmlabel CSMR0   \ 32  Chip-select 0 mask register
+FFFFF08A asmlabel CSCR0   \ 16  Chip-select 0 control register
+FFFFF090 asmlabel CSAR1   \ 16  Chip-select 1 base address register
+FFFFF094 asmlabel CSMR1   \ 32  Chip-select 1 mask register
+FFFFF09A asmlabel CSCR1   \ 16  Chip-select 1 control register
+FFFFF0A0 asmlabel CSAR2   \ 16  Chip-select 2 base address register
+FFFFF0A4 asmlabel CSMR2   \ 32  Chip-select 2 mask register
+FFFFF0AA asmlabel CSCR2   \ 16  Chip-select 2 control register
+FFFFF0B0 asmlabel CSAR3   \ 16  Chip-select 3 base address register
+FFFFF0B4 asmlabel CSMR3   \ 32  Chip-select 3 mask register
+FFFFF0BA asmlabel CSCR3   \ 16  Chip-select 3 control register
+FFFFF0C0 asmlabel CSAR4   \ 16  Chip-select 4 base address register
+FFFFF0C4 asmlabel CSMR4   \ 32  Chip-select 4 mask register
+FFFFF0CA asmlabel CSCR4   \ 16  Chip-select 4 control register
+FFFFF0D0 asmlabel CSAR5   \ 16  Chip-select 5 base address register
+FFFFF0D4 asmlabel CSMR5   \ 32  Chip-select 5 mask register
+FFFFF0DA asmlabel CSCR5   \ 16  Chip-select 5 control register
+FFFFF0E0 asmlabel CSAR6   \ 16  Chip-select 6 base address register
+FFFFF0E4 asmlabel CSMR6   \ 32  Chip-select 6 mask register
+FFFFF0EA asmlabel CSCR6   \ 16  Chip-select 6 control register
+FFFFF0F0 asmlabel CSAR7   \ 16  Chip-select 7 base address register
+FFFFF0F4 asmlabel CSMR7   \ 32  Chip-select 7 mask register
+FFFFF0FA asmlabel CSCR7   \ 16  Chip-select 7 control register
+
+FFFFF100 asmlabel DCR     \ 16  DRAMC control register
+FFFFF108 asmlabel DACR0   \ 32  DRAMC0 address & control register
+FFFFF10C asmlabel DMR0    \ 32  DRAMC0 mask register
+FFFFF110 asmlabel DACR1   \ 32  DRAMC1 address & control register
+FFFFF114 asmlabel DMR1    \ 32  DRAMC1 mask register
+
+FFFFF140 asmlabel TMR1    \ 16  Timer1 mode register
+FFFFF144 asmlabel TRR1    \ 16  Timer1 reference register
+FFFFF148 asmlabel TCR1    \ 16  Timer1 capture register            (r)
+FFFFF14C asmlabel TCN1    \ 16  Timer1 counter register
+FFFFF151 asmlabel TER1    \  8  Timer1 event register
+
+FFFFF180 asmlabel TMR2    \ 16  Timer2 mode register
+FFFFF184 asmlabel TRR2    \ 16  Timer2 reference register
+FFFFF188 asmlabel TCR2    \ 16  Timer2 capture register            (r)
+FFFFF18C asmlabel TCN2    \ 16  Timer2 counter register
+FFFFF191 asmlabel TER2    \  8  Timer2 event register
+
+FFFFF1C0 asmlabel UMR11   \  8  UART1 mode register
+FFFFF1C0 asmlabel UMR21   \  8  UART1 mode register
+FFFFF1C4 asmlabel USR1    \  8  UART1 status register              (r)
+FFFFF1C4 asmlabel UCSR1   \  8  UART1 clock select register        (w)
+FFFFF1C8 asmlabel UCR1    \  8  UART1 command register             (w)
+FFFFF1CC asmlabel URB1    \  8  UART1 receive buffer register      (r)
+FFFFF1CC asmlabel UTB1    \  8  UART1 transmit buffer register     (w)
+FFFFF1D0 asmlabel UIPCR1  \  8  UART1 inputport change register    (r)
+FFFFF1D0 asmlabel UACR1   \  8  UART1 auxilliary ctrl register     (w)
+FFFFF1D4 asmlabel UISR1   \  8  UART1 interrupt status register    (r)
+FFFFF1D4 asmlabel UIMR1   \  8  UART1 interrupt mask register      (w)
+FFFFF1D8 asmlabel UBG11   \  8  UART1 baud rate prescale MSB       (w)
+FFFFF1DC asmlabel UBG21   \  8  UART1 baud rate prescale LSB       (w)
+FFFFF1F0 asmlabel UIVR1   \  8  UART1 interrupt vector register
+FFFFF1F4 asmlabel UIP1    \  8  UART1 interrupt port register      (r)
+FFFFF1F8 asmlabel UOP11   \  8  UART1 output port bit set register (w)
+FFFFF1FC asmlabel UOP01   \  8  UART1 output port bit clr register (w)
+
+FFFFF200 asmlabel UMR12   \  8  UART2 mode register
+FFFFF200 asmlabel UMR22   \  8  UART2 mode register
+FFFFF204 asmlabel USR2    \  8  UART2 status register              (r)
+FFFFF204 asmlabel UCSR2   \  8  UART2 clock select register        (w)
+FFFFF208 asmlabel UCR2    \  8  UART2 command register             (w)
+FFFFF20C asmlabel URB2    \  8  UART2 receive buffer register      (r)
+FFFFF20C asmlabel UTB2    \  8  UART2 transmit buffer register     (w)
+FFFFF210 asmlabel UIPCR2  \  8  UART2 inputport change register    (r)
+FFFFF210 asmlabel UACR2   \  8  UART2 auxilliary ctrl register     (w)
+FFFFF214 asmlabel UISR2   \  8  UART2 interrupt status register    (r)
+FFFFF214 asmlabel UIMR2   \  8  UART2 interrupt mask register      (w)
+FFFFF218 asmlabel UBG12   \  8  UART2 baud rate prescale MSB       (w)
+FFFFF21C asmlabel UBG22   \  8  UART2 baud rate prescale LSB       (w)
+FFFFF230 asmlabel UIVR2   \  8  UART2 interrupt vector register
+FFFFF234 asmlabel UIP2    \  8  UART2 interrupt port register      (r)
+FFFFF238 asmlabel UOP12   \  8  UART2 output port bit set register (w)
+FFFFF23C asmlabel UOP02   \  8  UART2 output port bit clr register (w)
+
+FFFFF244 asmlabel PADDR   \ 16  Parallel port data direction register
+FFFFF248 asmlabel PADAT   \ 16  Parallel port data register
+FFFFF280 asmlabel MADR    \  8  Mbus address register
+FFFFF284 asmlabel MFDR    \  8  Mbus frequency register
+FFFFF288 asmlabel MBCR    \  8  Mbus control register
+FFFFF28C asmlabel MBSR    \  8  Mbus status register
+FFFFF290 asmlabel MBDR    \  8  Mbus data register
+
+FFFFF300 asmlabel SAR0    \ 32  DMA0 source address register
+FFFFF304 asmlabel DAR0    \ 32  DMA0 destination address register
+FFFFF308 asmlabel DCR0    \ 16  DMA0 control register
+FFFFF30C asmlabel BCR0    \ 16  DMA0 byte count register           (r)
+FFFFF310 asmlabel DSR0    \  8  DMA0 status register               (r)
+FFFFF314 asmlabel DIVR0   \  8  DMA0 interrupt vector register
+
+FFFFF340 asmlabel SAR1    \ 32  DMA0 source address register
+FFFFF344 asmlabel DAR1    \ 32  DMA0 destination address register
+FFFFF348 asmlabel DCR1    \ 16  DMA0 control register
+FFFFF34C asmlabel BCR1    \ 16  DMA0 byte count register           (r)
+FFFFF350 asmlabel DSR1    \  8  DMA0 status register               (r)
+FFFFF354 asmlabel DIVR1   \  8  DMA0 interrupt vector register
+
+FFFFF380 asmlabel SAR2    \ 32  DMA0 source address register
+FFFFF384 asmlabel DAR2    \ 32  DMA0 destination address register
+FFFFF388 asmlabel DCR2    \ 16  DMA0 control register
+FFFFF38C asmlabel BCR2    \ 16  DMA0 byte count register           (r)
+FFFFF390 asmlabel DSR2    \  8  DMA0 status register               (r)
+FFFFF394 asmlabel DIVR2   \  8  DMA0 interrupt vector register
+
+FFFFF3C0 asmlabel SAR3    \ 32  DMA0 source address register
+FFFFF3C4 asmlabel DAR3    \ 32  DMA0 destination address register
+FFFFF3C8 asmlabel DCR3    \ 16  DMA0 control register
+FFFFF3CC asmlabel BCR3    \ 16  DMA0 byte count register           (r)
+FFFFF3D0 asmlabel DSR3    \  8  DMA0 status register               (r)
+FFFFF3D4 asmlabel DIVR3   \  8  DMA0 interrupt vector register
+decimal
+

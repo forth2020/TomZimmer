@@ -1,0 +1,115 @@
+\ ------------------------------------------------------------------------
+\ Generic EEPROM read/write for IIC (2-wire) Serial EEPROMs
+HEX
+SYSTEM DEFINITIONS main-tokens  \ ----------------------------------------
+variable EEdevice                       c( EEPROM device select 0..7)
+
+HIDDEN DEFINITIONS  temp-tokens \ ----------------------------------------
+
+defer e-start   ( -- )    ' _e-start    is e-start
+defer e-stop    ( -- )    ' _e-stop     is e-stop
+defer e-nack?   ( -- f )  ' _e-nack?    is e-nack?
+defer e-ack     ( -- )    ' _e-ack      is e-ack
+defer e-inbyte  ( -- c )  ' _e-inbyte   is e-inbyte
+defer e-outbyte ( c -- )  ' _e-outbyte  is e-outbyte
+
+: e-device      ( -- n )                c( control code for IIC EEPROM)
+                EEdevice @ 2* 0A1 or ;
+
+: e-nack        ( -- )  e-nack? drop ;  c( send NACK to IIC EEPROM)
+variable ee!addr                        c( tracks address of ee! )
+
+{{ EEPROMpart 24128 24256 between }} [if]
+40 constant EEpagesize               [then]
+{{ EEPROMpart 2432 2464 between }}   [if]
+20 constant EEpagesize               [then]
+{{ EEPROMpart 2401 2416 between }}   [if]
+ 8 constant EEpagesize               [then] c( bytes per page write)
+
+SYSTEM DEFINITIONS main-tokens  \ ----------------------------------------
+HIDDEN
+
+{{ EEPROMpart 2432 24256 between }} [if]
+: <EE!          ( addr -- )             c( send control bytes to EEPROM)
+\ send control byte(s), return control byte for status polling
+                dup ee!addr !
+                e-start byte-split
+                e-device 1-                     ( lo hi ctrl )
+                e-outbyte e-nack
+                e-outbyte e-nack                \ hi addr
+                e-outbyte e-nack ;              \ lo addr
+[then]
+
+{{ EEPROMpart 2401 2416 between }} [if]
+: <EE!          ( addr -- )             c( send control bytes to EEPROM)
+\ send control byte(s), return control byte for status polling
+                dup ee!addr !
+                e-start byte-split 7 and
+                dup EEdevice ! 2*
+                0A0 or                  ( lo ctrl )
+                e-outbyte e-nack        \ map b10..b8 to 8 256B devices
+                e-outbyte e-nack ;      \ 2416 contains all eight sectors
+[then]
+
+: EEpoll        ( -- f )                c( test for presence of EEPROM)
+\ read last selected device, return T if found.
+                e-start
+                e-device
+                e-outbyte e-nack? 0=    \ current address read, T if responded
+                e-inbyte drop  e-nack   \ ignore the returned data
+                e-stop ;
+
+: EE!>          ( -- ior )              c( end EEPROM write, T if error)
+                e-stop
+                0 100 CTRscale mu/mod           \ convert 100 ms to timer ticks
+                counter@ d+ rot drop            ( endtime )
+        begin   pause
+                EEpoll EEpoll and
+                if      2drop e-stop
+                        0 exit
+                then
+                2dup counter@ counter<          \ time elapsed
+        until   2drop e-stop                    \ timed out, error.
+                true ;
+
+: EE!           ( c -- )                c( store next byte to EEPROM)
+                e-outbyte e-nack
+                ee!addr @ dup 1+ dup
+                ee!addr ! xor EEpagesize and    \ crossed page boundary?
+        if      EE!> drop                       \ yes, write it
+                ee!addr @ <EE!                  \ start a new page
+        then    ;
+: <EE@          ( addr -- )             c( set up for sequential read)
+                <EE! e-start e-device e-outbyte e-nack ;
+: EE@           ( -- c )                c( get next sequential EEPROM byte)
+                e-inbyte e-ack ;
+: EE@>          ( -- c )                c( get next EEPROM byte, end read)
+                e-inbyte e-nack e-stop ;
+
+0 constant EEMIN                                c( minimum EEPROM address)
+     {{ EEPROMpart  2401 = }} [if] 007F [then]  \ 128 bytes
+     {{ EEPROMpart  2402 = }} [if] 00FF [then]  \ 256 bytes
+     {{ EEPROMpart  2404 = }} [if] 01FF [then]  \ 512 bytes
+     {{ EEPROMpart  2408 = }} [if] 03FF [then]  \ 1K bytes
+     {{ EEPROMpart  2416 = }} [if] 07FF [then]  \ 2K bytes
+     {{ EEPROMpart  2432 = }} [if] 0FFF [then]  \ 4K bytes
+     {{ EEPROMpart  2464 = }} [if] 1FFF [then]  \ 8K bytes
+     {{ EEPROMpart 24128 = }} [if] 3FFF [then]  \ 16K bytes
+     {{ EEPROMpart 24256 = }} [if] 7FFF [then]  \ 32K bytes
+EEPROMpart {{ drop }}                           \ make sure it's defined
+constant EEMAX                                  c( maximum EEPROM address)
+
+: EE=MAIN       ( -- )                  c( select main serial eeprom)
+\ If you have an alternate IIC EEPROM bus, you can define a
+\ word similar to this one to redirect serial EEPROM operators
+\ to that bus.
+                ['] _e-start   is e-start
+                ['] _e-stop    is e-stop
+                ['] _e-nack?   is e-nack?
+                ['] _e-ack     is e-ack
+                ['] _e-inbyte  is e-inbyte
+                ['] _e-outbyte is e-outbyte
+                ;
+SYSTEM DEFINITIONS
+DECIMAL
+

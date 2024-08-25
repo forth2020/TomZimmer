@@ -1,0 +1,1437 @@
+((
+        Setup for John Hayes' ANS test suite, AV0.G
+        2/6/98 BNE
+))
+
+only also core also app  definitions    \ target wordlists
+\ anew testsuite
+
+HEX {{ HEX }}
+
+variable  ERRORPOSITION
+variable  ERRORTALLY
+
+: ERROR         ( c-addr u -- )
+                BASE @ >R DECIMAL
+                CR
+                TYPE
+                dup
+                ." POS "
+                drop
+                ERRORPOSITION @
+                .
+                CR
+                ERRORTALLY @ 1+ ERRORTALLY !
+                R> BASE ! ;
+
+VARIABLE ACTUAL-DEPTH                           \ STACK RECORD
+CREATE ACTUAL-RESULTS 20 CELLS ALLOT
+
+: {             ( -- ) ;
+
+: ->            ( ... ? )
+\ record depth and content of stack.
+                DEPTH DUP >R ACTUAL-DEPTH !
+        MULTI   ACTUAL-RESULTS R@ CELLS + !     \ RECORD STACK AND DEPTH
+        REPEAT  R> DROP ;
+
+: }             ( ... ?? )
+\ compare stack (expected) contents with saved (actual) contents.
+                DEPTH ACTUAL-DEPTH @ <>
+        IF      S" *** WRONG NUMBER OF RESULTS: " ERROR
+        ELSE    DEPTH >R 
+                MULTI   ACTUAL-RESULTS R@ CELLS + @ <>
+                        IF      S" *** INCORRECT RESULT: "  ERROR
+                                R>DROP EXIT     \ VERIFY STACK AND DEPTH
+                        THEN
+                REPEAT  R>DROP
+        THEN    ERRORPOSITION incr
+                ;
+
+: report        ( a n -- )
+                cr type 
+                ERRORPOSITION off ;
+
+\ create a larger virtual console
+
+0x800 string newconsole
+' newconsole ' con$ rebind
+cls
+
+: newscreen     ( -- )  cls ;
+
+also hidden
+
+: endreport     ( a n -- )
+                cr type space ERRORTALLY @ . ." errors"
+                cr 0x28 '-' emits cr
+                ;
+
+previous
+
+\
+
+
+
+\ From: John Hayes S1I
+\ Subject: core.fr
+\ Date: Mon, 27 Nov 95 13:10
+
+\ (C) 1995 JOHNS HOPKINS UNIVERSITY / APPLIED PHYSICS LABORATORY
+\ MAY BE DISTRIBUTED FREELY AS LONG AS THIS COPYRIGHT NOTICE REMAINS.
+\ VERSION 1.2
+\ THIS PROGRAM TESTS THE CORE WORDS OF AN ANS FORTH SYSTEM.
+\ THE PROGRAM ASSUMES A TWO'S COMPLEMENT IMPLEMENTATION WHERE
+\ THE RANGE OF SIGNED NUMBERS IS -2^(N-1) ... 2^(N-1)-1 AND
+\ THE RANGE OF UNSIGNED NUMBERS IS 0 ... 2^(N)-1.
+\ I HAVEN'T FIGURED OUT HOW TO TEST KEY, QUIT, ABORT, OR ABORT"...
+\ I ALSO HAVEN'T THOUGHT OF A WAY TO TEST ENVIRONMENT?...
+
+\ TESTING CORE WORDS
+
+\ Thanks John!
+\ Modified somewhat by Brad Eckert, split into multiple files, etc.
+
+\ ------------------------------------------------------------------------
+newscreen
+s" TESTING BASIC ASSUMPTIONS" report
+
+{ -> }                                  \ START WITH CLEAN SLATE
+( TEST IF ANY BITS ARE SET; ANSWER IN BASE 1 )
+{ : BITSSET? IF 0 0 ELSE 0 THEN ; -> }
+{  0 BITSSET? -> 0 }            ( ZERO IS ALL BITS CLEAR )
+{  1 BITSSET? -> 0 0 }          ( OTHER NUMBER HAVE AT LEAST ONE BIT )
+{ -1 BITSSET? -> 0 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING BOOLEANS: INVERT AND OR XOR" report
+
+{ 0 0 AND -> 0 }
+{ 0 1 AND -> 0 }
+{ 1 0 AND -> 0 }
+{ 1 1 AND -> 1 }
+
+{ 0 INVERT 1 AND -> 1 }
+{ 1 INVERT 1 AND -> 0 }
+
+0        CONSTANT 0S
+0 INVERT CONSTANT 1S
+
+{ 0S INVERT -> 1S }
+{ 1S INVERT -> 0S }
+
+{ 0S 0S AND -> 0S }
+{ 0S 1S AND -> 0S }
+{ 1S 0S AND -> 0S }
+{ 1S 1S AND -> 1S }
+
+{ 0S 0S OR -> 0S }
+{ 0S 1S OR -> 1S }
+{ 1S 0S OR -> 1S }
+{ 1S 1S OR -> 1S }
+
+{ 0S 0S XOR -> 0S }
+{ 0S 1S XOR -> 1S }
+{ 1S 0S XOR -> 1S }
+{ 1S 1S XOR -> 0S }
+
+\ ------------------------------------------------------------------------
+s" TESTING 2* 2/ LSHIFT RSHIFT" report
+
+( WE TRUST 1S, INVERT, AND BITSSET?; WE WILL CONFIRM RSHIFT LATER )
+1S 1 RSHIFT INVERT CONSTANT MSB
+{ MSB BITSSET? -> 0 0 }
+
+{ 0S 2* -> 0S }
+{ 1 2* -> 2 }
+{ 4000 2* -> 8000 }
+{ 1S 2* 1 XOR -> 1S }
+{ MSB 2* -> 0S }
+
+{ 0S 2/ -> 0S }
+{ 1 2/ -> 0 }
+{ 4000 2/ -> 2000 }
+{ 1S 2/ -> 1S }                         \ MSB PROPOGATED
+{ 1S 1 XOR 2/ -> 1S }
+{ MSB 2/ MSB AND -> MSB }
+
+{ 1 0 LSHIFT -> 1 }
+{ 1 1 LSHIFT -> 2 }
+{ 1 2 LSHIFT -> 4 }
+{ 1 F LSHIFT -> 8000 }                  \ BIGGEST GUARANTEED SHIFT
+{ 1S 1 LSHIFT 1 XOR -> 1S }
+{ MSB 1 LSHIFT -> 0 }
+
+{ 1 0 RSHIFT -> 1 }
+{ 1 1 RSHIFT -> 0 }
+{ 2 1 RSHIFT -> 1 }
+{ 4 2 RSHIFT -> 1 }
+{ 8000 F RSHIFT -> 1 }                  \ BIGGEST
+{ MSB 1 RSHIFT MSB AND -> 0 }           \ RSHIFT ZERO FILLS MSBS
+{ MSB 1 RSHIFT 2* -> MSB }
+
+\ ------------------------------------------------------------------------
+s" TESTING >>A 0= = 0< < > U< MIN MAX" report
+0 INVERT                        CONSTANT MAX-UINT
+0 INVERT 1 RSHIFT               CONSTANT MAX-INT
+0 INVERT 1 RSHIFT INVERT        CONSTANT MIN-INT
+0 INVERT 1 RSHIFT               CONSTANT MID-UINT
+0 INVERT 1 RSHIFT INVERT        CONSTANT MID-UINT+1
+
+0S CONSTANT <FALSE>
+1S CONSTANT <TRUE>
+
+{ 1 0 >>A -> 1 }        \ >>A is Arithmetic RSHIFT (from OFW)
+{ 1 1 >>A -> 0 }
+{ 2 1 >>A -> 1 }
+{ 4 2 >>A -> 1 }
+{ MID-UINT 9 >>A  MID-UINT+1 9 >>A  OR  -> 1S }  \ >>A SIGN EXTENDS MSBS
+
+{ 0 0= -> <TRUE> }
+{ 1 0= -> <FALSE> }
+{ 2 0= -> <FALSE> }
+{ -1 0= -> <FALSE> }
+{ MAX-UINT 0= -> <FALSE> }
+{ MIN-INT 0= -> <FALSE> }
+{ MAX-INT 0= -> <FALSE> }
+
+{ 0 0 = -> <TRUE> }
+{ 1 1 = -> <TRUE> }
+{ -1 -1 = -> <TRUE> }
+{ 1 0 = -> <FALSE> }
+{ -1 0 = -> <FALSE> }
+{ 0 1 = -> <FALSE> }
+{ 0 -1 = -> <FALSE> }
+
+{ 0 0< -> <FALSE> }
+{ -1 0< -> <TRUE> }
+{ MIN-INT 0< -> <TRUE> }
+{ 1 0< -> <FALSE> }
+{ MAX-INT 0< -> <FALSE> }
+ 
+{ 0 1 < -> <TRUE> }
+{ 1 2 < -> <TRUE> }
+{ -1 0 < -> <TRUE> }
+{ -1 1 < -> <TRUE> }
+{ MIN-INT 0 < -> <TRUE> }
+{ MIN-INT MAX-INT < -> <TRUE> }
+{ 0 MAX-INT < -> <TRUE> }
+{ 0 0 < -> <FALSE> }
+{ 1 1 < -> <FALSE> }
+{ 1 0 < -> <FALSE> }
+{ 2 1 < -> <FALSE> }
+{ 0 -1 < -> <FALSE> }
+{ 1 -1 < -> <FALSE> }
+{ 0 MIN-INT < -> <FALSE> }
+{ MAX-INT MIN-INT < -> <FALSE> }
+{ MAX-INT 0 < -> <FALSE> }
+
+{ 0 1 > -> <FALSE> }
+{ 1 2 > -> <FALSE> }
+{ -1 0 > -> <FALSE> }
+{ -1 1 > -> <FALSE> }
+{ MIN-INT 0 > -> <FALSE> }
+{ MIN-INT MAX-INT > -> <FALSE> }
+{ 0 MAX-INT > -> <FALSE> }
+{ 0 0 > -> <FALSE> }
+{ 1 1 > -> <FALSE> }
+{ 1 0 > -> <TRUE> }
+{ 2 1 > -> <TRUE> }
+{ 0 -1 > -> <TRUE> }
+{ 1 -1 > -> <TRUE> }
+{ 0 MIN-INT > -> <TRUE> }
+{ MAX-INT MIN-INT > -> <TRUE> }
+{ MAX-INT 0 > -> <TRUE> }
+{ 0 1 U< -> <TRUE> }
+{ 1 2 U< -> <TRUE> }
+{ 0 MID-UINT U< -> <TRUE> }
+{ 0 MAX-UINT U< -> <TRUE> }
+
+{ MID-UINT MAX-UINT U< -> <TRUE> }
+{ 0 0 U< -> <FALSE> }
+{ 1 1 U< -> <FALSE> }
+{ 1 0 U< -> <FALSE> }
+{ 2 1 U< -> <FALSE> }
+{ MID-UINT 0 U< -> <FALSE> }
+{ MAX-UINT 0 U< -> <FALSE> }
+{ MAX-UINT MID-UINT U< -> <FALSE> }
+ 
+{ 0 1 MIN -> 0 }
+{ 1 2 MIN -> 1 }
+{ -1 0 MIN -> -1 }
+{ -1 1 MIN -> -1 }
+{ MIN-INT 0 MIN -> MIN-INT }
+{ MIN-INT MAX-INT MIN -> MIN-INT }
+{ 0 MAX-INT MIN -> 0 }
+{ 0 0 MIN -> 0 }
+{ 1 1 MIN -> 1 }
+{ 1 0 MIN -> 0 }
+{ 2 1 MIN -> 1 }
+{ 0 -1 MIN -> -1 }
+{ 1 -1 MIN -> -1 }
+{ 0 MIN-INT MIN -> MIN-INT }
+{ MAX-INT MIN-INT MIN -> MIN-INT }
+{ MAX-INT 0 MIN -> 0 }
+
+{ 0 1 MAX -> 1 }
+{ 1 2 MAX -> 2 }
+{ -1 0 MAX -> 0 }
+{ -1 1 MAX -> 1 }
+{ MIN-INT 0 MAX -> 0 }
+{ MIN-INT MAX-INT MAX -> MAX-INT }
+{ 0 MAX-INT MAX -> MAX-INT }
+{ 0 0 MAX -> 0 }
+{ 1 1 MAX -> 1 }
+{ 1 0 MAX -> 1 }
+{ 2 1 MAX -> 2 }
+{ 0 -1 MAX -> 0 }
+{ 1 -1 MAX -> 1 }
+{ 0 MIN-INT MAX -> 0 }
+{ MAX-INT MIN-INT MAX -> MAX-INT }
+{ MAX-INT 0 MAX -> MAX-INT }
+
+\ ------------------------------------------------------------------------
+s" TESTING STACK OPS: 2DROP 2DUP 2OVER 2SWAP"  report
+s"     ?DUP DEPTH DROP DUP OVER ROT SWAP"  report
+
+{ 1 2 2DROP -> }
+{ 1 2 2DUP -> 1 2 1 2 }
+{ 1 2 3 4 2OVER -> 1 2 3 4 1 2 }
+{ 1 2 3 4 2SWAP -> 3 4 1 2 }
+{ 0 ?DUP -> 0 }
+{ 1 ?DUP -> 1 1 }
+{ -1 ?DUP -> -1 -1 }
+{ DEPTH -> 0 }
+{ 0 DEPTH -> 0 1 }
+{ 0 1 DEPTH -> 0 1 2 }
+{ 0 DROP -> }
+{ 1 2 DROP -> 1 }
+{ 1 DUP -> 1 1 }
+{ 1 2 OVER -> 1 2 1 }
+{ 1 2 3 ROT -> 2 3 1 }
+{ 1 2 SWAP -> 2 1 }
+
+\ ------------------------------------------------------------------------
+s" TESTING >R R> R@" report
+
+{ : GR1 >R R> ; -> }
+{ : GR2 >R R@ R> DROP ; -> }
+{ 123 GR1 -> 123 }
+{ 123 GR2 -> 123 }
+{ 1S GR1 -> 1S }   ( RETURN STACK HOLDS CELLS )
+
+\ ------------------------------------------------------------------------
+s" TESTING ADD/SUBT: UM+ + - 1+ 1- ABS NEGATE" report
+
+{ 0 5 UM+ -> 5 0 }
+{ 5 0 UM+ -> 5 0 }
+{ 0 -5 UM+ -> -5 0 }
+{ -5 0 UM+ -> -5 0 }
+{ 1 2 UM+ -> 3 0 }
+{ 1 -2 UM+ -> -1 0 }
+{ -1 2 UM+ -> 1 1 }
+{ -1 -2 UM+ -> -3 1 }
+{ -1 1 UM+ -> 0 1 }
+{ MID-UINT 1 UM+ -> MID-UINT+1 0 }
+
+{ 0 5 + -> 5 }
+{ 5 0 + -> 5 }
+{ 0 -5 + -> -5 }
+{ -5 0 + -> -5 }
+{ 1 2 + -> 3 }
+{ 1 -2 + -> -1 }
+{ -1 2 + -> 1 }
+{ -1 -2 + -> -3 }
+{ -1 1 + -> 0 }
+{ MID-UINT 1 + -> MID-UINT+1 }
+
+{ 0 5 - -> -5 }
+{ 5 0 - -> 5 }
+{ 0 -5 - -> 5 }
+{ -5 0 - -> -5 }
+{ 1 2 - -> -1 }
+{ 1 -2 - -> 3 }
+{ -1 2 - -> -3 }
+{ -1 -2 - -> 1 }
+{ 0 1 - -> -1 }
+{ MID-UINT+1 1 - -> MID-UINT }
+
+{ 0 1+ -> 1 }
+{ -1 1+ -> 0 }
+{ 1 1+ -> 2 }
+{ MID-UINT 1+ -> MID-UINT+1 }
+
+{ 2 1- -> 1 }
+{ 1 1- -> 0 }
+{ 0 1- -> -1 }
+{ MID-UINT+1 1- -> MID-UINT }
+
+{ 0 NEGATE -> 0 }
+{ 1 NEGATE -> -1 }
+{ -1 NEGATE -> 1 }
+{ 2 NEGATE -> -2 }
+{ -2 NEGATE -> 2 }
+
+{ 0 ABS -> 0 }
+{ 1 ABS -> 1 }
+{ -1 ABS -> 1 }
+{ MIN-INT ABS -> MID-UINT+1 }
+
+\ ------------------------------------------------------------------------
+s" TESTING MULTIPLY: S>D * M* UM*" report
+
+{ 0 S>D -> 0 0 }
+{ 1 S>D -> 1 0 }
+{ 2 S>D -> 2 0 }
+{ -1 S>D -> -1 -1 }
+{ -2 S>D -> -2 -1 }
+{ MIN-INT S>D -> MIN-INT -1 }
+{ MAX-INT S>D -> MAX-INT 0 }
+
+{ 0 0 M* -> 0 S>D }
+{ 0 1 M* -> 0 S>D }
+{ 1 0 M* -> 0 S>D }
+{ 1 2 M* -> 2 S>D }
+{ 2 1 M* -> 2 S>D }
+{ 3 3 M* -> 9 S>D }
+{ -3 3 M* -> -9 S>D }
+{ 3 -3 M* -> -9 S>D }
+{ -3 -3 M* -> 9 S>D }
+{ 0 MIN-INT M* -> 0 S>D }
+{ 1 MIN-INT M* -> MIN-INT S>D }
+{ 2 MIN-INT M* -> 0 1S }
+{ 0 MAX-INT M* -> 0 S>D }
+{ 1 MAX-INT M* -> MAX-INT S>D }
+{ 2 MAX-INT M* -> MAX-INT 1 LSHIFT 0 }
+{ MIN-INT MIN-INT M* -> 0 MSB 1 RSHIFT }
+{ MAX-INT MIN-INT M* -> MSB MSB 2/ }
+{ MAX-INT MAX-INT M* -> 1 MSB 2/ INVERT }
+
+{ 0 0 * -> 0 }                          \ TEST IDENTITIES
+{ 0 1 * -> 0 }
+{ 1 0 * -> 0 }
+{ 1 2 * -> 2 }
+{ 2 1 * -> 2 }
+{ 3 3 * -> 9 }
+{ -3 3 * -> -9 }
+{ 3 -3 * -> -9 }
+{ -3 -3 * -> 9 }
+
+{ MID-UINT+1 1 RSHIFT 2 * -> MID-UINT+1 }
+{ MID-UINT+1 2 RSHIFT 4 * -> MID-UINT+1 }
+{ MID-UINT+1 1 RSHIFT MID-UINT+1 OR 2 * -> MID-UINT+1 }
+
+{ 0 0 UM* -> 0 0 }
+{ 0 1 UM* -> 0 0 }
+{ 1 0 UM* -> 0 0 }
+{ 1 2 UM* -> 2 0 }
+{ 2 1 UM* -> 2 0 }
+{ 3 3 UM* -> 9 0 }
+
+{ MID-UINT+1 1 RSHIFT 2 UM* -> MID-UINT+1 0 }
+{ MID-UINT+1 2 UM* -> 0 1 }
+{ MID-UINT+1 4 UM* -> 0 2 }
+{ 1S 2 UM* -> 1S 1 LSHIFT 1 }
+{ MAX-UINT MAX-UINT UM* -> 1 1 INVERT }
+
+s" AV1" endreport
+\
+
+\ ------------------------------------------------------------------------
+newscreen
+s" TESTING DIVIDE: FM/MOD SM/REM UM/MOD */" report
+s"     */MOD / /MOD MOD" report
+
+{ 0 S>D 1 FM/MOD -> 0 0 }
+{ 1 S>D 1 FM/MOD -> 0 1 }
+{ 2 S>D 1 FM/MOD -> 0 2 }
+{ -1 S>D 1 FM/MOD -> 0 -1 }
+{ -2 S>D 1 FM/MOD -> 0 -2 }
+
+{ 0 S>D -1 FM/MOD -> 0 0 }
+{ 1 S>D -1 FM/MOD -> 0 -1 }
+{ 2 S>D -1 FM/MOD -> 0 -2 }
+{ -1 S>D -1 FM/MOD -> 0 1 }
+{ -2 S>D -1 FM/MOD -> 0 2 }
+{ 2 S>D 2 FM/MOD -> 0 1 }
+{ -1 S>D -1 FM/MOD -> 0 1 }
+{ -2 S>D -2 FM/MOD -> 0 1 }
+{  7 S>D  3 FM/MOD -> 1 2 }
+{  7 S>D -3 FM/MOD -> -2 -3 }
+{ -7 S>D  3 FM/MOD -> 2 -3 }
+{ -7 S>D -3 FM/MOD -> -1 2 }
+{ MAX-INT S>D 1 FM/MOD -> 0 MAX-INT }
+{ MIN-INT S>D 1 FM/MOD -> 0 MIN-INT }
+{ MAX-INT S>D MAX-INT FM/MOD -> 0 1 }
+{ MIN-INT S>D MIN-INT FM/MOD -> 0 1 }
+{ 1S 1 4 FM/MOD -> 3 MAX-INT }
+{ 1 MIN-INT M* 1 FM/MOD -> 0 MIN-INT }
+{ 1 MIN-INT M* MIN-INT FM/MOD -> 0 1 }
+{ 2 MIN-INT M* 2 FM/MOD -> 0 MIN-INT }
+{ 2 MIN-INT M* MIN-INT FM/MOD -> 0 2 }
+{ 1 MAX-INT M* 1 FM/MOD -> 0 MAX-INT }
+{ 1 MAX-INT M* MAX-INT FM/MOD -> 0 1 }
+{ 2 MAX-INT M* 2 FM/MOD -> 0 MAX-INT }
+{ 2 MAX-INT M* MAX-INT FM/MOD -> 0 2 }
+{ MIN-INT MIN-INT M* MIN-INT FM/MOD -> 0 MIN-INT }
+{ MIN-INT MAX-INT M* MIN-INT FM/MOD -> 0 MAX-INT }
+{ MIN-INT MAX-INT M* MAX-INT FM/MOD -> 0 MIN-INT }
+{ MAX-INT MAX-INT M* MAX-INT FM/MOD -> 0 MAX-INT }
+
+{ 0 S>D 1 SM/REM -> 0 0 }     
+{ 1 S>D 1 SM/REM -> 0 1 }
+{ 2 S>D 1 SM/REM -> 0 2 }
+{ -1 S>D 1 SM/REM -> 0 -1 }
+{ -2 S>D 1 SM/REM -> 0 -2 }
+{ 0 S>D -1 SM/REM -> 0 0 }
+{ 1 S>D -1 SM/REM -> 0 -1 }
+{ 2 S>D -1 SM/REM -> 0 -2 }
+{ -1 S>D -1 SM/REM -> 0 1 }
+{ -2 S>D -1 SM/REM -> 0 2 }
+{ 2 S>D 2 SM/REM -> 0 1 }
+{ -1 S>D -1 SM/REM -> 0 1 }
+{ -2 S>D -2 SM/REM -> 0 1 }
+{  7 S>D  3 SM/REM -> 1 2 }
+{  7 S>D -3 SM/REM -> 1 -2 }
+{ -7 S>D  3 SM/REM -> -1 -2 }
+{ -7 S>D -3 SM/REM -> -1 2 }
+{ MAX-INT S>D 1 SM/REM -> 0 MAX-INT }
+{ MIN-INT S>D 1 SM/REM -> 0 MIN-INT }
+{ MAX-INT S>D MAX-INT SM/REM -> 0 1 }
+{ MIN-INT S>D MIN-INT SM/REM -> 0 1 }
+{ 1S 1 4 SM/REM -> 3 MAX-INT }
+{ 2 MIN-INT M* 2 SM/REM -> 0 MIN-INT }
+{ 2 MIN-INT M* MIN-INT SM/REM -> 0 2 }
+{ 2 MAX-INT M* 2 SM/REM -> 0 MAX-INT }
+{ 2 MAX-INT M* MAX-INT SM/REM -> 0 2 }
+{ MIN-INT MIN-INT M* MIN-INT SM/REM -> 0 MIN-INT }
+{ MIN-INT MAX-INT M* MIN-INT SM/REM -> 0 MAX-INT }
+{ MIN-INT MAX-INT M* MAX-INT SM/REM -> 0 MIN-INT }
+{ MAX-INT MAX-INT M* MAX-INT SM/REM -> 0 MAX-INT }
+{ 0 0 1 UM/MOD -> 0 0 }
+{ 1 0 1 UM/MOD -> 0 1 }
+{ 1 0 2 UM/MOD -> 1 0 }
+{ 3 0 2 UM/MOD -> 1 1 }
+{ MAX-UINT 2 UM* 2 UM/MOD -> 0 MAX-UINT }
+{ MAX-UINT 2 UM* MAX-UINT UM/MOD -> 0 2 }  \ ||||
+{ MAX-UINT MAX-UINT UM* MAX-UINT UM/MOD -> 0 MAX-UINT }
+
+\ We're only doing floored division -- BNE
+
+: T/MOD  >R S>D R> FM/MOD ;
+: T/     T/MOD SWAP DROP ;
+: TMOD   T/MOD DROP ;
+: T*/MOD >R M* R> FM/MOD ;
+: T*/    T*/MOD SWAP DROP ;
+
+{ 0 1 /MOD -> 0 1 T/MOD }
+{ 1 1 /MOD -> 1 1 T/MOD }
+{ 2 1 /MOD -> 2 1 T/MOD }
+{ -1 1 /MOD -> -1 1 T/MOD }
+{ -2 1 /MOD -> -2 1 T/MOD }
+{ 0 -1 /MOD -> 0 -1 T/MOD }
+{ 1 -1 /MOD -> 1 -1 T/MOD }
+{ 2 -1 /MOD -> 2 -1 T/MOD }
+{ -1 -1 /MOD -> -1 -1 T/MOD }
+{ -2 -1 /MOD -> -2 -1 T/MOD }
+{ 2 2 /MOD -> 2 2 T/MOD }
+{ -1 -1 /MOD -> -1 -1 T/MOD }
+{ -2 -2 /MOD -> -2 -2 T/MOD }
+{ 7 3 /MOD -> 7 3 T/MOD }
+{ 7 -3 /MOD -> 7 -3 T/MOD }
+{ -7 3 /MOD -> -7 3 T/MOD }
+{ -7 -3 /MOD -> -7 -3 T/MOD }
+{ MAX-INT 1 /MOD -> MAX-INT 1 T/MOD }
+{ MIN-INT 1 /MOD -> MIN-INT 1 T/MOD }
+{ MAX-INT MAX-INT /MOD -> MAX-INT MAX-INT T/MOD }
+{ MIN-INT MIN-INT /MOD -> MIN-INT MIN-INT T/MOD }
+
+{ 0 1 / -> 0 1 T/ }
+{ 1 1 / -> 1 1 T/ }
+{ 2 1 / -> 2 1 T/ }
+{ -1 1 / -> -1 1 T/ }
+{ -2 1 / -> -2 1 T/ }
+{ 0 -1 / -> 0 -1 T/ }
+{ 1 -1 / -> 1 -1 T/ }
+{ 2 -1 / -> 2 -1 T/ }
+{ -1 -1 / -> -1 -1 T/ }
+{ -2 -1 / -> -2 -1 T/ }
+{ 2 2 / -> 2 2 T/ }
+{ -1 -1 / -> -1 -1 T/ }
+{ -2 -2 / -> -2 -2 T/ }
+{ 7 3 / -> 7 3 T/ }
+{ 7 -3 / -> 7 -3 T/ }
+{ -7 3 / -> -7 3 T/ }
+{ -7 -3 / -> -7 -3 T/ }
+{ MAX-INT 1 / -> MAX-INT 1 T/ }
+{ MIN-INT 1 / -> MIN-INT 1 T/ }
+{ MAX-INT MAX-INT / -> MAX-INT MAX-INT T/ }
+{ MIN-INT MIN-INT / -> MIN-INT MIN-INT T/ }
+
+{ 0 1 MOD -> 0 1 TMOD }
+{ 1 1 MOD -> 1 1 TMOD }
+{ 2 1 MOD -> 2 1 TMOD }
+{ -1 1 MOD -> -1 1 TMOD }
+{ -2 1 MOD -> -2 1 TMOD }
+{ 0 -1 MOD -> 0 -1 TMOD }
+{ 1 -1 MOD -> 1 -1 TMOD }
+{ 2 -1 MOD -> 2 -1 TMOD }
+{ -1 -1 MOD -> -1 -1 TMOD }
+{ -2 -1 MOD -> -2 -1 TMOD }
+{ 2 2 MOD -> 2 2 TMOD }
+{ -1 -1 MOD -> -1 -1 TMOD }
+{ -2 -2 MOD -> -2 -2 TMOD }
+{ 7 3 MOD -> 7 3 TMOD }
+{ 7 -3 MOD -> 7 -3 TMOD }
+{ -7 3 MOD -> -7 3 TMOD }
+{ -7 -3 MOD -> -7 -3 TMOD }
+{ MAX-INT 1 MOD -> MAX-INT 1 TMOD }
+{ MIN-INT 1 MOD -> MIN-INT 1 TMOD }
+{ MAX-INT MAX-INT MOD -> MAX-INT MAX-INT TMOD }
+{ MIN-INT MIN-INT MOD -> MIN-INT MIN-INT TMOD }
+
+{ 0 2 1 */ -> 0 2 1 T*/ }
+{ 1 2 1 */ -> 1 2 1 T*/ }
+{ 2 2 1 */ -> 2 2 1 T*/ }
+{ -1 2 1 */ -> -1 2 1 T*/ }
+{ -2 2 1 */ -> -2 2 1 T*/ }
+{ 0 2 -1 */ -> 0 2 -1 T*/ }
+{ 1 2 -1 */ -> 1 2 -1 T*/ }
+{ 2 2 -1 */ -> 2 2 -1 T*/ }
+{ -1 2 -1 */ -> -1 2 -1 T*/ }
+{ -2 2 -1 */ -> -2 2 -1 T*/ }
+{ 2 2 2 */ -> 2 2 2 T*/ }
+{ -1 2 -1 */ -> -1 2 -1 T*/ }
+{ -2 2 -2 */ -> -2 2 -2 T*/ }
+{ 7 2 3 */ -> 7 2 3 T*/ }
+{ 7 2 -3 */ -> 7 2 -3 T*/ }
+{ -7 2 3 */ -> -7 2 3 T*/ }
+{ -7 2 -3 */ -> -7 2 -3 T*/ }
+{ MAX-INT 2 MAX-INT */ -> MAX-INT 2 MAX-INT T*/ }
+{ MIN-INT 2 MIN-INT */ -> MIN-INT 2 MIN-INT T*/ }
+
+{ 0 2 1 */MOD -> 0 2 1 T*/MOD }
+{ 1 2 1 */MOD -> 1 2 1 T*/MOD }
+{ 2 2 1 */MOD -> 2 2 1 T*/MOD }
+{ -1 2 1 */MOD -> -1 2 1 T*/MOD }
+{ -2 2 1 */MOD -> -2 2 1 T*/MOD }
+{ 0 2 -1 */MOD -> 0 2 -1 T*/MOD }
+{ 1 2 -1 */MOD -> 1 2 -1 T*/MOD }
+{ 2 2 -1 */MOD -> 2 2 -1 T*/MOD }
+{ -1 2 -1 */MOD -> -1 2 -1 T*/MOD }
+{ -2 2 -1 */MOD -> -2 2 -1 T*/MOD }
+{ 2 2 2 */MOD -> 2 2 2 T*/MOD }
+{ -1 2 -1 */MOD -> -1 2 -1 T*/MOD }
+{ -2 2 -2 */MOD -> -2 2 -2 T*/MOD }
+{ 7 2 3 */MOD -> 7 2 3 T*/MOD }
+{ 7 2 -3 */MOD -> 7 2 -3 T*/MOD }
+{ -7 2 3 */MOD -> -7 2 3 T*/MOD }
+{ -7 2 -3 */MOD -> -7 2 -3 T*/MOD }
+{ MAX-INT 2 MAX-INT */MOD -> MAX-INT 2 MAX-INT T*/MOD }
+{ MIN-INT 2 MIN-INT */MOD -> MIN-INT 2 MIN-INT T*/MOD }
+
+s" AV2" endreport 
+\
+
+\ ------------------------------------------------------------------------
+newscreen
+s" TESTING HERE , @ ! CELL+ CELLS C, C@ C!" report
+s"     CHARS 2@ 2! ALIGN ALIGNED +! ALLOT" report
+
+HERE 1 ALLOT
+HERE
+CONSTANT 2NDA
+CONSTANT 1STA
+{ 1STA 2NDA U< -> <TRUE> }              \ HERE MUST GROW WITH ALLOT
+{ 1STA 1+ -> 2NDA }                     \ ... BY ONE ADDRESS UNIT
+( MISSING TEST: NEGATIVE ALLOT )
+
+HERE 1 ,
+HERE 2 ,
+CONSTANT 2ND
+CONSTANT 1ST
+{ 1ST 2ND U< -> <TRUE> }                \ HERE MUST GROW WITH ALLOT
+{ 1ST CELL+ -> 2ND }                    \ ... BY ONE CELL
+{ 1ST 1 CELLS + -> 2ND }
+{ 1ST @ 2ND @ -> 1 2 }
+{ 5 1ST ! -> }
+{ 1ST @ 2ND @ -> 5 2 }
+{ 6 2ND ! -> }
+{ 1ST @ 2ND @ -> 5 6 }
+{ 1ST 2@ -> 6 5 }
+{ 2 1 1ST 2! -> }
+{ 1ST 2@ -> 2 1 }
+{ 1S 1ST !  1ST @ -> 1S }               \ CAN STORE CELL-WIDE VALUE
+
+HERE 1 C,
+HERE 2 C,
+CONSTANT 2NDC
+CONSTANT 1STC
+{ 1STC 2NDC U< -> <TRUE> }              \ HERE MUST GROW WITH ALLOT
+{ 1STC CHAR+ -> 2NDC }                  \ ... BY ONE CHAR
+{ 1STC 1 CHARS + -> 2NDC }
+{ 1STC C@ 2NDC C@ -> 1 2 }
+{ 3 1STC C! -> }
+{ 1STC C@ 2NDC C@ -> 3 2 }
+{ 4 2NDC C! -> }
+{ 1STC C@ 2NDC C@ -> 3 4 }
+
+ALIGN 1 ALLOT HERE ALIGN HERE 3 CELLS ALLOT
+CONSTANT A-ADDR  CONSTANT UA-ADDR
+{ UA-ADDR ALIGNED -> A-ADDR }
+{    1 A-ADDR C!  A-ADDR C@ ->    1 }
+{ 1234 A-ADDR  !  A-ADDR  @ -> 1234 }
+{ 123 456 A-ADDR 2!  A-ADDR 2@ -> 123 456 }
+{ 2 A-ADDR CHAR+ C!  A-ADDR CHAR+ C@ -> 2 }
+{ 3 A-ADDR CELL+ C!  A-ADDR CELL+ C@ -> 3 }
+{ 1234 A-ADDR CELL+ !  A-ADDR CELL+ @ -> 1234 }
+{ 123 456 A-ADDR CELL+ 2!  A-ADDR CELL+ 2@ -> 123 456 }
+
+: BITS ( X -- U )
+   0 SWAP BEGIN DUP WHILE DUP MSB AND IF >R 1+ R> THEN 2* REPEAT DROP ;
+( CHARACTERS >= 1 AU, <= SIZE OF CELL, >= 8 BITS )
+{ 1 CHARS 1 < -> <FALSE> }
+{ 1 CHARS 1 CELLS > -> <FALSE> }
+( TBD: HOW TO FIND NUMBER OF BITS? )
+
+( CELLS >= 1 AU, INTEGRAL MULTIPLE OF CHAR SIZE, >= 16 BITS )
+{ 1 CELLS 1 < -> <FALSE> }
+{ 1 CELLS 1 CHARS MOD -> 0 }
+{ 1S BITS 10 < -> <FALSE> }
+
+{ 0 1ST ! -> }
+{ 1 1ST +! -> }
+{ 1ST @ -> 1 }
+{ -1 1ST +! 1ST @ -> 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING CHAR [CHAR] [ ] BL S-quote" report
+
+{ BL -> 20 }
+{ CHAR X -> 58 }
+{ CHAR HELLO -> 48 }
+{ : GC1 [CHAR] X ; -> }
+{ : GC2 [CHAR] HELLO ; -> }
+{ GC1 -> 58 }
+{ GC2 -> 48 }
+{ : GC3 [ GC1 ] LITERAL ; -> }      
+{ GC3 -> 58 }
+
+{ : GC4 S" XY" ; -> }
+{ GC4 SWAP DROP -> 2 }
+{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }
+
+\ ------------------------------------------------------------------------
+s" TESTING ' ['] EXECUTE IMMEDIATE COUNT " report
+s"     LITERAL POSTPONE STATE" report
+
+{ : GT1 123 ; -> }
+{ ' GT1 EXECUTE -> 123 }
+{ : GT2 ['] GT1 ; IMMEDIATE -> }
+{ GT2 EXECUTE -> 123 }
+HERE 3 C, CHAR G C, CHAR T C, CHAR 1 C, CONSTANT GT1STRING
+{ : GT3 GT2 LITERAL ; -> }
+{ GT3 -> ' GT1 }
+{ GT1STRING COUNT -> GT1STRING CHAR+ 3 }
+
+{ : GT4 POSTPONE GT1 ; IMMEDIATE -> }
+{ : GT5 GT4 ; -> }
+{ GT5 -> 123 }
+{ : GT6 345 ; IMMEDIATE -> }
+{ : GT7 POSTPONE GT6 ; -> }
+{ GT7 -> 345 }
+
+{ : GT8 STATE @ ; IMMEDIATE -> }
+{ GT8 -> 0 }
+{ : GT9 GT8 LITERAL ; -> }
+{ GT9 0= -> <FALSE> }
+
+\ ------------------------------------------------------------------------
+s" TESTING IF ELSE THEN BEGIN WHILE REPEAT " report
+s"     UNTIL RECURSE" report
+
+{ : GI1 IF 123 THEN ; -> }
+{ : GI2 IF 123 ELSE 234 THEN ; -> }
+{ 0 GI1 -> }
+{ 1 GI1 -> 123 }
+{ -1 GI1 -> 123 }
+{ 0 GI2 -> 234 }
+{ 1 GI2 -> 123 }
+{ -1 GI1 -> 123 }
+
+{ : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ; -> }
+{ 0 GI3 -> 0 1 2 3 4 5 }
+{ 4 GI3 -> 4 5 }
+{ 5 GI3 -> 5 }
+{ 6 GI3 -> 6 }
+
+{ : GI4 BEGIN DUP 1+ DUP 5 > UNTIL ; -> }
+{ 3 GI4 -> 3 4 5 6 }
+{ 5 GI4 -> 5 6 }
+{ 6 GI4 -> 6 7 }
+
+\ { : GI5 BEGIN DUP 2 > WHILE DUP 5 < WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ; -> }
+\ { 1 GI5 -> 1 345 }
+\ { 2 GI5 -> 2 345 }
+\ { 3 GI5 -> 3 4 5 123 }
+\ { 4 GI5 -> 4 5 123 }
+\ { 5 GI5 -> 5 123 }
+
+{ : GI6 ( N -- 0,1,..N ) DUP IF DUP >R 1- RECURSE R> THEN ; -> }
+{ 0 GI6 -> 0 }
+{ 1 GI6 -> 0 1 }
+{ 2 GI6 -> 0 1 2 }
+{ 3 GI6 -> 0 1 2 3 }
+{ 4 GI6 -> 0 1 2 3 4 }
+
+\ ------------------------------------------------------------------------
+s" TESTING DO LOOP +LOOP I J UNLOOP LEAVE" report
+s"     EXIT >NUMBER" report
+
+{ : GD1 DO I LOOP ; -> }
+{ 4 1 GD1 -> 1 2 3 }
+{ 2 -1 GD1 -> -1 0 1 }
+{ MID-UINT+1 MID-UINT GD1 -> MID-UINT }
+
+{ : GD2 DO I -1 +LOOP ; -> }
+{ 1 4 GD2 -> 4 3 2 1 }
+{ -1 2 GD2 -> 2 1 0 -1 }
+{ MID-UINT MID-UINT+1 GD2 -> MID-UINT+1 MID-UINT }
+ 
+{ : GD3 DO 1 0 DO J LOOP LOOP ; -> }
+{ 4 1 GD3 -> 1 2 3 }
+{ 2 -1 GD3 -> -1 0 1 }  
+{ MID-UINT+1 MID-UINT GD3 -> MID-UINT }
+
+{ : GD4 DO 1 0 DO J LOOP -1 +LOOP ; -> }
+{ 1 4 GD4 -> 4 3 2 1 }
+{ -1 2 GD4 -> 2 1 0 -1 }
+{ MID-UINT MID-UINT+1 GD4 -> MID-UINT+1 MID-UINT }
+
+{ : GD5 123 SWAP 0 DO I 4 > IF DROP 234 LEAVE THEN LOOP ; -> }
+{ 1 GD5 -> 123 }
+{ 5 GD5 -> 123 }
+{ 6 GD5 -> 234 }
+
+{ : GD6  ( PAT: {0 0},{0 0}{1 0}{1 1},{0 0}{1 0}{1 1}{2 0}{2 1}{2 2} )
+   0 SWAP 0 DO
+      I 1+ 0 DO I J + 3 = IF I UNLOOP I UNLOOP EXIT THEN 1+ LOOP
+    LOOP ; -> }
+{ 1 GD6 -> 1 }
+{ 2 GD6 -> 3 }
+{ 3 GD6 -> 4 1 2 }
+
+{ 24 CONSTANT MAX-BASE -> }
+
+CREATE GN-BUF 0 C,
+: GN-STRING     GN-BUF 1 ;
+: GN-CONSUMED   GN-BUF CHAR+ 0 ;
+: =GN           GN-BUF C!  GN-STRING ;
+
+{ 0 0 CHAR 0 =GN >NUMBER -> 0 0 GN-CONSUMED }  \ |||
+{ 0 0 CHAR 1 =GN >NUMBER -> 1 0 GN-CONSUMED }  \ |||
+{ 1 0 CHAR 1 =GN >NUMBER -> BASE @ 1+ 0 GN-CONSUMED }
+{ 0 0 CHAR - =GN >NUMBER -> 0 0 GN-STRING } \ SHOULD FAIL TO CONVERT THESE
+{ 0 0 CHAR + =GN >NUMBER -> 0 0 GN-STRING }
+{ 0 0 CHAR . =GN >NUMBER -> 0 0 GN-STRING }
+
+: >NUMBER-BASED
+   BASE @ >R BASE ! >NUMBER R> BASE ! ;
+
+{ 0 0 CHAR 2 =GN 10 >NUMBER-BASED -> 2 0 GN-CONSUMED }
+{ 0 0 CHAR 2 =GN  2 >NUMBER-BASED -> 0 0 GN-STRING }
+{ 0 0 CHAR F =GN 10 >NUMBER-BASED -> F 0 GN-CONSUMED }
+{ 0 0 CHAR G =GN 10 >NUMBER-BASED -> 0 0 GN-STRING }
+{ 0 0 CHAR G =GN MAX-BASE >NUMBER-BASED -> 10 0 GN-CONSUMED }
+{ 0 0 CHAR Z =GN MAX-BASE >NUMBER-BASED -> 23 0 GN-CONSUMED }
+
+: GN1   \ ( UD BASE -- UD' LEN ) UD SHOULD EQUAL UD' AND LEN SHOULD BE ZERO.
+   BASE @ >R BASE !
+   <# #S #>
+   0 0 2SWAP >NUMBER SWAP DROP          \ RETURN LENGTH ONLY
+   R> BASE ! ;
+{ 0 0 2 GN1 -> 0 0 0 }
+{ MAX-UINT 0 2 GN1 -> MAX-UINT 0 0 }        \ |||
+{ MAX-UINT DUP 2 GN1 -> MAX-UINT DUP 0 }
+{ 0 0 MAX-BASE GN1 -> 0 0 0 }
+{ MAX-UINT 0 MAX-BASE GN1 -> MAX-UINT 0 0 }
+{ MAX-UINT DUP MAX-BASE GN1 -> MAX-UINT DUP 0 }
+
+: GN2   \ ( -- 16 10 )
+   BASE @ >R  HEX BASE @  DECIMAL BASE @  R> BASE ! ;
+{ GN2 -> 10 A }
+
+s" AV3" endreport
+
+\ ------------------------------------------------------------------------
+newscreen
+s" TESTING DEFINING WORDS: : ; CONSTANT " report
+s"     VARIABLE CREATE DOES> >BODY " report
+
+{ 123 CONSTANT X123 -> }
+{ X123 -> 123 }
+{ : EQU CONSTANT ; -> }
+{ X123 EQU Y123 -> }
+{ Y123 -> 123 }
+
+{ VARIABLE V1 -> }
+{ 123 V1 ! -> }
+{ V1 @ -> 123 }
+
+{ : NOP : POSTPONE ; ; -> }
+{ NOP NOP1 NOP NOP2 -> }
+{ NOP1 -> }
+{ NOP2 -> }
+
+{ : DOES1 DOES> @ 1 + ; -> }
+{ : DOES2 DOES> @ 2 + ; -> }
+{ CREATE CR1 -> }
+{ CR1 -> HERE }
+{ ' CR1 >BODY -> HERE }
+{ 1 , -> }
+{ CR1 @ -> 1 }
+{ DOES1 -> }
+{ CR1 -> 2 }
+{ DOES2 -> }
+{ CR1 -> 3 }
+
+{ : WEIRD: CREATE DOES> 1 + DOES> 2 + ; -> }
+{ WEIRD: W1 -> }
+{ ' W1 >BODY -> HERE }
+{ W1 -> HERE 1 + }
+{ W1 -> HERE 2 + }
+{ ROM -> }
+
+\ ------------------------------------------------------------------------
+s" TESTING <# # #S #> HOLD SIGN BASE >NUMBER" report
+s"     HEX DECIMAL" report
+
+: S=  \ ( ADDR1 C1 ADDR2 C2 -- T/F ) COMPARE TWO STRINGS.
+   >R SWAP R@ = IF                      \ MAKE SURE STRINGS HAVE SAME LENGTH
+      R> ?DUP IF                        \ IF NON-EMPTY STRINGS
+         0 DO
+            OVER C@ OVER C@ - IF 2DROP <FALSE> UNLOOP EXIT THEN
+            SWAP CHAR+ SWAP CHAR+
+         LOOP
+      THEN
+      2DROP <TRUE>                      \ IF WE GET HERE, STRINGS MATCH
+   ELSE
+      R> DROP 2DROP <FALSE>             \ LENGTHS MISMATCH
+   THEN ;
+
+: GP1  <# 41 HOLD 42 HOLD 0 0 #> S" BA" S= ;
+{ GP1 -> <TRUE> }
+
+: GP2  <# -1 SIGN 0 SIGN -1 SIGN 0 0 #> S" --" S= ;
+{ GP2 -> <TRUE> }
+
+: GP3  <# 1 0 # # #> S" 01" S= ;
+{ GP3 -> <TRUE> }
+
+: GP4  <# 1 0 #S #> S" 1" S= ;
+{ GP4 -> <TRUE> }
+
+: COUNT-BITS
+   0 0 INVERT BEGIN DUP WHILE >R 1+ R> 2* REPEAT DROP ;
+COUNT-BITS 2* CONSTANT #BITS-UD         \ NUMBER OF BITS IN UD
+
+: GP5
+   BASE @ <TRUE>
+   MAX-BASE 1+ 2 DO                     \ FOR EACH POSSIBLE BASE
+      I BASE !                          \ TBD: ASSUMES BASE WORKS
+      I 0 <# #S #> S" 10" S= AND
+   LOOP
+   SWAP BASE ! ;
+{ GP5 -> <TRUE> }
+
+: GP6
+   BASE @ >R  2 BASE !
+   MAX-UINT MAX-UINT <# #S #>           \ MAXIMUM UD TO BINARY
+   R> BASE !                            \ S: C-ADDR U
+   DUP #BITS-UD = SWAP
+   0 DO                                 \ S: C-ADDR FLAG
+      OVER C@ [CHAR] 1 = AND            \ ALL ONES
+      >R CHAR+ R>
+   LOOP SWAP DROP ;
+{ GP6 -> <TRUE> }
+
+: GP7
+   BASE @ >R    MAX-BASE BASE !
+   <TRUE>
+   A 0 DO
+      I 0 <# #S #>
+      1 = SWAP C@ I 30 + = AND AND
+   LOOP
+   MAX-BASE A DO
+      I 0 <# #S #>
+      1 = SWAP C@ 41 I A - + = AND AND
+   LOOP
+   R> BASE ! ;
+
+{ GP7 -> <TRUE> }
+
+
+\ ------------------------------------------------------------------------
+s" TESTING FILL MOVE INCR DECR" report
+
+CREATE FBUF 00 C, 00 C, 00 C,
+CREATE SBUF 12 C, 34 C, 56 C,
+: SEEBUF FBUF C@  FBUF CHAR+ C@  FBUF CHAR+ CHAR+ C@ ;
+
+{ FBUF 0 20 FILL -> }
+{ SEEBUF -> 00 00 00 }
+
+{ FBUF 1 20 FILL -> }
+{ SEEBUF -> 20 00 00 }
+
+{ FBUF 3 20 FILL -> }
+{ SEEBUF -> 20 20 20 }
+
+{ FBUF FBUF 3 CHARS MOVE -> }           \ BIZARRE SPECIAL CASE
+{ SEEBUF -> 20 20 20 }
+
+{ SBUF FBUF 0 CHARS MOVE -> }
+{ SEEBUF -> 20 20 20 }
+
+{ SBUF FBUF 1 CHARS MOVE -> }
+{ SEEBUF -> 12 20 20 }
+
+{ SBUF FBUF 3 CHARS MOVE -> }
+{ SEEBUF -> 12 34 56 }
+
+{ FBUF FBUF CHAR+ 2 CHARS MOVE -> }
+{ SEEBUF -> 12 12 34 }                  \ |||
+
+{ FBUF CHAR+ FBUF 2 CHARS MOVE -> }     \ |||
+{ SEEBUF -> 12 34 34 }
+
+{ 0 V1 !  V1 INCR  V1 @ -> 1 }
+{ -1 V1 ! V1 INCR  V1 @ -> 0 }
+
+{ 0 V1 !  V1 DECR  V1 @ -> -1 }
+{ 1 V1 !  V1 DECR  V1 @ -> 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING OUTPUT: . dotquote CR EMIT SPACE" report
+s"     SPACES TYPE U." report
+
+: OUTPUT-TEST
+   CR ." YOU SHOULD SEE THE STANDARD GRAPHIC CHARS:" CR
+   41 BL DO I EMIT LOOP CR
+   61 41 DO I EMIT LOOP CR
+   7F 61 DO I EMIT LOOP CR
+   ." YOU SHOULD SEE 0-9 SEPARATED BY A SPACE:" CR
+   9 1+ 0 DO I . LOOP CR
+   ." YOU SHOULD SEE 0-9 (WITH NO SPACES):" CR
+   [CHAR] 9 1+ [CHAR] 0 DO I 0 SPACES EMIT LOOP CR
+   ." YOU SHOULD SEE A-G SEPARATED BY A SPACE:" CR
+   [CHAR] G 1+ [CHAR] A DO I EMIT SPACE LOOP CR
+   ." YOU SHOULD SEE 0-5 SEPARATED BY TWO SPACES:" CR
+   5 1+ 0 DO I [CHAR] 0 + EMIT 2 SPACES LOOP CR
+   ." YOU SHOULD SEE TWO SEPARATE LINES:" CR
+   S" LINE 1" TYPE CR S" LINE 2" TYPE CR
+   ." YOU SHOULD SEE THE NUMBER RANGES OF " CR
+   ." SIGNED AND UNSIGNED NUMBERS:" CR
+   ."   SIGNED: " MIN-INT . MAX-INT . CR
+   ." UNSIGNED: " 0 U. MAX-UINT U. CR
+;
+
+{ OUTPUT-TEST -> }
+
+\ ========================================================================
+\ Testing beyond Hayes' test suite, TOF specific.
+
+\  -------=======-------=======-------=======
+s" TESTING  NIP TUCK -ROT PLUCK PICK -PICK "  report
+s"     C>N W>N BYTE-SPLIT BYTE-SWAP " report
+s"     BYTE-JOIN WORD-SPLIT WORD-JOIN UMAX " report
+s"     UMIN 0MAX "   report
+
+{ 3 5 NIP -> 5 }
+{ 4 6 TUCK -> 6 4 6 }
+{ 1 2 3 -ROT -> 3 1 2 }
+{ 7 8 9 PLUCK -> 7 8 9 7 }
+{ 1 2 3 0 PICK -> 1 2 3 3 }
+{ 1 2 3 1 PICK -> 1 2 3 2 }
+{ 1 2 3 2 PICK -> 1 2 3 1 }
+{ 1 2 3 99 0 -PICK -> 1 2 99 }
+{ 1 2 3 99 1 -PICK -> 1 99 3 }
+{ 1 2 3 99 2 -PICK -> 99 2 3 }
+{ 7F C>N -> 7F }
+{ 80 C>N -> -80 }
+{ 7FFF W>N -> 7FFF }
+{ 8000 W>N -> -8000 }
+{ 1234 BYTE-SPLIT -> 34 12 }
+{ 1234 BYTE-SWAP  -> 3412 }
+{ 34 56 BYTE-JOIN -> 5634 }
+{ 1234 WORD-SPLIT -> 1234 0 }
+{ 4321 0 WORD-JOIN -> 4321 }
+{ -2 -1 UMAX -> -1 }
+{ 2 1 UMAX -> 2 }
+{ -2 -1 UMIN -> -2 }
+{ 2 1 UMIN -> 1 }
+{ MAX-INT 0MAX -> MAX-INT }
+{ MIN-INT 0MAX -> 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING  0<> 0>= 0<= 0> <> >= <= D0= D0< " report
+s"     D0<> D+ D- " report
+
+{ 1 0<> -> TRUE }
+{ 0 0<> -> FALSE }
+{ 5 5 <> -> FALSE }
+{ 1 2 <> -> TRUE }
+
+{ 0       0>= -> TRUE }
+{ 1       0>= -> TRUE }
+{ -1      0>= -> FALSE }
+{ MIN-INT 0>= -> FALSE }
+{ MAX-INT 0>= -> TRUE }
+
+{ 0       0<= -> TRUE }
+{ 1       0<= -> FALSE }
+{ -1      0<= -> TRUE }
+{ MIN-INT 0<= -> TRUE }    \ |||
+{ MAX-INT 0<= -> FALSE }
+
+{ 0       0>  -> FALSE }
+{ 1       0>  -> TRUE }
+{ -1      0>  -> FALSE }   \ |||
+{ MIN-INT 0>  -> FALSE }
+{ MAX-INT 0>  -> TRUE }
+
+{ 0 1 <= -> <TRUE> }
+{ 1 2 <= -> <TRUE> }
+{ -1 0 <= -> <TRUE> }
+{ -1 1 <= -> <TRUE> }
+{ MIN-INT 0 <= -> <TRUE> }
+{ MIN-INT MAX-INT <= -> <TRUE> }
+{ 0 MAX-INT <= -> <TRUE> }
+{ 0 0 <= -> <TRUE> }
+{ 1 1 <= -> <TRUE> }
+{ 1 0 <= -> <FALSE> }
+{ 2 1 <= -> <FALSE> }
+{ 0 -1 <= -> <FALSE> }
+{ 1 -1 <= -> <FALSE> }
+{ 0 MIN-INT <= -> <FALSE> }
+{ MAX-INT MIN-INT <= -> <FALSE> }
+{ MAX-INT 0 <= -> <FALSE> }
+
+{ 0 1 >= -> <FALSE> }
+{ 1 2 >= -> <FALSE> }
+{ -1 0 >= -> <FALSE> }
+{ -1 1 >= -> <FALSE> }
+{ MIN-INT 0 >= -> <FALSE> }
+{ MIN-INT MAX-INT >= -> <FALSE> }
+{ 0 MAX-INT >= -> <FALSE> }
+{ 0 0 >= -> <TRUE> }
+{ 1 1 >= -> <TRUE> }
+{ 1 0 >= -> <TRUE> }
+{ 2 1 >= -> <TRUE> }
+{ 0 -1 >= -> <TRUE> }
+{ 1 -1 >= -> <TRUE> }
+{ 0 MIN-INT >= -> <TRUE> }
+{ MAX-INT MIN-INT >= -> <TRUE> }
+{ MAX-INT 0 >= -> <TRUE> }
+
+{ 0.  D0=  -> TRUE }
+{ 1 0 D0=  -> FALSE }
+{ 0 1 D0=  -> FALSE }
+{ 0.  D0<> -> FALSE }
+{ 1 0 D0<> -> TRUE }
+{ 0 1 D0<> -> TRUE }
+{ 0.              D0< -> FALSE }
+{ MIN-INT MAX-INT D0< -> FALSE }      \ |||
+{ MAX-INT MIN-INT D0< -> TRUE }
+
+{ -1. -> -1 -1 }
+{ -1. 2DUP D+ -> -2. }
+{ -1. -1. D- -> 0 0 }
+{ 77777777. 22222222. D- -> 55555555. }
+
+\ ------------------------------------------------------------------------
+s" TESTING  TRUE FALSE CELL UNDER+ UNDER1+" report
+s"     UNDER1- BIT-ON BIT-OFF BIT? ON OFF" report
+s"     VALUE TO c-quote" report
+
+{ VARIABLE TEMPBITS -> }
+{ TRUE -> <TRUE> }
+{ FALSE -> <FALSE> }
+{ 0 CELL+ -> CELL }
+{ 2 7 3 UNDER+ -> 5 7 }
+{ 2 7  UNDER1+ -> 3 7 }
+{ 2 7  UNDER1- -> 1 7 }
+{ 0 TEMPBITS !  1 TEMPBITS BIT-ON  3 TEMPBITS BIT-ON -> }
+{ TEMPBITS C@ -> 0A }
+{ 0 TEMPBITS BIT? -> FALSE }
+{ 1 TEMPBITS BIT? -> TRUE }
+{ 2 TEMPBITS BIT? -> FALSE }
+{ 3 TEMPBITS BIT? -> TRUE }
+{ 3 TEMPBITS BIT-OFF -> }
+{ 3 TEMPBITS BIT? -> FALSE }
+{ TEMPBITS C@  TEMPBITS OFF  -> 2 }
+{ TEMPBITS DECR -> }
+{ TEMPBITS @ -> -1 }
+{ TEMPBITS INCR -> }
+{ TEMPBITS @ -> 0 }
+{ TEMPBITS ON -> }
+
+{ 6789 VALUE MYVAL1 -> }
+{ : MYVAL1!  TO MYVAL1 ; -> }
+{ MYVAL1 -> 6789 }
+{ 9876 TO MYVAL1 -> }
+{ MYVAL1 -> 9876 }
+{ 1235 MYVAL1! -> }
+{ MYVAL1 -> 1235 }
+
+{ : CQUOTE? C" XY" ; -> }
+{ CQUOTE? COUNT SWAP C@ -> 2 CHAR X }
+
+\ ------------------------------------------------------------------------
+s" TESTING  2>R 2R> 2R@ DUP>R R>DROP " report
+s"     2CONSTANT 2VARIABLE" report
+
+{ : G2R1 2>R R@ 2R> ; -> }
+{ : G2R2 DUP>R R@ R>DROP ; -> }
+{ : G2R3 >R >R 2R@ 2R> ; -> }
+{ 123 456 G2R1 -> 456 123 456 }
+{ 123 G2R2 -> 123 DUP }
+{ 1S 1S G2R1 -> 1S 1S 1S }
+{ -1 -2 G2R3 -> -2 -1 -2 -1 }
+{ 12345678. 2CONSTANT MYCON1 -> }
+{ MYCON1 -> 12345678. }
+{ 12345678. DEPTH NIP NIP -> 2 }
+{ RAM ALIGN HERE CELL+ CELL+ 2VARIABLE MYVAR1 -> RAM HERE ROM }
+{ MYCON1 MYVAR1 2! -> }
+{ MYVAR1 2@ -> 12345678. }
+{ MYVAR1 INCR  MYVAR1 CELL+ DECR -> }
+{ MYVAR1 2@  1- UNDER1+ -> MYCON1 }
+
+s" AV4" endreport
+
+\ ------------------------------------------------------------------------
+newscreen
+
+\ ------------------------------------------------------------------------
+s" TESTING  CASE OF ENDOF ENDCASE UNUSED " report
+: CASET   CASE  1 OF 111 ENDOF
+                2 OF 222 ENDOF
+                3 OF 333 ENDOF
+          ENDCASE ;
+{ 1 CASET -> 111 }
+{ 2 CASET -> 222 }
+{ 3 CASET -> 333 }
+{ 9 CASET -> }
+{ CPUTYPE DEPTH NIP -> 1 }
+
+{ RAM UNUSED  0 C, -> UNUSED CHAR+ }
+{ ROM UNUSED  0 C, -> UNUSED CHAR+ }
+
+\ ------------------------------------------------------------------------
+s" TESTING  :NONAME EXECUTECFA LAY" report
+
+{ 4 :NONAME OVER + ; DEPTH SWAP EXECUTECFA -> 4 6 }
+
+{ PAD 3 LAY 4 LAY 5 SWAP C! -> }
+{ PAD COUNT SWAP COUNT SWAP C@ -> 3 4 5 }
+
+\ ------------------------------------------------------------------------
+s" TESTING  ON? OFF? >DIGIT DIGIT" report
+
+{ VARIABLE TVAR -> TVAR OFF }
+{ TVAR OFF? -> TRUE }
+{ TVAR ON? -> FALSE }
+{ TVAR INCR -> }
+{ TVAR OFF? -> FALSE }
+{ TVAR ON? -> TRUE }
+{ TVAR ON -> }
+{ TVAR OFF? -> FALSE }
+{ TVAR ON? -> TRUE }
+{ 0 >DIGIT -> CHAR 0 }
+{ 9 >DIGIT -> CHAR 9 }
+{ 0A >DIGIT -> CHAR A }
+{ 23 >DIGIT -> CHAR Z }
+{ CHAR 0 1- 4 DIGIT -> CHAR 0 1- FALSE }
+{ CHAR 0    4 DIGIT -> 0 TRUE }
+{ CHAR 3    4 DIGIT -> 3 TRUE }
+{ CHAR 4    4 DIGIT -> CHAR 4 FALSE }
+{ FF        4 DIGIT -> FF FALSE }
+
+\ ------------------------------------------------------------------------
+s" TESTING  STRING ERASE BLANK " report
+
+{ 10 STRING XSTR -> }
+{ XSTR NIP -> 10 }
+{ XSTR 4 FILL -> }
+{ XSTR DROP 3 BLANK -> }
+{ XSTR DROP 2 ERASE -> }
+{ XSTR DROP 1 7 FILL -> }
+{ XSTR DROP 0 ERASE -> }
+{ XSTR DROP COUNT SWAP COUNT SWAP COUNT SWAP C@ -> 7 0 BL 4 }
+
+s" TESTING  -SCAN EMITS .R UD. D." report
+{ s"      "  BL -SCAN NIP -> 0 }
+{ s" ABXXX"  CHAR X -SCAN NIP -> 2 }
+
+{ : moreouttest
+        CR ." You should see 8 stars: " 8 [CHAR] * EMITS
+        CR ." 1234 right justified:   " 0 [CHAR] ? EMITS
+                                        1234 8 .R
+        CR ." The 4 should be under the rightmost star"
+        CR ." Max unsigned double: " -1. decimal ud. hex
+        CR ." Minus 1 is " -1 -1 d.
+        ; -> }
+{ moreouttest -> }
+
+s" TESTING  |COUNTER| U2/ UD2/ D2/ D2* " report
+s"     DNEGATE DABS " report
+
+{ -1. |COUNTER| -> FFFFFFFF. }
+
+{ 0 U2/ -> 0 }
+{ 1 U2/ -> 0 }
+{ 4000 U2/ -> 2000 }
+{ -1 U2/ -> MAX-INT }
+{ -1 1 XOR U2/ -> MAX-INT }
+
+{ 0 0 UD2/ -> 0 0 }
+{ 1 0 UD2/ -> 0 0 }
+{ 4444 4444 UD2/ -> 2222 2222 }
+{ -1 -1 UD2/ -> -1 MAX-INT }
+
+{ 0 0 D2/ -> 0 0 }
+{ 1 0 D2/ -> 0 0 }
+{ 4444 4444 D2/ -> 2222 2222 }
+{ -1 -1 D2/ -> -1 -1 }
+
+{ 0 0 D2* -> 0 0 }
+{ 1 0 D2* -> 2 0 }
+{ 4444 4444 D2* -> 8888 8888 }
+{ -1 -1 D2* -> -2 -1 }
+
+{ 0 0 DNEGATE -> 0 0 }
+{ 1 0 DNEGATE -> -1 -1 }
+{ -1 -1 DNEGATE -> 1 0 }
+{ 2 0 DNEGATE -> -2 -1 }
+{ -2 -1 DNEGATE -> 2 0 }
+
+{ 0 0 DABS -> 0 0 }
+{ 1 0 DABS -> 1 0 }
+{ -1 -1 DABS -> 1 0 }
+{ 0 -1 DABS -> 0 1 }
+
+s" TESTING  A! A@ !A @A !A+ @A+ @R @R+ " report
+s"     C!A C@A C!A+ C@A+ " report
+
+{ 8 CELLS ARRAY MYA -> }
+
+{ MYA 8 CELLS ERASE -> }
+{ : MYAA  MYA A! A@ ; -> }
+{ MYAA -> MYA }
+
+{ : MYAB  MYA A! 111 !A+ 222 !A+ A@ ; -> }
+{ MYAB 2 CELLS - -> MYA }
+{ MYA @ MYA CELL+ @ -> 111 222 }
+{ : PX1  MYA >R @R+ @R+ R> 2 CELLS - ; -> }
+{ PX1 -> 111 222 MYA }
+
+{ : MYAC  MYA A! 333 !A A@ ; -> }
+{ MYAC -> MYA }
+{ MYA @ -> 333 }
+
+{ : MYAD MYA A! 1 C!A 2 C!A+ 3 C!A+ 4 C!A A@ ; -> }
+{ MYAD 2 CHARS - -> MYA }
+{ : MYAE MYA A! C@A+ C@A+ C@A A@ ; -> }
+{ MYAE 2 CHARS - -> 2 3 4 MYA }  
+
+
+s" TESTING  CLEAR BOUNDS HERE ORG ?DO ?EXIT" report
+
+{ 1 2 3 CLEAR -> }
+{ 3 7 BOUNDS -> 0A 3 }
+
+{ HERE DUP CELL + ORG  HERE SWAP - -> CELL }
+
+{ : GD1X ?DO I LOOP ; -> }
+{ 3 3 GD1X -> }
+{ 4 1 GD1X -> 1 2 3 }
+{ 2 -1 GD1X -> -1 0 1 }
+{ MID-UINT+1 MID-UINT GD1X -> MID-UINT }
+
+{ : GD2X ?DO I -1 +LOOP ; -> }
+{ -1 -1 GD2X -> }
+{ 1 4 GD2X -> 4 3 2 1 }
+{ -1 2 GD2X -> 2 1 0 -1 }
+{ MID-UINT MID-UINT+1 GD2X -> MID-UINT+1 MID-UINT }
+
+{ : QEX  BEGIN DUP DUP 2 - 0= ?EXIT 1- AGAIN ; -> }
+{ 4 QEX -> 4 3 2 2 }
+
+
+s" TESTING  COMP SCAN SKIP /STRING" report
+
+{ S" FORTH" MYA SWAP MOVE -> }
+{ MYA  S" FORTH"  COMP -> 0 }
+{ MYA  S" FORTE"  COMP -> -1 }
+{ MYA  S" FORTX"  COMP -> 1 }
+{ MYA  PAD 0 COMP -> 0 }
+
+{ S" HELLO" 10 /STRING NIP -> 0 }
+{ S" HELLO" 3 /STRING NIP -> 2 }
+{ MYA S" GOFORTH" 2 /STRING COMP -> 0 }
+
+{ MYA S" WHEREFORTH" 'F' SCAN COMP -> 0 }
+{ S" HELLO" '?' SCAN NIP -> 0 }
+{ MYA 0 'F' SCAN NIP -> 0 }
+
+{ MYA S" ****FORTH" '*' SKIP COMP -> 0 }
+{ MYA S" FORTH" '?' SKIP COMP -> 0 }
+{ S" *****" '*' SKIP NIP -> 0 }
+
+{ 2 2 2 BETWEEN -> TRUE }
+{ 1 1 3 BETWEEN -> TRUE }
+{ 3 1 3 BETWEEN -> TRUE }
+{ 4 1 3 BETWEEN -> FALSE }
+
+{ 2 2 2 WITHIN -> FALSE }
+{ 1 1 3 WITHIN -> TRUE }
+{ 2 1 3 WITHIN -> TRUE }
+{ 3 1 3 WITHIN -> FALSE }   \ still need to check negative numbers
+
+s" TESTING  W@ W! W, UD* REBIND CPUTYPE " report
+s"     ,quote $TYPE " report
+
+{ CREATE MYB  HERE MYA !  123 W, 456 W, 789 W,  -> }
+{ MYB W@ -> 123 }
+{ HERE MYA @ - 3 /  MYB + W@  -> 456 }
+
+{ -1 -1 -1 UD* -> 1 -1 }
+{ 0 0 0 UD* -> 0 0 }
+
+{ : MSG1 123 ; -> }
+{ : MSG2 456 ; -> }
+{ MSG1 ' MSG2 ' MSG1 REBIND MSG1 -> 123 456 }
+
+{ : .CPUTYPE   CR ." CPU TYPE = " CPUTYPE . ; -> }
+{ .CPUTYPE -> }
+
+{ CREATE $TEST ," WORKING" -> }
+{ CR s" Should say WORKING --> " TYPE  $TEST $TYPE -> }
+
+s" TESTING  #IF #ELSE #ENDIF #THEN CELL CELL- " report
+
+{ 1 2 3 0 #IF DROP #THEN -> 1 2 3 }
+{ 1 2 3 1 #IF DROP #THEN -> 1 2 }
+{ 1 2 3 0 #IF DROP #ELSE SWAP #THEN -> 1 3 2 }
+{ 1 2 3 1 #IF DROP #ELSE SWAP #THEN -> 1 2 }
+{ 1 2 3 0 #IF DROP #ELSE SWAP #ENDIF -> 1 3 2 }
+{ 1 2 3 1 #IF DROP #ELSE SWAP #ENDIF -> 1 2 }
+
+{ 3 CELLS -> 3 CELL * }
+{ 0 CELL- -> 0 CELL - }
+{ 10 CELL- -> 10 CELL - }
+
+\ yet to test: mu/mod m/mod u/mod [compile]
+
+s" AV5" endreport
+

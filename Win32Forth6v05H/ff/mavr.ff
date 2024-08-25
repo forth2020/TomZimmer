@@ -1,0 +1,432 @@
+\ AVR demonstration program            4/00 by Brad Eckert
+
+\ Use as a template for your hardware.
+\ Includes the multidrop (RS422/485) datalink for the debugger.
+
+host decimal
+anew demo_AVR_program
+homeorder
+1       constant hardware       \ hardware configuration
+\ devices:  0=AT90S2313  4=AT90S4414  6=AT90S8515  8=ATmega103
+{{ debugging off }}
+
+{{ hardware 1 = }} [IF]         \ STK200 demo board
+        4000000 constant xtalfreq       \ crystal frequency in Hz
+              6 constant device         \ device is AT90S8515
+.( AT90S8515 @ 4 MHz, )
+        include ALABAVR.FF              \ port labels
+        include BEGIN.FAR               \ basic register assignments
+[THEN]
+{{ hardware 2 = }} [IF]         \ ATmega demo board with 5M xtal
+        5000000 constant xtalfreq       \ crystal frequency in Hz
+              8 constant device         \ device is ATmega103
+.( ATMEGA103 @ 5 MHz, )
+        include ALABAVR.FF              \ port labels
+        include BEGIN.FAR               \ basic register assignments
+        38400 485baud                   \ default for this board
+[THEN]
+{{ hardware 3 = }} [IF]         \ your target board
+        *** Your Configuration Here ***
+[THEN]
+(( debugger baud rates with common ceramic resonators, kHz -> BPS
+     455 -> 2.4  3579 -> 4.8K   5000 -> 38K    8000 -> 38K
+     540 -> 4.8  4000 -> 19.2K  6000 -> 14K   10000 -> 38K
+   good xtal selections:
+    3686 -> 115K   9830 -> 38K
+    7372 -> 115K  11059 -> 115K
+))
+.( Multidrop debugger interface)
+
+INCLUDE KERNEL.FAR
+
+\ ----------------------------------------------------------------------------
+\ Multidrop communication interface
+
+ram     asmbyte MDaddress               \ address of UUT
+        asmbyte MDinLength              \ length of incoming data payload
+        asmbyte MDoutLength             \ length of outgoing data payload
+        asmbyte MDrectype               \ type of received packet
+        asmbyte MDrectype0
+        asmbyte MDpending               \ a packet was received
+        asmbyte MDCRC asmbyte MDCRC1    \ CRC result
+        asmbyte MDptr asmbyte MDptr1    \ Pointer to data
+        asmbyte MDsize                  \ Byte counter for incoming data
+        asmbyte MDRpacketID0
+        asmbyte MDRpacketID             \ packet ID of received data
+        asmbyte MDpacketID              \ packet ID of transmitted data
+        asmbyte MDrectype               \ type of received packet
+        asmbyte MDtemp
+    44 asmarray MDinBuffer              \ 66-byte input buffer
+    44 asmarray MDoutBuffer             \ 66-byte output buffer
+rom
+
+\ This code uses an interrupt-driven state machine that handles half duplex
+\ communication and error detection.  The ISR execution time is about 35 to 150
+\ clocks depending on the state.  The address-seek mode is the most common state,
+\ which takes 35 clocks. R20 is the state pointer for incoming data.  The VECTOR
+\ directives change state.  A state switch is pretty quick, which isn't very
+\ impressive here since this ISR is a bit compute intensive.  The protocol for
+\ RS422/485 is covered in the Firmware Factory documentation.
+\
+\ The incoming data payload is stored at MDinBuffer.  The length of the data is
+\ at MDinLength.  When a good ACK packet arrives, MDpending is set to 1.  The
+\ incoming packet ID is stored in MDRpacketID.
+
+\ Change these for your own hardware. This example uses PC7. Connect RX, TX and
+\ PC7 lines to a transceiver such as a Maxim MAX487. On the PC end, use
+\ an RS485 converter with SD transmit control. SD control uses a retriggerable
+\ one-shot to drive the RS485 bus for at least one character length when a
+\ character is transmitted. This code allows the converter two character times
+\ to switch back to receive.
+assemble sbi PortC,7 macro: RS485=TX
+assemble cbi PortC,7 macro: RS485=RX
+
+\D .( State indicator appears on STK200's PortB LEDs) \ if debugging is on
+
+loco crctabl c; 0000 , 1081 , 2102 , 3183 , 4204 , 5285 , 6306 , 7387 ,
+                8408 , 9489 , A50A , B58B , C60C , D68D , E70E , F78F ,
+
+code (CRC-CCITT) ( -- )
+\ compute half of CRC-CCITT  R18=char, R16.W=crctemp uses Z,R0
+                ldiw z,crctabl
+                eor r18,R16  andi r18,0F ; idx = (R18 xor crctemp)&0x0F
+                lsl r18     clr r0       ; r18 = index into table
+                add zl,r18  adc zh,r0
+                lsr R17  ror R16  lsr R17  ror R16
+                lsr R17  ror R16  lsr R17  ror R16
+                lpm | eor R16,r0 adiw z,1 ; crctemp = crctemp>>4 xor table[idx]
+                lpm | eor R17,r0
+                ret c;
+
+code MD_crc     ( -- )                                  \ include R19 in CRC
+                push R0  push R16  push R17  push R18
+                lds R16,MDCRC  lds R17,MDCRC1
+                mov R18,R19            rcall (CRC-CCITT)
+                mov R18,R19  swap r18  rcall (CRC-CCITT)
+                sts MDCRC,R16  sts MDCRC1,R17
+                pop R18  pop R17  pop R16  pop R0
+                ret c;
+
+code MD_done    pop R19  pop zh  out sreg,zh  pop zh   pop zl
+                reti c;                                 \ all states end here
+
+code MD_seek    c( RX interrupt: seek address)
+\D              ldi zh,0FF  out PORTB,zh
+                lds zl,MDaddress  in zh,UDR   sub zh,zl
+        if_z    vector{
+        then    rjmp MD_done  c;
+
+code MD_abort   c( back to seek mode)
+                vector R20,MD_seek
+                ldi_R19[ RXEN RXCIE ]  out UCR,R19 \ enable RX
+                rjmp MD_done  c;
+
+code MD_end     c( end transmission)
+                RS485=RX
+                rjmp MD_abort  c;
+
+code MD_txcrc2  c( send 3rd byte [15:14] of CRC)
+                lds zh,MDCRC1  swap zh  ror zh  ror zh
+                andi zh,3  out UDR,zh  c;
+code MD_turnpending
+                vector R20,MD_end
+                ldi_R19[ TXEN TXCIE ]  out UCR,R19      \ set up to turn around
+                rjmp MD_done  c;
+code MD_txcrc1  c( send 2nd byte [13:7] of CRC)
+                lds zl,MDCRC   rol zl
+                lds zh,MDCRC1  rol zh
+                andi zh,7F  out UDR,zh
+                vector R20,MD_txcrc2
+                rjmp MD_done  c;
+code MD_txcrc   c( send 1st byte [6:0] of CRC)
+                lds R19,MDCRC  andi R19,7F  out UDR,R19
+                vector R20,MD_txcrc1
+                rjmp MD_done  c;
+
+code MD_send1   c( send payload of RESPONSE)
+                lds zl,MDptr  lds zh,MDptr1
+                ld R19,z+  out UDR,R19                  \ transmit next byte
+                sts MDptr,zl  sts MDptr1,zh
+                rcall MD_crc
+                lds R19,MDsize  dec R19
+                sts MDsize,R19
+        if_z    vector R20,MD_txcrc                     \ finished tx, send CRC
+        then    rjmp MD_done  c;
+
+code MD_send    c( send length of RESPONSE)
+                lds R19,MDoutLength  out UDR,R19  rcall MD_CRC
+                vector R20,MD_send1
+                rjmp MD_done  c;
+
+code MD_reply   c( send the id,type byte)
+                lds R19,MDpacketID                      \ 00,10,20,...,60,70
+                lds zh,MDCRC  or R19,zh  out UDR,R19    \ transmit ID/type
+                subi zh,4  andi zh,0E                   \ 4 = data, 5 = repdata
+        if_z    lds zl,MDaddress
+                sts MDCRC,zl  sts MDCRC1,zh
+                rcall MD_CRC                            \ CRC = address + id/type
+                vector R20,MD_send
+                ldiw z,MDoutBuffer
+                sts MDptr,zl  sts MDptr1,zh             \ MDptr = MDoutBuffer
+                lds zh,MDoutLength  sts MDsize,zh       \ set up length of data
+        else    rjmp MD_turnpending
+        then    rjmp MD_done  c;
+
+code MD_talk    c( send a response)
+                ldi R19,0      out TCCR0,R19            \ T0clk = off
+                RS485=TX                                \ drive the RS485
+                vector R20,MD_reply
+                ldi_R19[ TXEN UDRIE ] out UCR,R19       \ enable TX
+                lds R19,MDaddress     out UDR,R19       \ transmit address
+                rjmp MD_done  c;                        \ the rest is pending
+
+{{ asmlabel? UBRRinit 1+ 0C * negate >@@0 }}            \ 2 character times
+
+code MD_ahem    c( get ready to send a response)        \ zl = reply number
+                ldi_R19[ TXEN ] out UCR,R19             \ enable TX, no ints
+                vector R20,MD_talk    sts MDCRC,zl
+                ldi R19,@@0    out TCNT0,R19            \ start the timer
+                ldi R19,3      out TCCR0,R19            \ T0clk = xtal/64
+                rjmp MD_done  c;
+
+code MD_polled  c( RX int: respond to POLL command)
+\ If RX data hasn't been digested, send BUSY.  Otherwise: If output data is
+\ pending, send a DATA packet. Else send READY.
+                ldi zl,8  lds zh,MDpending
+                tst zh   brne MD_ahem           \ haven't processed RX data: BUSY
+                ldi zl,7  lds zh,MDoutLength
+                tst zh   breq MD_ahem           \ nothing to send: EMPTY
+                ldi zl,6 rjmp MD_ahem c;        \ send READY
+
+code MD_reccrc2 c( RX int: get CRC of received data)
+                in R19,UDR
+                lds zl,MDCRC  lds zh,MDCRC1
+                swap zh  ror zh  ror zh  eor R19,zh
+                andi R19,3  or R19,zl
+        if_nz   ldi zl,6  rjmp MD_ahem          \ bogus CRC
+        then    vector R20,MD_seek
+                lds R19,MDrectype0  sts MDrectype,R19 \ save packet type
+                cpi R19,1
+                if_z    lds R19,MDinLength  tst R19
+                        if_z    cli             \ reboot packet resets processor
+                                clr zl clr zh ijmp
+                        then
+                then
+                ldi R19,1 sts MDpending,R19     \ good CRC --> pending = 1
+                lds R19,MDRpacketID0  sts MDRpacketID,R19
+                rjmp MD_done  c;
+
+code MD_reccrc1 c( RX int: get CRC of received data)
+                push R18
+                in R19,UDR  clr R18             \ 2nd byte of CRC
+                lsr R19  ror R18                \ R19:R18 = ch << 7
+                lds zl,MDCRC  lds zh,MDCRC1
+                eor zl,R18  eor zh,R19
+                sts MDCRC,zl  sts MDCRC1,zh
+                vector R20,MD_reccrc2
+                pop R18
+                rjmp MD_done c;
+
+code MD_reccrc  c( RX int: get CRC of received data)
+                in R19,UDR  lds zl,MDCRC
+                eor R19,zl  sts MDCRC,R19       \ 1st byte of CRC
+                vector R20,MD_reccrc1
+                rjmp MD_done c;
+
+code MD_recv    c( RX int: get incoming data)
+\D              lds zh,MDsize  andi zh,0F  com zh
+\D              ori zh,0E0  out PORTB,zh
+                in R19,UDR  rcall MD_crc
+                lds zl,MDptr  lds zh,MDptr1
+                st Z+,R19                       \ store next byte
+                sts MDptr,zl  sts MDptr1,zh
+                lds R19,MDsize  dec R19
+                sts MDsize,R19
+        if_z    vector R20,MD_reccrc            \ finished receiving, test CRC
+                ldi zh,3  sts MDsize,zh
+        then    rjmp MD_done  c;
+
+code MD_len     c( RX int: get length of data)
+\D              ldi zh,0F7  out PORTB,zh
+                in R19,UDR  rcall MD_crc
+                tst R19
+        if_z    rjmp MD_abort                   \ zero length
+        then    cpi R19,39
+        if_ge   rjmp MD_abort                   \ too long
+        then    sts MDsize,R19                  \ set length for receive
+                sts MDinLength,R19
+                vector R20,MD_recv
+                rjmp MD_done  c;
+
+code MD_data    c( RX int: respond to DATA command)
+\D              ldi zh,0FB  out PORTB,zh
+                in R19,UDR  rcall MD_crc        \ CRC = addr + type
+                vector R20,MD_len               \ get length next
+                ldiw z,MDinBuffer
+                sts MDptr,zl  sts MDptr1,zh     \ input ptr = MDinBuffer
+                andi R19,70   sts MDRpacketID0,R19 \ save the packet ID
+                rjmp MD_done  c;
+
+code MD_next    c( RX int: get packet type)
+\ This is the 3rd byte of a received packet. This determines the kind of packet.
+\D              ldi zh,0FD  out PORTB,zh
+                in R19,UDR   andi R19,0F
+        if_z    rjmp MD_polled                  \ POLL
+        then    sts MDrectype0,R19
+                andi R19,0FC   breq MD_data     \ DATA
+                rjmp MD_abort  c;               \ other
+
+code MD_addr    c( RX interrupt: seek 2nd address)
+\ This is the 2nd byte of a received packet. Must be another address byte.
+\D              ldi zh,0FE  out PORTB,zh
+                lds zl,MDaddress  in zh,UDR   sub zh,zl
+        if_nz   rjmp MD_abort
+        then    sts MDCRC,zl  sts MDCRC1,zh     ; CRC = address
+                vector R20,MD_next              ; 2 address bytes --> test data
+                rjmp MD_done  c;
+
+                }vector R20,MD_addr             \ SEEK jumps to ADDR
+
+code MD_ISR     ( -- )
+\ Perform UART receive action, R20 is state pointer. Saves regs: R0,R16-R19,Z.
+\ This ISR needs at least 14 bytes of return stack space.
+                push zl  push zh  in zh,sreg  push zh  push R19
+                movw zl,R20  ijmp  c;
+
+{{ asmlabel? MDinBuffer asmlabel? MDaddress - >@@0 }}
+
+code MD_init    ( -- )                  c( Initialize UART stuff)
+                ldip R20,MD_seek        \ initial state = seek
+                ldiw z,MDaddress        \ Z = input buffer
+                ldi R16,@@0  clr R0
+       for      st z+,R0                \ clear MD variables
+       next R16
+                ldi R16,-1  sts MDpacketID,R16  \ first will always be a response
+                ret c;
+
+{{ asmlabel? UBRRinit 1+ 0C * negate >@@0 }}            \ 2 character times
+
+code MD_transmit c( transmit data packet immediately)   \ zh = type
+        begin   sei  vector R16,MD_seek
+                cli  sub R16,R20  sub R17,R21  or R16,R17
+        until_z
+                ldi_R19[ TXEN ] out UCR,R19             \ enable TX, no ints
+                vector R20,MD_talk   sts MDCRC,zh
+                ldi R19,@@0    out TCNT0,R19            \ start the timer
+                ldi R19,3      out TCCR0,R19            \ T0clk = xtal/64
+                sei ret c;
+
+\ ----------------------------------------------------------------------------
+
+clearwatch
+0x14  0x102 watchdata" STATE  (next ISR action)"
+asmlabel? MDCRC       0x102 watchdata" CRC value"
+asmlabel? MDptr       0x102 watchdata" MDptr"
+asmlabel? MDsize      0x001 watchdata" MDsize"
+asmlabel? MDpending   0x001 watchdata" MDpending"
+asmlabel? MDRpacketID 0x001 watchdata" MDRpacketID"
+asmlabel? MDinLength  0x001 watchdata" MDinLength"
+asmlabel? MDoutLength 0x001 watchdata" MDoutLength"
+\ When I was debugging this stuff, I reassigned UDR and USR so that I could use
+\ the simple debugger to test the states.  These definitions set up the watch
+\ window, which made it easier to follow the code as I faked incoming bytes.
+
+\ ----------------------------------------------------------------------------
+
+
+INCLUDE END.FAR
+
+code md_evinit  ( -- )
+                lds R18,MDinLength sts MDtemp,R18
+                ldiw z,MDinBuffer
+                sts MDptr1,zh  sts MDptr,zl  ret c;
+
+code MD_evPack  ( -- )
+                rcall md_evinit  clr R19     \ Z = in    R18 = inlen
+                push xl push xh
+                push yl push yh
+                ldiw x,MDoutBuffer           \ X = out   R19 = intally
+                begin   tst R18
+                while_nz tst R19             \ pack into 7-bit chars
+                        if_z    clr R17 ldi R19,7
+                                movw y,z  ldi R16,7
+                                for     ld R0,y+  rol R0  rol R17
+                                next R16  st x+,R17
+                        then
+                        ld R17,z+  andi R17,07F
+                        st x+,R17  dec R19  dec R18
+                repeat
+                subi xl,MDoutBuffer  sts MDoutLength,xl \ OK if <256
+                pop yh  pop yl
+                pop xh  pop xl
+                ret c;
+
+code MD_eval    ( -- )
+\ evaluate incoming packets forever.
+\ ACK: if packet# is different, process the data. Either way send response.
+\ NACK: retransmit
+\ Mangled: send NACK
+\ Processing the data is a bit bulky.  8-bit data must be squeezed to 7 bits.
+ begin          lds R16,MDpending
+                tst R16
+        if_nz   lds R16,MDRpacketID             \ received ACK ================
+                lds R17,MDpacketID  cp R16,R17
+                if_nz   sts MDpacketID,R16      \ update packet ID
+                        rcall md_evinit         \ MDinBuffer --> MDinBuffer
+                        begin   lds R16,MDtemp  tst R16  \ evaluate the string:
+                        while_nz dec R16 sts MDtemp,R16  \ size--
+                                lds zl,MDptr  lds zh,MDptr1  ld R16,z
+                                ori R16,080              \ assume it's a command
+                                rcall b_exec             \ evaluate the byte
+                                lds zl,MDptr  lds zh,MDptr1  st z+,R16
+                                sts MDptr,zh  sts MDptr,zl
+                        repeat
+                        rcall MD_evPack
+                        ldi zh,4                \ new data
+                else    ldi zh,5                \ repeated data
+                then    clr R16  sts MDpending,R16
+                rcall MD_transmit
+        then
+ again   c;
+
+code b_cold
+                ldiw y,b_sp0                    \ clear stacks
+                ldiw R16,b_rp0
+                out  SPL,R16
+{{ device 1 > }} [IF] out SPH,R17 [THEN]
+                ldi R16,UBRRinit   out UBRR,R16 \ debugger baud rate
+                ldi_R16[ RXEN RXCIE ]
+                                    out UCR,R16 \ enable RX and TX
+                ldi_R16[ TOIE0 ]  out TIMSK,R16 \ enable T0
+                ldi R19,0      out TCCR0,R19    \ T0clk = off
+                rcall decimal
+                rcall MD_init                   \ default state
+                ldi R16,080  sts MDaddress,R16  \ device address
+\D              ldi R16,-1  out ddrb,r16  out portb,r16 \ test LEDs off
+                RS485=RX
+                sei
+                rjmp MD_eval                    \ use the multidrop evaluator
+                c;
+
+decimal
+
+here
+\ resolve interrupt vectors -----------------------------------------
+000       org assemble rjmp b_cold c;
+INT_URC   org assemble rjmp MD_ISR c;     \ received a character
+INT_UTE   org assemble rjmp MD_ISR c;     \ ready to send, HDX communication
+INT_UTC   org assemble rjmp MD_ISR c;     \ transmit complete
+INT_T0OV  org assemble rjmp MD_ISR c;     \ transceiver turnaround delay
+org
+
+{{ cr .( Baud rate = ) }}
+asmlabel? UBRRinit {{ 1+ xtalfreq xtaldivisor / 16 / swap / . .( bps ) }}
+
+
+hsave da.hex
+
+previous
+core definitions
+previous
+
+

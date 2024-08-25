@@ -1,0 +1,2296 @@
+(( =======================================================================
+
+        Subroutine threaded 8051-oriented words, 16 or 32 bit cells.
+
+        The return stack is the hardware stack, always in IRAM.  The data
+        stack is in IRAM if InternalStack is true, in XRAM otherwise.
+
+        SP --> return stack, R0 --> data stack
+        Data stack grows down, return stack grows up.
+        For both stacks, MSB is in top.  Numbers are big endian.
+
+        Top of data stack is cached in r2r3DPTR for 32bit, DPTR for 16bit.
+        Top of loop stack is cached in _index3_index2_index1_index0.
+
+        All reads from memory use MOVC, leaving the RD line unused.  The
+        application can use it for peripheral devices or for a general
+        purpose I/O line.
+
+        The following labels should have already been defined:
+        SP051, RP051                    stack origins           asmlabels
+        BINDORIGINH, BINDORIGINL        binding table origin    asmlabels
+        _TIME3.._TIME0                  raw time data           asmlabels
+        __RAM                           ram/rom bit variable    asmlabels
+
+        8051 IRAM locations 0x00 thru 0x0B are used here.
+
+
+        This file contains the core set of processor-specific words, used
+        to "anchor" the firmware to a particular processor.
+
+        The remainder of the system (loaded after this file) should avoid
+        processor-specific words in order to enhance portability.
+
+        The CORE words are mostly ANS CORE and CORE EXT words.
+
+======================================================================= ))
+
+( order: ROOT HOME building | ? )
+
+0 {{ constant slowpoke }} \ T = use Forth instead of assembly for some words
+warning off
+
+{{ code-bounds? nip 1+ byte-split }}    \ -> 0th binding table entry
+   asmlabel bindoriginh  \ binding table origin, grows downward
+   asmlabel bindoriginl
+
+vocabulary hidden        \ special purpose words used only by CORE
+vocabulary CORE          \ processor-specific part of kernel
+
+also    CORE             \ include both in the search order
+also    HIDDEN
+also                     \ order: HOME CORE HIDDEN HIDDEN BUILDING | ??
+
+hex rom static           \ ROM code, static binding
+
+HIDDEN DEFINITIONS  \ ====================================================
+
+low-tokens      0x0001 >token#    \ interrupt vectors and 1-byte tokens
+main-tokens     0x0180 >token#    \ normal token assignments
+temp-tokens     0x0100 >token#    \ hidden token list, some are rebindable
+low-tokens
+
+0x30 org                          \ start code at 0030
+
+code %INT0  c;          c( hook for interrupt EXT0)
+code %INT1  c;          c( hook for interrupt T0)
+code %INT2  c;          c( hook for interrupt EXT1)
+code %INT3  c;          c( hook for interrupt T1)
+code %INT4  c;          c( hook for interrupt UART)
+code %INT5  c;          c( hook for interrupt T2)
+
+0x0020 >token#                    \ main token list starts at 32
+
+CORE DEFINITIONS  \ ======================================================
+
+code DUP        ( x -- x x )                    c( duplicate top item)
+                dec r0  mov a, dpl  movy @r0, a
+                dec r0  mov a, dph  movy @r0, a
+\32             dec r0  mov a, r3  movy @r0, a
+\32             dec r0  mov a, r2  movy @r0, a
+                ret  c;
+
+code DROP       ( x1 x2 -- x1 )                 c( remove item from stack)
+\32             movy a, @r0  inc r0  mov r2, a
+\32             movy a, @r0  inc r0  mov r3, a
+                movy a, @r0  inc r0  mov dph, a
+                movy a, @r0  inc r0  mov dpl, a
+                ret  c;
+
+\ Local code definitions -------------------------------------------------
+
+loco >NOS       ( x1 x2 -- x2 )         ( nip NOS to r4r5r6r7 or r6r7)
+\32             movy a, @r0  inc r0  mov r4, a
+\32             movy a, @r0  inc r0  mov r5, a
+                movy a, @r0  inc r0  mov r6, a
+                movy a, @r0  inc r0  mov r7, a
+                ret  c;
+loco >NOSNOS    ( x1 x2 x3 -- x3 )
+( 3rd = r4r5, 2nd = r6r7)               \ 16-bit usage only, for addresses
+\32             inc r0  inc r0          \ drop upper 16-bits of 32-bit cells
+                movy a, @r0  inc r0  mov r6, a
+                movy a, @r0  inc r0  mov r7, a
+\32             inc r0  inc r0
+                movy a, @r0  inc r0  mov r4, a
+                movy a, @r0  inc r0  mov r5, a
+                ret  c;
+loco NOS>       ( x1 -- x2 x1 )         ( tuck r4r5r6r7 or r6r7 under TOS)
+                dec r0  mov a, r7  movy @r0, a
+                dec r0  mov a, r6  movy @r0, a
+\32             dec r0  mov a, r5  movy @r0, a
+\32             dec r0  mov a, r4  movy @r0, a
+                ret  c;
+loco (CY>F)     ( x -- f )              ( copy cy flag to TOS bits)
+                subb a, acc
+                mov dph, a  mov dpl, a
+\32             mov r2, a   mov r3, a
+                ret  c;
+loco (Z>F)      ( x -- f )              ( copy Z flag to TOS bits)
+                clr c   if_z   cpl c  then
+                goto (CY>F)  c;
+loco (NZ>F)     ( x -- f )              ( copy ~Z flag to TOS bits)
+                clr c   if_nz  cpl c  then
+                goto (CY>F)  c;
+loco (0=)       ( x -- x )              ( acc=0 if top element is zero)
+                mov a, dpl  orl a, dph
+\32             orl a, r3   orl a, r2
+                ret  c;
+loco LITA       ( -- x )                ( convert unsigned acc to literal)
+                mov r7, a  call DUP
+                mov dpl, r7  clr a
+                mov dph, a
+\32             mov r2, a  mov r3, a
+                ret  c;
+loco ADDACC     ( x -- x' )             ( add acc to top stack item) \ unsigned
+                add a, dpl  mov dpl, a
+                if_c    inc dph
+\32                     mov a, dph
+\32                     if_z    inc r3  mov a, r3
+\32                             if_z    inc r2
+\32                     then    then
+                then
+                ret  c;
+loco (>)        ( n1 n2 -- n1 n2 )      ( comparison primitive)
+\ compare n1 and n2, leave result in CY and acc
+\ CY    is set if n2 > n1 (unsigned)
+\ b=0 if equal
+                mov a, r0  add a, #cellsize  mov r1, a
+                clr c
+                dec r1  movy a, @r1  subb a, dpl  mov b, a
+                dec r1  movy a, @r1  subb a, dph  orl b, a
+\32             dec r1  movy a, @r1  subb a, r3   orl b, a
+\32             dec r1  movy a, @r1  subb a, r2   orl b, a
+                ret  c;
+loco (>)nip     ( n1 n2 -- n2 )         ( comparison primitive)
+                call (>)
+                inc r0  inc r0
+\32             inc r0  inc r0
+                ret c;
+loco (PICK)     ( xu ... x1 x0 ?? -- xu ... x1 x0 xu )
+( copy item with offset acc)
+\ acc = offset to item to pick
+                clr c  rlc a
+\32             rlc a
+                add a, r0  mov r1, a
+\32             movy a, @r1  mov r2, a   inc r1
+\32             movy a, @r1  mov r3, a   inc r1
+                movy a, @r1  mov dph, a  inc r1
+                movy a, @r1  mov dpl, a  inc r1
+                ret  c;
+loco (R@)       ( -- n )                ( fetch item from return stack)
+\ offset = acc  : R@ acc = -(2 + 0*cellsize) (r@) ;
+                add a, sp  push acc
+                call DUP
+                pop acc    mov r1, a
+\32             mov a, @r1  mov r2, a   dec r1
+\32             mov a, @r1  mov r3, a   dec r1
+                mov a, @r1  mov dph, a  dec r1
+                mov a, @r1  mov dpl, a
+                ret c;
+loco maskacc    ( bit# x -- x )         ( convert bit# to a mask) \ used by bit operations
+                call >NOS  mov a, r7
+                anl a, #7  inc a
+                movc a, @a+pc
+                ret  end-code
+                01 c, 02 c, 04 c, 08 c,
+                10 c, 20 c, 40 c, 80 c,
+loco (C@)       ( addr -- addr )        ( fetch data byte to acc)
+                mov a, dph  rlc a
+                if_c    clr a  movc a, @a+dptr  ret     \ 8000..FFFF = MOVC
+                then    movx a, @dptr  ret              \ 0000..7FFF = MOVX
+                end-code
+loco swapdptr   ( a -- a' )             ( swap dptr with r4r5) \ used by MOVE
+                push acc
+                mov a, r4  xch a, dph  mov r4, a
+                mov a, r5  xch a, dpl  mov r5, a
+                pop acc  ret c;
+loco (_LSHIFT)  ( n -- n/2 )            ( left shift 1 place with carry)
+                mov a, dpl  rlc a  mov dpl, a
+                mov a, dph  rlc a  mov dph, a
+\32             mov a, r3   rlc a  mov r3, a
+\32             mov a, r2   rlc a  mov r2, a
+                ret c;
+loco (LSHIFT)   ( n -- n' )             ( logical shift left acc places)
+                mov r7, a
+                begin    anl a, #0F8            \ byte shifting
+                while_nz mov a, r7  add a, #-8  mov r7, a
+\32                      mov a, r3  mov r2, a
+\32                      mov r3, dph
+                         mov dph, dpl  mov dpl, #0
+                         mov a, r7
+                repeat
+                begin    mov a, r7              \ bit shifting
+                while_nz dec r7  clr c
+                         call (_LSHIFT)
+                repeat   ret  c;
+loco (_RSHIFT)  ( n -- n/2 )            ( right shift 1 place with carry)
+\32             mov a, r2   rrc a  mov r2, a
+\32             mov a, r3   rrc a  mov r3, a
+                mov a, dph  rrc a  mov dph, a
+                mov a, dpl  rrc a  mov dpl, a
+                ret c;
+loco (RSHIFT)   ( n -- n' )             ( logical shift right acc places)
+\ right shift acc places
+                mov r7, a
+                begin    anl a, #0F8            \ byte shifting
+                while_nz mov a, r7  add a, #-8  mov r7, a
+                         mov dpl, dph
+\16                      mov dph, #0
+\32                      mov dph, r3  mov a, r2  mov r3, a
+\32                      mov r2, #0
+                         mov a, r7
+                repeat
+                begin    mov a, r7              \ bit shifting
+                while_nz dec r7  clr c
+                         call (_RSHIFT)
+                repeat   ret  c;
+loco UD256*     ( ud -- ud*256 )        ( multiply double cell by 256 )
+\32             mov a, r3  mov r2, a  mov r3, dph
+                mov dph, dpl  movy a, @r0  mov dpl, a
+\16             mov r7, #1
+\32             mov r7, #3
+                mov a, r0  mov r1, a    \ shift lower section
+                for     inc r1  movy a, @r1
+                        dec r1  movy @r1, a  inc r1
+                next r7 clr a
+                movy @r1, a
+                ret  c;
+loco UM*88      ( u1 u2 -- ud )         ( multiply 8 x 8, used by UM*)
+\ upper bytes are known to be zero
+                mov a, r0
+\16             inc a
+\32             add a, #3
+                mov r1, a               \ -> u1:lo
+                movy a, @r1  mov b, dpl
+                mul ab   movy @r1, a  mov a, b
+                dec r1   movy @r1, a     \ store result
+\32             clr a
+\32             dec r1   movy @r1, a
+\32             dec r1   movy @r1, a
+\32             mov r2, a  mov r3, a    \ clear upper
+                mov dptr, #0
+                ret  c;
+loco UM*8N     ( u1 u2 -- ud )          ( multiply 8 x 16/32, used by UM*)
+\ all bytes in u2 except LSB are known to be zero
+                mov a, r0  mov r6, #0           \ r6 = carry of 8x8 multiply
+\16             inc a      mov r7, #cellsize
+\32             add a, #3  mov r7, #cellsize    \ r7 = loop count
+                mov r1, a
+                for     movy a, @r1  mov b, dpl  mul ab \ multiply byte
+                        add a, r6  if_c inc b then      \ add carry
+                        mov r6, b  movy @r1, a  dec r1  \ save carry & result
+                next r7 mov dpl, r6
+                clr a  mov dph, a
+\32             mov r2, a  mov r3, a
+                ret  c;
+loco (WORD-SPLIT) ( n -- nl nh )        ( split 32 --> lo-16 hi-16)
+\16             call DUP  mov dptr, #0  ret
+\32             clr a
+\32             mov r6, dph  mov r7, dpl  mov r4, a  mov r5, a  \ lower
+\32             mov dph, r2  mov dpl, r3  mov r2, a  mov r3, a  \ upper
+\32             goto NOS>
+                c;
+loco XQDIV      ( xdividend 4bitDivisor -- xquotient 4bitremainder )
+( long division with 4-bit divisor)
+\ n x 4 quick division for the 8051
+\ dpl = 4-bit divisor
+\ @r0 = (r7) byte dividend
+\ execution time: 120T for 16-bit dividend, 480T for 32-bit dividend
+                mov a, r7  add a, r7  mov r4, a
+                mov b, #0
+                for     movy a, @r0  anl a, #0F0  orl a, b  swap a
+                        mov b, dpl  div ab  mov r6, a       \ r6 = lsn
+                        mov a, r7  mov r5, a
+                        mov a, r0  add a, r5  mov r1, a
+                        for     dec r1
+                                movy a, @r1  swap a  anl a, #0F0  orl a, r6
+                                mov r6, a  movy a, @r1
+                                xch a, r6  movy @r1, a
+                                mov a, r6   swap a  anl a, #00F  mov r6, a
+                        next r5
+                next r4 mov dpl, b
+                clr a  mov dph, a
+\32             mov r2, a  mov r3, a
+                ret c;
+
+
+\ end of local code definitions ------------------------------------------
+
+code SWAP       ( x1 x2 -- x2 x1 )              c( swap top 2 cells )
+                mov a, r0   mov r1, a
+\32             movy a, @r1  xch a, r2   movy @r1, a  inc r1
+\32             movy a, @r1  xch a, r3   movy @r1, a  inc r1
+                movy a, @r1  xch a, dph  movy @r1, a  inc r1
+                movy a, @r1  xch a, dpl  movy @r1, a
+                ret c;
+
+code OVER       ( x1 x2 -- x1 x2 x1 )           c( copy 2nd item on the stack)
+                call DUP
+                mov a, #1  goto (PICK) c;
+
+code AND        ( x1 x2 -- x3 )                 c( bitwise AND TOS with NOS )
+                call >NOS
+                mov a, r7  anl dpl, a
+                mov a, r6  anl dph, a
+\32             mov a, r5  anl reg3, a
+\32             mov a, r4  anl reg2, a
+                ret  c;
+
+code OR         ( x1 x2 -- x3 )                 c( bitwise OR  TOS with NOS )
+                call >NOS
+                mov a, r7  orl dpl, a
+                mov a, r6  orl dph, a
+\32             mov a, r5  orl reg3, a
+\32             mov a, r4  orl reg2, a
+                ret  c;
+
+
+code XOR        ( x1 x2 -- x3 )                 c( bitwise XOR TOS with NOS )
+                call >NOS
+                mov a, r7  xrl dpl, a
+                mov a, r6  xrl dph, a
+\32             mov a, r5  xrl reg3, a
+\32             mov a, r4  xrl reg2, a
+                ret  c;
+
+code UM+        ( u1 u2 -- ud )                 c( add top two items, double result)
+\16             mov a, r0  add a, #1  mov r1, a
+\32             mov a, r0  add a, #3  mov r1, a
+                movy a, @r1  add  a, dpl  movy @r1, a  dec r1
+                movy a, @r1  addc a, dph  movy @r1, a  \32 dec r1
+\32             movy a, @r1  addc a, r3   movy @r1, a  dec r1
+\32             movy a, @r1  addc a, r2   movy @r1, a  dec r1
+                clr a  addc a, #0  mov dpl, a  mov dph, #0
+\32             clr a  mov r2, a  mov r3, a
+                ret  c;
+
+code +          ( x1 x2 -- x1+x2 )              c( add TOS to NOS)
+\16             mov a, r0  add a, #1  mov r1, a
+\32             mov a, r0  add a, #3  mov r1, a
+                movy a, @r1  dec r1  add  a, dpl  mov dpl, a
+                movy a, @r1  dec r1  addc a, dph  mov dph, a
+\32             movy a, @r1  dec r1  addc a, r3   mov r3, a
+\32             movy a, @r1          addc a, r2   mov r2, a
+\16             inc r0  inc r0
+\32             mov a, r0  add a, #4  mov r0, a
+                ret  c;
+
+code -          ( x1 x2 -- x1-x2 )              c( subtract TOS from NOS)
+\16             mov a, r0  add a, #1  mov r1, a
+\32             mov a, r0  add a, #3  mov r1, a
+                clr c
+                movy a, @r1  dec r1  subb a, dpl  mov dpl, a
+                movy a, @r1  dec r1  subb a, dph  mov dph, a
+\32             movy a, @r1  dec r1  subb a, r3   mov r3, a
+\32             movy a, @r1          subb a, r2   mov r2, a
+\16             inc r0  inc r0
+\32             mov a, r0  add a, #4  mov r0, a
+                ret  c;
+
+code 0=         ( x -- flag )                   c( true if x = 0)
+                call (0=)  goto (z>f) c;
+
+code 0<         ( n -- flag )                   c( true if signed x < 0 )
+\16             mov a, dph
+\32             mov a, r2
+                rlc a  goto (cy>f)  c;
+
+code >R         ( x -- )  ( R:  -- x )          c( push cell to return stack)
+                pop b     pop acc
+                push dpl  push dph
+\32             push reg3 push reg2
+                push acc  push b
+                goto DROP c;                    call-only
+
+code R>         ( -- x )  ( R:  x -- )          c( pop cell from return stack)
+                call DUP
+                pop b     pop acc
+\32             pop reg2  pop reg3
+                pop dph   pop dpl
+                push acc  push b
+                ret  c;                         call-only
+
+code U2/        ( x1 -- x2 )                    c( logical right shift one bit)
+                clr c  goto (_RSHIFT)  c;
+
+code 2/         ( x1 -- x2 )                    c( arithmetic right shift one bit)
+\16             mov a, dph
+\32             mov a, reg2
+                rlc a  goto (_RSHIFT)  c;
+
+code C@         ( addr -- c )                   c( char fetch )
+                mov a, dph  rlc a
+                if_c    clr a  movc a, @a+dptr          \ 8000..FFFF = MOVC
+                else    movx a, @dptr                   \ 0000..7FFF = MOVX
+                then
+                mov dpl, a  clr a  mov dph, a
+\32             mov r2, a  mov r3, a
+                ret  c;
+
+code W@         ( addr -- n )                           \ 8000..FFFF = MOVC
+                                                        \ 0000..7FFF = MOVX
+                mov a, dph  rlc a               c( 16-bit fetch)
+                if_c    clr a  movc a, @a+dptr  inc dptr  mov r7, a
+                        clr a  movc a, @a+dptr  mov dpl, a  mov dph, r7
+                else    movx a, @dptr  inc dptr  mov r7, a
+                        movx a, @dptr  mov dpl, a  mov dph, r7
+                then
+\32             clr a  mov r2, a  mov r3, a
+                ret  c;
+
+code @          ( addr -- n )                   c( 16-bit fetch)
+c( cell fetch, MSB first )
+\16             goto W@  c;
+\32             mov a, dph  rlc a
+\32             if_c    clr a  movc a, @a+dptr  inc dptr  mov r2, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r3, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r7, a
+\32                     clr a  movc a, @a+dptr  mov dpl, a  mov dph, r7
+\32             else    movx a, @dptr  inc dptr  mov r2, a
+\32                     movx a, @dptr  inc dptr  mov r3, a
+\32                     movx a, @dptr  inc dptr  mov r7, a
+\32                     movx a, @dptr  mov dpl, a  mov dph, r7
+\32             then
+\32             ret  c;
+
+code C!         ( c addr -- )                   c( char store )
+                inc r0
+\32             inc r0       inc r0
+                movy a, @r0  inc r0  movx @dptr, a
+                goto DROP  c;
+
+code W!         ( n addr -- )                   c( 16-bit store)
+\32             inc r0  inc r0
+                movy a, @r0  inc r0  movx @dptr, a  inc dptr
+                movy a, @r0  inc r0  movx @dptr, a
+                goto DROP  c;
+
+code !          ( n addr -- )                   c( cell store, MSB first )
+\16             goto W!  c;
+\32             mov r7, #cellsize
+\32             for     movy a, @r0  inc r0  movx @dptr, a  inc dptr
+\32             next r7
+\32             goto DROP  c;
+
+code A!         ( addr -- )                     c( set A register )
+                mov _addr1, dph  mov _addr0, dpl
+                goto DROP  c;
+
+code A@         ( -- addr )                     c( get A register )
+                call DUP
+                mov dph, _addr1  mov dpl, _addr0
+\32             clr a  mov r2, a  mov r3, a
+                ret c;
+
+loco (@RA)      ( a -- a' )     \ (r2r3)r4r5 = result
+                if_c
+\16                     clr a  movc a, @a+dptr  inc dptr  mov r4, a
+\16                     clr a  movc a, @a+dptr  inc dptr  mov r5, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r2, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r3, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r4, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r5, a
+                else
+\16                     movx a, @dptr  inc dptr  mov r4, a
+\16                     movx a, @dptr  inc dptr  mov r5, a
+\32                     movx a, @dptr  inc dptr  mov r2, a
+\32                     movx a, @dptr  inc dptr  mov r3, a
+\32                     movx a, @dptr  inc dptr  mov r4, a
+\32                     movx a, @dptr  inc dptr  mov r5, a
+                then    ret c;
+loco (@A)       ( -- a' )     \ (r2r3)r4r5 = result
+                call DUP
+                mov a, _addr1  mov dph, a
+                rlc a          mov dpl, _addr0  \ -> src
+                goto (@RA) c;
+loco (@R)       ( -- a' )     \ (r2r3)r4r5 = result
+                call DUP      \ R is buried under 2 return addresses
+                mov a, sp
+\16             add a, #-4  mov r1, a
+\32             add a, #-6  mov r1, a
+                mov a, @r1  mov dph, a  dec r1
+                mov a, @r1  mov dpl, a         \ -> src
+                goto (@RA) c;
+loco (C@A)      ( -- a' )     \ a = result
+                call DUP
+                mov a, _addr1  mov dph, a
+                rlc a          mov dpl, _addr0  \ -> src
+                if_c    clr a  movc a, @a+dptr
+                else    movx a, @dptr
+                then    inc dptr  ret c;
+
+code @A         ( -- x )                        c( fetch cell from A stream)
+\ Same as A@ @
+                call (@A)
+                mov dph, r4      mov dpl, r5
+                ret  c;
+
+code @A+        ( -- x )                        c( lift cell from A stream)
+\ Same as A@ @  A@ CELL+ A!
+                call (@A)
+                mov _addr1, dph  mov _addr0, dpl
+                mov dph, r4      mov dpl, r5
+                ret  c;
+
+code C@A        ( -- c )                        c( fetch char from A stream)
+\ Same as A@ C@
+                call (C@A)
+                mov dpl, a  clr a  mov dph, a
+\32             mov r2, a  mov r3, a
+                ret  c;
+
+code C@A+       ( -- c )                        c( lift char from A stream)
+\ Same as A@ @  A@ CHAR+ A!
+                call (C@A)
+                mov _addr1, dph  mov _addr0, dpl
+                mov dpl, a  clr a  mov dph, a
+\32             mov r2, a  mov r3, a
+                ret  c;
+
+loco (!A)       ( x -- a' )
+                mov r4, dph  mov r5, dpl
+                mov dph, _addr1  mov dpl, _addr0  \ -> dest
+\16             mov a, r4  movx @dptr, a  inc dptr
+\16             mov a, r5  movx @dptr, a  inc dptr
+\32             mov a, r2  movx @dptr, a  inc dptr
+\32             mov a, r3  movx @dptr, a  inc dptr
+\32             mov a, r4  movx @dptr, a  inc dptr
+\32             mov a, r5  movx @dptr, a  inc dptr
+                ret  c;
+loco (!R)       ( x -- a' )
+                mov r4, dph  mov r5, dpl
+\16             mov a, sp  add a, #-4  mov r1, a
+\32             mov a, sp  add a, #-6  mov r1, a
+                mov a, @r1  mov dph, a  dec r1
+                mov a, @r1  mov dpl, a           \ -> dest
+\16             mov a, r4  movx @dptr, a  inc dptr
+\16             mov a, r5  movx @dptr, a  inc dptr
+\32             mov a, r2  movx @dptr, a  inc dptr
+\32             mov a, r3  movx @dptr, a  inc dptr
+\32             mov a, r4  movx @dptr, a  inc dptr
+\32             mov a, r5  movx @dptr, a  inc dptr
+                ret  c;
+loco (C!A)      ( x -- a' )
+                mov a, dpl
+                mov dph, _addr1  mov dpl, _addr0  \ -> dest
+                movx @dptr, a  inc dptr
+                ret  c;
+
+code !A         ( x -- )                        c( store cell to A stream)
+\ Same as A@ !
+                call (!A)  goto DROP  c;
+
+code !A+        ( x -- )                        c( append cell to A stream)
+\ Same as A@ !  A@ CELL+ A!
+                call (!A)  mov _addr1, dph  mov _addr0, dpl
+                goto DROP  c;
+
+code C!A        ( x -- )                        c( store char to A stream)
+\ Same as A@ C!
+                call (C!A)  goto DROP  c;
+
+code C!A+       ( x -- )                        c( append char to A stream)
+\ Same as A@ !  A@ CHAR+ A!
+                call (C!A)  mov _addr1, dph  mov _addr0, dpl
+                goto DROP  c;
+
+code @R         ( -- x ) ( R: a -- a )          c( fetch cell from R stream)
+\ Same as R@ @
+                call (@R)  mov dph, r4  mov dpl, r5
+                ret  c;                         call-only
+
+code @R+        ( -- x ) ( R: a -- a+4 )        c( lift cell from R stream)
+\ Same as R@ @  R> CELL+ >R
+                call (@R)  mov @r1, dpl
+                inc r1     mov @r1, dph
+                mov dph, r4      mov dpl, r5
+                ret  c;                         call-only
+
+code !R         ( x -- ) ( R: a -- a )          c( store cell to R stream)
+\ Same as R@ !
+                call (!R)  goto DROP  c;        call-only
+
+code !R+        ( x -- ) ( R: a -- a+4 )        c( append cell to R stream)
+\ Same as R@ !  R> CELL+ >R
+                call (!R)  mov a, dpl  mov @r1, a
+                inc r1     mov a, dph  mov @r1, a
+                goto DROP  c;                   call-only
+
+code C,         ( c -- )                        c( append char to dictionary)
+                mov a, dpl
+                if_b    __RAM
+                        mov dph, _dhere1  mov dpl, _dhere0
+                        movx @dptr, a  inc dptr
+                        mov _dhere1, dph  mov _dhere0, dpl
+                else    mov dph, _chere1  mov dpl, _chere0
+                        movx @dptr, a  inc dptr
+                        mov _chere1, dph  mov _chere0, dpl
+                then    goto DROP c;
+
+code W,         ( n -- )                        c( append 16-bit to dictionary)
+                mov a, dph  mov r7, dpl
+                if_b    __RAM
+                        mov dph, _dhere1  mov dpl, _dhere0
+                        movx @dptr, a  inc dptr  mov a, r7
+                        movx @dptr, a  inc dptr
+                        mov _dhere1, dph  mov _dhere0, dpl
+                else    mov dph, _chere1  mov dpl, _chere0
+                        movx @dptr, a  inc dptr  mov a, r7
+                        movx @dptr, a  inc dptr
+                        mov _chere1, dph  mov _chere0, dpl
+                then    goto DROP c;
+
+code ,          ( n -- )                        c( append cell to dictionary)
+\32             call (word-split)  call w,
+                goto w, c;
+
+\16  2 constant  CELL   c( 0x0002)
+\32  4 constant  CELL   c( 0x00000004)
+
+  -1 constant  true     \16 c( 0xFFFF)
+                        \32 c( 0xFFFFFFFF)
+   0 constant  false    \16 c( 0x0000)
+                        \32 c( 0x00000000)
+  -1 constant -1        \16 c( 0xFFFF)
+                        \32 c( 0xFFFFFFFF)
+   0 constant  0        \16 c( 0x0000)
+                        \32 c( 0x00000000)
+   1 constant  1        \16 c( 0x0001)
+                        \32 c( 0x00000001)
+   2 constant  2        \16 c( 0x0002)
+                        \32 c( 0x00000002)
+0x20 constant  BL       c( ASCII blank)
+
+code NIP        ( x1 x2 -- x1 )                 c( discard 2nd item on stack)
+                inc r0  inc r0
+\32             inc r0  inc r0
+                ret  c;                         macro
+
+code 1+         ( x -- x+1 )                    c( add 1 to TOS )
+\16             inc dptr  ret  c;               macro
+\32             mov a, #1  goto ADDACC  c;
+
+code 1-         ( x -- x-1 )                    c( subtract 1 from TOS )
+                mov a, dpl
+                if_z
+\32                     mov a, dph
+\32                     if_z    mov a, r3
+\32                             if_z    dec r2
+\32                             then    dec r3
+\32                     then
+                        dec dph
+                then    dec dpl
+                ret c;
+
+code 2*         ( x1 -- x2 )                    c( logical left shift one bit)
+                clr c  goto (_LSHIFT)  c;
+
+code INVERT     ( x -- ~x )                     c( bitwise invert TOS )
+\32             mov a, #-1
+\32             xrl reg2, a  xrl reg3, a
+\32             xrl dph, a   xrl dpl, a
+\16             xrl dph, #-1   xrl dpl, #-1
+                ret  c;
+
+: NEGATE        ( x -- -x )     INVERT 1+ ;     c( negate TOS )
+
+code R@         ( -- x )  ( R:  x -- x )        c( copy cell from return stack)
+                mov a, #-2                      \ x is under return address
+                goto (R@)  c;                   call-only
+
+code DUP>R      ( x -- x )  ( R: -- x )         c( copy cell to return stack)
+                pop b      pop acc
+                push dpl   push dph
+\32             push reg3  push reg2
+                push acc   push b
+                ret  c;                         call-only
+
+code R>DROP     ( x -- x )  ( R: x -- )         c( copy cell to return stack)
+                pop b      pop reg7
+\16             dec sp  dec sp
+\32             mov a, sp  add a, #-4  mov sp, a
+                push reg7   push b
+                ret  c;                         call-only
+
+code 0<>        ( x -- flag )
+                call (0=)  goto (nz>f) c;       c( true if x <> 0)
+
+code 0>=        ( n -- flag )                   c( true if signed x >= 0 )
+\16             mov a, dph
+\32             mov a, r2
+                rlc a  cpl c  goto (cy>f)  c;
+
+code 0<=        ( n -- flag )                   c( true if signed x <= 0 )
+\16             mov a, dph              \ less than
+\32             mov a, r2
+                rlc a  call (0=)
+                if_z    setb c          \ or equal to
+                then
+                goto (cy>f)  c;
+
+code 0>         ( n -- flag )                   c( true if signed x > 0 )
+\16             mov a, dph              \ less than
+\32             mov a, r2
+                rlc a  call (0=)
+                if_z    setb c          \ or equal to
+                then    cpl c
+                goto (cy>f)  c;
+
+: =             ( x1 x2 -- f )  xor 0= ;        c( true if NOS = TOS)
+: <>            ( x1 x2 -- f )  xor 0<> ;       c( true if NOS <> TOS)
+
+code ?DUP       ( x -- x x | 0 )                c( DUP if nonzero )
+                call (0=)
+                if_nz   goto DUP
+                then    ret  c;         
+
+code LSHIFT     ( x1 u -- x1<<u )               c( left shift u places )
+                push dpl  call DROP
+                pop acc   goto (LSHIFT)  c;
+
+code RSHIFT     ( x1 u -- x1>>u )               c( logical right shift u places )
+                push dpl  call DROP
+                pop acc   goto (RSHIFT)  c;
+
+code >>A        ( x1 u -- x1>>u )               c( arithmetic right shift u places )
+                push dpl  call DROP
+                begin   pop acc
+                while_nz  dec a  push acc
+\16                     mov a, dph
+\32                     mov a, r2
+                        rrc a  call (_RSHIFT)
+                repeat  ret c;
+
+code 2DROP      ( x1 x2 -- )                    c( drop cell pair )
+\16             inc r0  inc r0
+\32             mov a, r0  add a, #4  mov r0, a
+                goto DROP  c;
+
+: 2DUP          ( x1 x2 -- x1 x2 x1 x2 )        c( duplicate cell pair )
+                OVER OVER ;
+
+code 2OVER      ( x1 x2 x3 x4 -- x1 x2 x3 x4 x1 x2 ) c( copy 2nd cell pair)
+                call DUP  mov a, #3  call (pick)
+                call DUP  mov a, #3  goto (pick)  c;
+
+code 2SWAP      ( x1 x2 x3 x4 -- x3 x4 x1 x2 )  c( exchange top two cell pairs)
+                call >NOS
+                mov a, r0  mov r1, a
+\32             movy a, @r1  xch a, r2   movy @r1, a  inc r1
+\32             movy a, @r1  xch a, r3   movy @r1, a  inc r1
+                movy a, @r1  xch a, dph  movy @r1, a  inc r1
+                movy a, @r1  xch a, dpl  movy @r1, a  inc r1
+\32             movy a, @r1  xch a, r4   movy @r1, a  inc r1
+\32             movy a, @r1  xch a, r5   movy @r1, a  inc r1
+                movy a, @r1  xch a, r6   movy @r1, a  inc r1
+                movy a, @r1  xch a, r7   movy @r1, a
+                goto NOS>  c;
+
+code D+         ( d1 d2 -- d3 )                 c( double-cell add)
+                call DUP
+\16             mov a, #4
+\32             mov a, #8
+                mov r7, a
+                add a, r0  mov r1, a            \ -> mx2
+                add a, r7  mov r0, a            \ -> mx1
+                for     dec r0  movy a, @r0  mov b, a
+                        dec r1  movy a, @r1  addc a, b
+                        movy @r0, a             \ dest = mx1
+                next r7
+                goto DROP  c;
+
+code DNEGATE    ( d1 -- -d1 )                   c( double-cell negate)
+                call DUP
+\16             mov a, #4
+\32             mov a, #8
+                mov r7, a
+                add a, r0  mov r1, a            \ -> mx2
+                clr c
+                for     dec r1  movy a, @r1
+                        mov r2, a  clr a  subb a, r2
+                        movy @r1, a
+                next r7
+                goto DROP  c;
+
+: D-            ( d1 d2 -- d3 )   dnegate d+ ;  c( double-cell subtraction )
+
+code UD2/       ( d1 -- d2 )                    c( logical right shift on double)
+                call u2/   push psw     \ asr on tos, result is in cy
+                call swap  pop psw
+                call (_rshift)          \ shift lower part
+                goto swap  c;
+
+code D2/        ( d1 -- d2 )                    c( arithmetic right shift on double)
+                call 2/    push psw     \ asr on tos, result is in cy
+                call swap  pop psw
+                call (_rshift)          \ shift lower part
+                goto swap  c;
+
+: D2*           ( d1 -- d2 )      2dup d+ ;     c( logical left shift on double)
+
+code CELL+      ( x -- x+1 )                    c( add cellsize to TOS )
+\16             inc dptr  inc dptr  ret  c;     MACRO
+\32             mov a, #4  goto ADDACC   c;
+
+code CELLS      ( x1 -- x2 )                    c( multiply by cell size)
+\16             mov a, #1
+\32             mov a, #2
+                goto (lshift)  c;
+
+: CHAR+         ( x -- x+1 )    1+ ;            c( add chararacter size to TOS )
+: CHARS         ( x1 -- x2 ) ;                  c( multiply by character size)
+: COUNT         ( c-addr1 -- c-addr2 u )        c( get length of a counted string)
+                dup char+ swap c@ ;
+
+code ROT        ( a b c -- b c a )              c( rotate third stack item to top)
+                call >NOS               \ r4..r7 = b, r2r3dptr=c, @r0=a
+                mov a, r0  mov r1, a
+\32             movy a, @r1  xch a, r2   xch a, r4  movy @r1, a  inc r1
+\32             movy a, @r1  xch a, r3   xch a, r5  movy @r1, a  inc r1
+                movy a, @r1  xch a, dph  xch a, r6  movy @r1, a  inc r1
+                movy a, @r1  xch a, dpl  xch a, r7  movy @r1, a
+                goto NOS>  c;
+
+code -ROT        ( a b c -- c a b )             c( rotate top to third stack item)
+                call >NOS               \ r4..r7 = b, r2r3dptr=c, @r0=a
+                mov a, r0  mov r1, a
+\32             movy a, @r1  xch a, r4  xch a, r2   movy @r1, a  inc r1
+\32             movy a, @r1  xch a, r5  xch a, r3   movy @r1, a  inc r1
+                movy a, @r1  xch a, r6  xch a, dph  movy @r1, a  inc r1
+                movy a, @r1  xch a, r7  xch a, dpl  movy @r1, a
+                goto NOS>  c;
+
+: UNDER+        ( a b c -- a+c b ) rot + swap ; c( add TOS to item under NOS)
+
+code PICK       ( ... n -- ... xn )             c( get nth stack element)
+                mov a, dpl
+                if_z    call DROP goto DUP      \ 0 pick = dup
+                then    goto (pick)  c;
+
+code PLUCK      ( x1 x2 -- x1 x2 x1 )           c( 2 pick )     call DUP
+                mov a, #2  goto (PICK) c;
+
+code -PICK      ( ... x n -- ... )              c( store NOS to the TOSth element)
+                mov a, dpl
+                if_z    call DROP               ( a b x 0 -- a x )
+                        goto NIP
+                then
+                call >NOS                       \ x
+                mov a, dpl
+                clr c  rlc a
+\32             rlc a                           \ offset
+                add a, r0  mov r1, a            \ -> MSB
+\32             mov a, r4  movy @r1, a  inc r1
+\32             mov a, r5  movy @r1, a  inc r1
+                mov a, r6  movy @r1, a  inc r1
+                mov a, r7  movy @r1, a
+                goto DROP  c;
+
+loco onoff      ( addr -- )
+                            movx @dptr, a
+                inc dptr    movx @dptr, a
+\32             inc dptr    movx @dptr, a
+\32             inc dptr    movx @dptr, a
+                goto DROP  c;
+code ON         ( addr -- )                     c( store true to addr)
+                mov a, #-1  goto onoff  c;
+
+code OFF        ( addr -- )                     c( store false to addr)
+                clr a  goto onoff  c;
+
+loco r4567@     ( addr -- addr )
+                push dpl  push dph
+                mov a, dph  rlc a
+                if_c
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r4, a
+\32                     clr a  movc a, @a+dptr  inc dptr  mov r5, a
+                        clr a  movc a, @a+dptr  inc dptr  mov r6, a
+                        clr a  movc a, @a+dptr            mov r7, a
+                else
+\32                     movx a, @dptr  inc dptr  mov r4, a
+\32                     movx a, @dptr  inc dptr  mov r5, a
+                        movx a, @dptr  inc dptr  mov r6, a
+                        movx a, @dptr            mov r7, a
+                then    pop dph  pop dpl
+                ret  c;
+loco r4567!     ( addr -- )
+\32             mov a, r4  movx @dptr, a  inc dptr
+\32             mov a, r5  movx @dptr, a  inc dptr
+                mov a, r6  movx @dptr, a  inc dptr
+                mov a, r7  movx @dptr, a  inc dptr
+                goto DROP c;
+
+slowpoke [IF]
+: +!            ( n addr -- )  dup>r @ + r> ! ; c( add n to the cell at addr)
+[else]
+code +!         ( n addr -- )                   c( add n to the cell at addr)
+                call r4567@
+\16             mov a, r0  add a, #1  mov r1, a
+\32             mov a, r0  add a, #3  mov r1, a
+                movy a, @r1  dec r1  add  a, r7  mov r7, a
+                movy a, @r1  dec r1  addc a, r6  mov r6, a
+\32             movy a, @r1  dec r1  addc a, r5  mov r5, a
+\32             movy a, @r1          addc a, r4  mov r4, a
+\16             inc r0  inc r0
+\32             mov a, r0  add a, #4  mov r0, a
+                goto r4567! c;
+[then]
+
+code TUCK       ( x1 x2 -- x2 x1 x2 )           c( tuck TOS under NOS)
+                call >NOS  call DUP
+                goto NOS>  c;
+
+: LAY           ( addr c -- addr' )             c( lay down next char in a string)
+                over c! char+ ;
+slowpoke [IF]
+: INCR          ( addr -- )      1 swap +! ;    c( increment cell by 1)
+: DECR          ( addr -- )     -1 swap +! ;    c( decrement cell by 1)
+[else]
+code INCR       ( addr -- )                     c( increment cell by 1)
+                call r4567@
+                inc r7  mov a, r7
+                if_z    inc r6
+\32                     mov a, r6
+\32                     if_z    inc r5  mov a, r5
+\32                             if_z    inc r4
+\32                     then    then
+                then
+                goto r4567! c;
+
+code DECR       ( addr -- )                     c( decrement cell by 1)
+                call r4567@
+                mov a, r7  dec r7
+                if_z
+\32                     mov a, r6
+                        dec r6
+\32                     if_z    mov a, r5  dec r5
+\32                             if_z    dec r4
+\32                     then    then
+                then
+                goto r4567! c;
+
+[then]
+
+code 2>R        ( d -- )  ( R:  -- d )          c( push double to return stack)
+                pop reg6  pop reg7              \ 2R>'s return address
+                call swap  call >R  call >R
+                push reg7 push reg6
+                ret  c;                         call-only
+
+code 2R>        ( -- d )  ( R:  d -- )          c( pop double from return stack)
+                pop reg6  pop reg7              \ 2R>'s return address
+                call R>  call R>
+                push reg7 push reg6
+                goto swap  c;                   call-only
+
+code 2R@        ( -- d )  ( R:  d -- d )        c( copy double from return stack)
+\16             mov a, #-6
+\32             mov a, #-8
+                call (R@)
+                goto R@  c;                     call-only
+
+loco (unloop)
+\32             pop _index3  pop _index2        \ uncache last index
+                pop _index1  pop _index0
+                push reg7  push reg6
+                ret c;
+code UNLOOP     ( -- )  ( R: loop-sys -- )      c( discard loop parameters)
+                pop reg6   pop reg7
+                mov a, sp
+\16             add a, #-4                      \ discard end count & leaver
+\32             add a, #-6
+                mov sp, a  goto (unloop) c;     call-only
+
+code LEAVE      ( -- )                          c( discard loop parameters, leave)
+\ return stack effect:
+\ ( ... old-i RA-leave endlimit RA -- ... RA-leave )
+                mov a, sp
+\16             add a, #-4                      \ drop RA1 & endlimit
+\32             add a, #-6
+                mov sp, a
+                pop reg6   pop reg7             \ r6r7 = RAL
+                goto (unloop) c;                call-only
+
+code ?EXIT      ( f -- )                        c( exit definition if T)
+                call (0=)
+                if_z    goto DROP               \ false
+                then    call DROP               \ true: drop return address
+                dec sp  dec sp  ret c;          call-only
+
+main-tokens
+
+{{ watchdogstyle 0 = }} [IF]
+: WATCHDOG- ; : WATCHDOG+ ;                     c( no watchdog hardware)
+[THEN]
+{{ watchdogstyle 1 = }} [IF]
+code WATCHDOG+  ( -- )  setb __watchdog ret c;  c( set the watchdog bit)
+code WATCHDOG-  ( -- )  clr __watchdog  ret c;  c( clear the watchdog bit)
+[THEN]
+{{ watchdogstyle 2 = }} [IF]
+include WATCHDG0.F51    [THEN]                  \ Custom watchdog handlers
+{{ watchdogstyle 3 = }} [IF]
+include WATCHDG1.F51    [THEN]
+{{ watchdogstyle 4 = }} [IF]
+include WATCHDG2.F51    [THEN]
+{{ watchdogstyle 5 = }} [IF]
+include WATCHDG3.F51    [THEN]
+hex
+
+code C>N        ( c -- x )                      c( sign extend byte --> cell)
+                mov a, dpl  rlc a
+                clr a  rlc a  cpl a  inc a
+                mov dph, a
+\32             mov r2, a  mov r3, a
+                ret  c;
+
+code W>N        ( w -- x )                      c( sign extend 16-bit --> cell)
+\32             mov a, dph  rlc a
+\32             clr a  rlc a  cpl a  inc a
+\32             mov r2, a  mov r3, a
+                ret  c;
+
+loco %LIT8      ( -- x )                        ( convert signed acc to literal)
+                call LITA  goto C>N c;
+
+code C@P        ( a -- c )                      c( char fetch from program memory)
+                clr a  movc a, @a+dptr  mov dpl, a
+                clr a  mov dph, a
+\32             mov r2, a  mov r3, a
+                ret c;
+
+code @P         ( addr -- n )                   c( fetch from program memory)
+\32             clr a  movc a, @a+dptr  inc dptr  mov r2, a
+\32             clr a  movc a, @a+dptr  inc dptr  mov r3, a
+                clr a  movc a, @a+dptr  inc dptr  mov r7, a
+                clr a  movc a, @a+dptr  mov dpl, a  mov dph, r7
+                ret  c;
+
+code W@P        ( addr -- x )                   c( 16bit fetch from program memory)
+\16             goto @P  c;
+\32             clr a  mov r2, a  mov r3, a
+\32                    movc a, @a+dptr  inc dptr  mov r7, a
+\32             clr a  movc a, @a+dptr  mov dpl, a  mov dph, r7
+\32             ret  c;
+
+: C!P           ( c addr -- )  C! ;             c( char store to program memory )
+: !P            ( x addr -- )   ! ;             c( store cell to program memory )
+: W!P           ( x addr -- )  W! ;             c( 16-bit store to program memory )
+
+: PAUSE         ( -- )  watchdog+ watchdog- ;   c( hook for multitasker)
+: TID           ( -- addr )  0 ;                c( ID of current task )
+
+code CLEAR       ( -- )                         c( clear the data stack)
+\ Can be used in the main loop for safety, but check the
+\ stack depth and issue a warning so as not to mask bugs.
+                mov r0, _sp051
+                ret c;
+
+code DEPTH      ( -- n )                        c( # of cells on stack)
+                mov a, _sp051  clr c  subb a, r0
+                rrc a
+\32             mov c, acc.7  rrc a
+                goto %lit8  c;                  \ -128..+127
+
+code 'BIND      ( xt -- addr )                  c( point to jump in binding table)
+                mov a, dpl  mov b, #3  mul ab
+                  mov dpl, a  mov r7, b
+                mov a, dph  mov b, #3  mul ab
+                  add a, r7  mov dph, a
+                clr c
+                mov a, #bindoriginl  subb a, dpl  mov dpl, a
+                mov a, #bindoriginh  subb a, dph  mov dph, a
+\32             clr a  mov r2, a  mov r3, a
+                ret c;
+
+: BIND@         ( xt -- addr )                  c( get CFA from the binding table)
+\ Extract the destination address
+                'bind 1+ w@ ;           \ assume w! reads from code space
+                                        \ binding table must be above 8000
+
+: BIND!         ( addr xt -- )                  c( store CFA to the binding table)
+\ Place LJMP opcode and destination
+                'bind 02 lay w! ;       \ assume w! stores to code space
+
+code EXECUTECFA ( addr -- )                     c( execute at absolute address)
+                push dpl  push dph
+                goto drop  c;
+
+: REBOOT        ( -- )  0 executeCFA ;          c( reset the CPU)
+
+\ Time functions use 32-bit time count, which is incremented by an ISR.
+\ Must increment at 1 kHz or greater.  For cell sizes over 16 bits,
+\ bit positions beyond b31 in the result are zero.
+
+code COUNTER@   ( -- udtime )                   c( get 32-bit count, double cell)
+                call DUP
+        begin   mov a, _time1
+\16             mov dph, _time3  mov dpl, _time2
+\16             mov r6,  _time1  mov r7,  _time0
+\32             mov r4,  _time3  mov r5,  _time2
+\32             mov r6,  _time1  mov r7,  _time0
+                xrl a, _time1   \ did a ripple carry occur during read?
+        until_z                 \ if so, read again.
+\32             clr a  mov r2, a  mov r3, a  mov dptr, #0
+                goto NOS> c;            DATATYPE DOUBLE
+
+code COUNTER!   ( udtime -- )                   c( set 32-bit timer count)
+                mov _time0, #0  \ ensure we won't have ripple carry soon
+                call >NOS
+\16             mov _time3, dph  mov _time2, dpl
+\16             mov _time1, r6   mov _time0, r7
+\32             mov _time3, r4   mov _time2, r5
+\32             mov _time1, r6   mov _time0, r7
+                goto DROP  c;
+
+code |COUNTER|  ( d1 -- d2 )                    c( truncate difference to 32 bits)
+\32             clr a  mov r2, a  mov r3, a  mov dptr, #0
+                ret c;
+
+\ The following calculation assumes 1 tick every 256 machine cycles:
+{{ maxuint 0x2EE000 um* xtalfreq um/mod nip }} constant CTRSCALE
+\ For MS conversion. Equals 2^cellsize * 1000 / TickFrequency
+c( msec per tick * 2^cellsize)
+\ example CTRSCALE for _16bit_   _32bit____
+\ 1 msec tick period  = 65535 or 4294967295
+\ 100 usec tick period = 6553 or  429496729
+
+
+: UNINITIALIZED ( -- )  ;               c( error handler for DEFERed words)
+temp-tokens
+code (%multi)   ( -- | R: x -- x-1 )    c( runtime code for MULTI )
+\  x=x-1, test x, if x < 0 then bump return address
+( compiled by MULTI )
+\16             mov a, sp  add a, #-3  mov r1, a
+\32             mov a, sp  add a, #-5  mov r1, a   \ -> lo byte
+                mov a, @r1  dec @r1
+                if_z    inc r1 \32 mov a, @r1
+                        dec @r1         \ x = x - 1
+\32                     if_z    inc r1  mov a, @r1  dec @r1
+\32                             if_z    inc r1  dec @r1
+\32                             then
+\32                     then
+                then    ( Rstack: ...MSB RAL RAH ) \ terminate if MSB<0
+                mov a, sp  add a, #-2  mov r1, a
+                mov a, @r1
+        if_b    acc.7   ret             \ negative, do nothing
+        then    pop b pop acc add a, #3 \ okay, execute loop
+                if_c    inc b
+                then
+                push acc  push b
+                ret c;                  call-only
+
+code (%FOR)     ( n -- )  goto >R c; call-only          c( runtime for FOR)
+
+code (%NEXT)    ( -- )                                  c( runtime for NEXT)
+\ similar to (%multi) but drop R upon termination
+\16             mov a, sp  add a, #-3  mov r1, a
+\32             mov a, sp  add a, #-5  mov r1, a   \ -> lo byte
+                mov a, @r1  dec @r1
+                if_z    inc r1 \32 mov a, @r1
+                        dec @r1         \ x = x - 1
+\32                     if_z    inc r1  mov a, @r1  dec @r1
+\32                             if_z    inc r1  dec @r1
+\32                             then
+\32                     then
+                then    ( Rstack: ...MSB RAL RAH ) \ terminate if MSB<0
+                mov a, sp  add a, #-2  mov r1, a
+                mov a, @r1
+        if_b    acc.7                   \ negative, skip backward jump
+                pop b pop acc
+                dec sp dec sp \32 dec sp dec sp \ and discard R
+                add a, #3
+                if_c    inc b
+                then
+                push acc  push b
+        then
+                ret c;                  call-only
+
+
+\ DO LOOP object code structure:
+
+\       call (%?DO)                     ?DO skips if equal, DO always skips
+\       ljmp LV
+\ LP:   ...
+\       call unloop                     compiled by UNLOOP
+\       ...
+\       call (%LOOP)
+\       ljmp LP                         this is skipped to leave the loop
+\ LV:   ...
+
+\ The upper limit and index are kept on the return stack, with the index
+\ being cached in _INDEX
+
+loco (%XDO)     ( n1|u1 n2|u2 -- )      ( R: -- loop-sys )  ( runtime for ?DO/DO)
+\ push parameters onto return stack, bump return address if acc<>0
+                if_z    goto 2drop              \ skip the whole DO structure
+                then
+                pop acc  mov r6, a  mov r4, a   \ r4r5 = RA
+                pop acc  mov r5, a
+                add a, #3
+                if_c    inc r6                  \ r6r7 = RA'
+                then    mov r7, a
+                push _index0  push _index1      \ push index register
+\32             push _index2  push _index3
+\32             mov _index3, r2                 \ index = TOS
+\32             mov _index2, r3
+                mov _index1, dph
+                mov _index0, dpl
+                push reg5 push reg4             \ save bypass address for LEAVE
+\16             movy a, @r0  inc r0  mov b, a
+\16             movy a, @r0  inc r0  push acc  push b
+\32             mov r5, #cellsize
+\32             mov a, r0  add a, r5  mov r1, a
+\32             for     dec r1  movy a, @r1  push acc
+\32                     inc r0
+\32             next r5
+                push reg7 push reg6             \ put back bumped return addr
+                goto DROP  c;                   call-only
+
+code (%?DO)     ( n1|u1 n2|u2 -- ) ( R: -- loop-sys )
+c( runtime for ?DO)
+\ compare params, skip exit jump if equal
+                call (>)  mov a, b
+                goto (%XDO)  c;                 call-only
+
+code (%DO)      ( n1|u1 n2|u2 -- ) ( R: -- loop-sys )
+c( runtime for DO)
+\ push params to return stack
+                mov a, #1  goto (%XDO)  c;      call-only
+
+loco (%ENDLOOP) ( -- )  ( R:  loop-sys -- )   ( terminates DO loop)
+\ jumped to by loop, +loop
+                pop b  pop acc
+                add a, #3                       \ skip back-jump
+                if_c    inc b
+                then
+                push acc  push b
+                goto UNLOOP  c;
+
+code (%+LOOP)   ( n -- )
+c( runtime for +LOOP)
+\ add n to top element of return stack, bump return address if it passed
+\ the endpoint.
+\16             mov a, sp  add a, #-3  mov r1, a        \ -> end (LSB)
+\32             mov a, sp  add a, #-5  mov r1, a
+                clr c
+                mov a, @r1  subb a, _index0  inc r1  mov r7, a  \ compute span
+                mov a, @r1  subb a, _index1  inc r1  mov r6, a
+\32             mov a, @r1  subb a, _index2  inc r1  mov r5, a
+\32             mov a, @r1  subb a, _index3          mov r4, a
+                mov a, r7  add  a, dpl
+                mov a, r6  addc a, dph
+\32             mov a, r5  addc a, r3
+\32             mov a, r4  addc a, r2                   \ end - i + n
+                if_nc   call DROP
+                        goto (%ENDLOOP)                 \ crossed boundary
+                then
+                mov a, _index0  add  a, dpl  mov _index0, a
+                mov a, _index1  addc a, dph  mov _index1, a
+\32             mov a, _index2  addc a, r3   mov _index2, a
+\32             mov a, _index3  addc a, r2   mov _index3, a
+                goto DROP  c;                   call-only
+
+code (%LOOP)    ( -- )  ( R:  loop-sys1 --  | loop-sys2 )
+c( runtime for LOOP)
+\ bump top element of return stack, bump return address if equal to endpoint
+\16             mov a, sp  add a, #-3  mov r1, a        \ -> end (LSB)
+\32             mov a, sp  add a, #-5  mov r1, a
+                inc _index0  mov a, _index0             \ bump I
+                if_z    inc _index1
+\32                     mov a, _index1
+\32                     if_z    inc _index2  mov a, _index2
+\32                             if_z    inc _index3
+\32                     then    then
+                then
+                mov a, @r1  xrl a, _index0  inc r1  mov r6, a
+\16             mov a, @r1  xrl a, _index1          orl a, r6
+\32             mov a, @r1  xrl a, _index1  inc r1  orl a, r6  mov r6, a
+\32             mov a, @r1  xrl a, _index2  inc r1  orl a, r6  mov r6, a
+\32             mov a, @r1  xrl a, _index3          orl a, r6
+                if_z    goto (%ENDLOOP)
+                then    ret c;                  call-only
+
+code (%OF)      ( n1 n2 -- n1 | )               c( runtime for OF)
+\ Compare n1 & n2.  If equal drop both and bump ret address,
+\ else drop n2.
+                call (>)  mov a, b
+                if_z    inc r0  inc r0
+\32                     inc r0  inc r0
+                        pop b     pop acc
+                        add  a, #3
+                        if_c    inc b
+                        then
+                        push acc  push b
+                then
+                goto DROP  c;                   call-only
+
+code (%IF)      ( f -- )                        c( runtime for IF/WHILE/UNTIL)
+\ Swallow flag, bump return address if non-zero.  A zero flag
+\ lets the instruction after the call execute, which is an LJMP
+\ past the IF clause.
+                call (0=)
+                if_nz   pop b   pop acc
+                        add  a, #3
+                        if_c    inc b
+                        then
+                        push acc  push b
+                then    goto DROP c;
+main-tokens
+code 3DROP      ( x1 x2 -- )                    c( drop cell pair )
+\16             mov a, r0  add a, #4  mov r0, a
+\32             mov a, r0  add a, #8  mov r0, a
+                goto DROP  c;
+
+code CELL-      ( x -- x-cell )                 c( decrement TOS by 1 cell )
+\16             mov a, #-2
+\32             mov a, #-4
+                add a, dpl  mov dpl, a
+        if_nc   mov a, dph  dec dph
+\32             if_z    mov a, r3  dec r3
+\32                     if_z    dec r2
+\32                     then
+\32             then
+        then    ret c;
+
+low-tokens
+
+code I          ( -- n|u )                      c( innermost loop index)
+                call DUP
+\32             mov r2,  _index3  mov r3,  _index2
+                mov dph, _index1  mov dpl, _index0
+                ret c;
+
+code J          ( -- n|u )                      c( next innermost loop index)
+\16             mov a, #-6
+\32             mov a, #-8
+                goto (R@)  c;                   CALL-ONLY
+
+code <          ( x1 x2 -- f )
+c( true if NOS < TOS)
+                call (>)nip
+                if_b    OV
+                        cpl a
+                then    rlc a
+                goto (cy>f)  c;
+
+code >=         ( x1 x2 -- f )                  c( true if NOS >= TOS)
+                call (>)nip
+                if_b    OV
+                        cpl a
+                then    rlc a
+                cpl c
+                goto (cy>f)  c;
+
+: >             ( x1 x2 -- f )  swap < ;        c( true if NOS > TOS)
+: <=            ( x1 x2 -- f )  swap >= ;       c( true if NOS >= TOS)
+
+code U<         ( u1 u2 -- flag )               c( true if NOS < TOS unsigned)
+                call (>)nip
+                goto (cy>f)  c;
+
+: D0=           ( d -- f )      OR 0= ;         c( true if double-cell = 0)
+: D0<           ( d -- f )      nip 0< ;        c( true if double-cell < 0)
+: D0<>          ( d -- f )      d0= invert ;    c( true if double-cell <> 0)
+
+: 2!            ( x1 x2 a-addr -- )             c( double-cell store)
+                SWAP OVER ! CELL+ ! ;
+
+: 2@            ( a-addr -- x1 x2 )             c( double-cell fetch)
+                DUP CELL+ @ SWAP @ ;
+
+: ON?           ( addr -- f )   @ 0<> ;         c( flag at addr <> 0?)
+: OFF?          ( addr -- f )   @ 0= ;          c( flag at addr = 0?)
+
+code BIT-ON     ( bit# addr -- )                c( set bit# of char at addr)
+                call maskacc  mov r7, a
+                call (C@)
+                orl a, r7  movx @dptr, a
+                goto DROP  c;
+
+code BIT-OFF    ( bit# addr -- )                c( clear bit# of char at addr)
+                call maskacc  cpl a  mov r7, a
+                call (C@)
+                anl a, r7  movx @dptr, a
+                goto DROP  c;
+
+code BIT?       ( bit# addr -- f )              c( test bit# of char at addr)
+                call maskacc  mov r7, a
+                call (C@)
+                anl a, r7  goto (nz>f)  c;
+
+: S>D           ( n -- d )                      c( signed single --> signed double )
+                dup 0< ;
+
+code ABS        ( x -- |x| )                    c( absolute value of TOS)
+\16             mov a, dph
+\32             mov a, r2
+                rlc a
+                if_c    goto negate
+                then    ret  c;
+
+code DABS       ( d -- |d| )                    c( double-cell absolute value )
+\16             mov a, dph  rlc a
+\32             mov a, r2   rlc a
+                if_c    goto dnegate
+                then    ret  c;
+
+code UMAX       ( n1 n2 -- n3 )                 c( choose maximum of n1, n2)
+                call (>)
+                if_nc   goto drop
+                then    goto nip  c;
+
+code UMIN       ( n1 n2 -- n3 )                 c( choose minimum of n1, n2)
+                call (>)
+                if_c    goto drop
+                then    goto nip  c;
+
+code MAX        ( n1 n2 -- n3 )                 c( choose maximum of n1, n2)
+                call (>)
+                if_b OV cpl a then
+                rlc a
+                if_nc   goto drop
+                then    goto nip  c;
+
+code MIN        ( n1 n2 -- n3 )                 c( choose minimum of n1, n2)
+                call (>)
+                if_b OV cpl a then
+                rlc a
+                if_c    goto drop
+                then    goto nip  c;
+
+code 0MAX       ( x -- u )                      c( limit TOS to 0)
+\16             mov a, dph  rlc a
+\32             mov a, r2   rlc a
+                if_c    mov dptr, #0
+\32                     clr a  mov r2, a  mov r3, a
+                then    ret c;
+
+: WITHIN        ( u ul uh -- f )                c( lo <= n < hi unsigned)
+                over - >r - r> u< ;
+
+: BETWEEN       ( n lo hi --- f1 )              c( lo <= n <= hi signed)
+                pluck >=  -rot >=  and ;
+
+: BOUNDS        ( a n -- aend abeg )            c( set up for DO..LOOP)
+                over + swap ;
+
+code MOVE       ( asrc adest n -- )             c( move string of n chars)
+\ n limited to 65535 for 8051
+                call swap               \ dptr = adest
+                call >NOSNOS            \ r4r5 = src  r6r7 = n
+                clr c
+                mov a, dpl  subb a, r5
+                mov a, dph  subb a, r4
+                if_c    begin   mov a, r6  orl a, r7
+                        while_nz
+                                call swapdptr
+                                call (C@)  inc dptr
+                                call swapdptr
+                                movx @dptr, a  inc dptr
+                                mov a, r7
+                                if_z    dec r6
+                                then    dec r7
+                        repeat
+                else    mov a, dpl  add  a, r7  mov dpl, a
+                        mov a, dph  addc a, r6  mov dph, a
+                        mov a, r5   add  a, r7  mov r5, a
+                        mov a, r4   addc a, r6  mov r4, a
+                        begin   mov a, r6  orl a, r7
+                        while_nz
+                                call swapdptr  call 1-
+                                call (C@)  push acc
+                                call swapdptr  call 1-
+                                pop acc  movx @dptr, a
+                                mov a, r7
+                                if_z    dec r6
+                                then    dec r7
+                        repeat
+                then    goto DROP c;
+
+code FILL       ( a n c -- )                    c( fill array a with n chars of c)
+                call rot        \ dptr = a
+                call >NOSNOS    \ r4r5 = n, r7 = c
+                begin    mov a, r4
+                while_nz mov a, r7  mov r6, #0
+                         for      movx @dptr, a  inc dptr
+                         next r6  dec r4
+                repeat          \ fill until there are less than 256 bytes left
+                begin    mov a, r5
+                while_nz mov a, r7
+                         movx @dptr, a  inc dptr
+                         dec r5
+                repeat   goto DROP
+                c;
+
+slowpoke [IF]
+: /STRING       ( addr len n -- addr' len' )    c( index into the string by n)
+\ Returns addr+n and len-n, n>=0
+                over min >r  swap r@ +  swap r> - ;
+[ELSE]
+code /STRING    ( addr len n -- addr' len' )    c( index into the string by n)
+\ Returns addr+n and len-n, n>=0
+                call >NOS  clr c        \ (r4r5)r6r7 = len  @r0 = addr  dptr = n
+                mov a, r7  subb a, dpl  push acc
+                mov a, r6  subb a, dph  push acc
+\32             mov a, r5  subb a, r3   push acc
+\32             mov a, r4  subb a, r2   push acc
+        if_b    acc.7                   \ len-n < 0
+\16             mov a, r0  inc a      mov r1, a   \ @r0 = @r0 + len
+\32             mov a, r0  add a, #3  mov r1, a
+                        movy a, @r1  add  a, r7   movy @r1, a
+                dec r1  movy a, @r1  addc a, r6   movy @r1, a
+\32             dec r1  movy a, @r1  addc a, r5   movy @r1, a
+\32             dec r1  movy a, @r1  addc a, r4   movy @r1, a
+\32             pop acc  pop acc
+                pop acc  pop acc
+                mov dptr, #0
+\32             clr a  mov r2, a  mov r3, a       \ n = 0
+        else
+\16             mov a, r0  inc a      mov r1, a   \ @r0 = @r0 + n
+\32             mov a, r0  add a, #3  mov r1, a
+                        movy a, @r1  add  a, dpl  movy @r1, a
+                dec r1  movy a, @r1  addc a, dph  movy @r1, a
+\32             dec r1  movy a, @r1  addc a, r3   movy @r1, a
+\32             dec r1  movy a, @r1  addc a, r2   movy @r1, a
+\32             pop reg2  pop reg3                \ n - len-n
+                pop dph   pop dpl
+        then    ret c;
+[THEN]
+
+code UM*        ( u1 u2 -- ud )
+\16 c( unsigned 16*16 --> 32 multiply)
+\32 c( unsigned 32*32 --> 64 multiply)
+                call (>)
+                if_c    call SWAP               \ make u2 the smaller for speed
+                then
+                mov a, dph
+\32             orl a, r2  orl a, r3
+                if_z    movy a, @r0
+\32                     mov b, a  mov a, r0  mov r1, a
+\32                     inc r1  movy a, @r1  orl b, a
+\32                     inc r1  movy a, @r1  orl a, b
+                        if_z    goto UM*88      \ 8 x 8 multiply
+                        then    goto UM*8N      \ 8 x cellsize multiply, TOS<256
+                then
+                call >R
+                call 0 call 0                   ( u2 dsum )
+                mov a, #cellsize
+                for     push acc  clr c  subb a, #cellsize
+                        dec a  add a, sp
+                        push acc
+                        call PLUCK  call DUP
+                        pop reg1  mov a, @r1  mov dpl, a
+                        call UM*8N  call 2SWAP  ( u2 ud dsum )
+                        call UD256* call D+     ( u2 dsum' )
+                        pop acc
+                next acc
+                call R>DROP
+                call ROT  goto DROP
+                c;
+
+code UM/MOD     ( ud u -- r q )
+\16 c( unsigned 32/16 --> r16 q16)
+\32 c( unsigned 64/32 --> r32 q32)
+\ Unsigned 32 by 16 division --> 16-bit remainder, 16-bit quotient
+((
+                mov r6, dph  mov r7, dpl        \ r6r7 = divisor
+                mov a, r7
+        if_z    dec r7
+        then    dec r6                          \ r6r7 = div-1
+                mov a, r6  anl a, dph  mov r6, a
+                mov a, r7  anl a, dpl  orl a, r6
+        if_z    mov a, r7                       \ divisor is power of 2
+                if_nb   acc.7                   \ and nonzero
+                        mov a, dpl
+                        if_z    mov a, dph
+                                mov r6, #8
+                        then
+                        begin   inc r6
+                                rrc a
+                        until_c dec r6
+                        mov dpl, r6  mov dph, #0
+                        goto UM/MODpwr2
+        then    then
+))
+                mov a, dph
+\32             orl a, r2  orl a, r3
+                if_z    mov a, dpl  anl a, #0F0
+                        if_z    ( 4-bit divisor, use quick divide )
+\16                             mov r7, #4  call XQDIV
+\32                             mov r7, #8  call XQDIV
+                                call -ROT goto DROP
+                then    then
+                mov a, r0
+\16             inc a      mov r4, a  add a, #cellsize  mov r5, a
+\32             add a, #3  mov r4, a  add a, #cellsize  mov r5, a
+\16             clr c   mov r7, #11
+\32             clr c   mov r7, #21
+                for     push psw    clr c
+                        mov a, r4  mov r1, a
+                        movy a, @r1  subb a, dpl  dec r1
+                        movy a, @r1  subb a, dph  dec r1
+\32                     movy a, @r1  subb a, r3   dec r1
+\32                     movy a, @r1  subb a, r2
+                        pop acc     xrl a, psw          \ cy from last shift
+                        rlc a                           \ need to subtract?
+                        if_nc   mov a, r4  mov r1, a
+                                movy a, @r1  subb a, dpl  movy @r1, a  dec r1
+                                movy a, @r1  subb a, dph  movy @r1, a  dec r1
+\32                             movy a, @r1  subb a, r3   movy @r1, a  dec r1
+\32                             movy a, @r1  subb a, r2   movy @r1, a
+                                clr c
+                        then    cpl c                   \ shift into dividend
+\16                     mov r6, #4
+\32                     mov r6, #8
+                        mov a, r5  mov r1, a
+                        for     movy a, @r1  rlc a  movy @r1, a
+                                dec r1
+                        next r6
+                next r7
+                mov r6, #cellsize
+                mov a, r0  mov r1, a
+                for     movy a, @r1  rrc a  movy @r1, a   \ fix remainder
+                        inc r1
+                next r6
+                call DROP  goto SWAP  c;
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+code ?negate    ( n1 n2 -- n3 )                 c( if TOS is negative, negate NOS)
+\ : ?NEGATE  0< IF NEGATE THEN ;
+\16             push dph
+\32             push reg2
+                call DROP
+                pop acc  rlc a
+                if_c    goto negate
+                then    ret  c;
+
+: (mu/mod)      ( ud# un1 -- rem d#quot )
+\16 c( unsigned 32/16 --> r16 q32)
+\32 c( unsigned 64/32 --> r32 q64)
+\ Divide unsigned double by a single, leaving a remainder and quotient.
+                >r  0  r@  um/mod  r>  swap
+                >r  um/mod  r> ;
+
+code CY>F       ( -- f )                        c( push CY flag onto stack)
+                call DUP goto (CY>F) c;
+
+variable temp'value                             c( temporary pointer to value)
+variable maxtoken                               c( highest seen token value)
+: maxtoken@     ( -- xt ) maxtoken @ 1+ ;       c( highest seen token value + 1)
+
+: P@+           ( a -- a' n )                   c( next sequential program cell)
+                dup cell+ swap @P ;
+
+CORE DEFINITIONS  low-tokens \ ===========================================
+
+: M/MOD         ( d n -- r q )  ( floored )     c( signed   d/n --> r q )
+                dup 0<  dup>r
+                if      negate >r dnegate r>
+                then    >r dup 0<
+                        if      r@ +
+                        then    r> um/mod r>
+                if      swap negate swap
+                then    ;
+
+code MU/MOD     ( ud# un1 -- rem d#quot )
+\16 c( unsigned 32/16 --> r16 q32)
+\32 c( unsigned 64/32 --> r32 q64)
+\ Divide unsigned double by a single, leaving a remainder and quotient.
+\ Used for numeric conversion, uses quick divide for un1 < 16.
+                mov a, dph
+\32             orl a, r2  orl a, r3
+                if_z    mov a, dpl  anl a, #0F0
+                        if_z    \ able to use quick divide
+\16                             mov r7, #4  call xqdiv
+\32                             mov r7, #8  call xqdiv
+                                goto -rot
+                        then
+                then
+                goto (mu/mod)
+                c;
+
+
+: M*            ( n1 n2 -- d )                  c( signed mult, double-cell result)
+                2dup xor 0<
+                >r  abs swap abs um*  r>
+                if      dnegate
+                then    ;
+
+: U/MOD         ( u1 u2 -- r q )  drop um/mod ;         c( unsigned u/u --> r q )
+: /MOD          ( n1 n2 -- r q )  over 0< swap m/mod ;  c( dividend divisor -- rem quot)
+: MOD           ( n1 n2 -- r )    /mod drop ;           c( dividend divisor -- rem )
+: */MOD         ( n1 n2 n3 -- r q )  >r m* r> m/mod ;   c( n1*n2/n3 --> rem quot)
+: /             ( n1 n2 -- q )       /mod nip ;         c( dividend divisor -- quot)
+: *             ( n1 n2 -- n3 )      um* drop ;         c( signed mult, single-cell result)
+: */            ( n1 n2 n3 -- q )    */mod nip ;        c( n1*n2/n3 --> quot)
+: FM/MOD        ( d1 n1 -- n2 n3 )   m/mod ;            c( floored m/mod)
+
+: SM/REM        ( d1 n2 -- n2 n3 )              c( symetric m/mod)
+                over >r  2dup xor 0< >r
+                abs >r  dabs r>   um/mod ( rem quot )
+                r> ?negate swap  r> ?negate swap ;
+
+code ALLOT      ( n -- )                        c( allot n chars in dictionary)
+                if_b    __RAM
+                        mov a, _dhere0  add  a, dpl  mov _dhere0, a
+                        mov a, _dhere1  addc a, dph  mov _dhere1, a
+                else    mov a, _chere0  add  a, dpl  mov _chere0, a
+                        mov a, _chere1  addc a, dph  mov _chere1, a
+                then    goto DROP c;
+
+: ALIGNED       ( addr -- addr )  ;             c( align tos with word boundary)
+: ALIGN         ( -- )  ;                       c( align dp with word boundary)
+
+code HERE       ( -- addr )                     c( address of next free char)
+                call DUP
+                if_b    __RAM
+                        mov dph, _dhere1  mov dpl, _dhere0
+                else    mov dph, _chere1  mov dpl, _chere0
+                then
+\32             clr a  mov r2, a  mov r3, a
+                ret c;  DATATYPE CELL
+
+main-tokens
+
+code UNDER1+    ( x1 x2 -- x1' x2 )             c( add 1 to NOS)
+\16             mov r7, #2
+\32             mov r7, #4
+                mov a, r0  add a, r7  mov r1, a
+                for     dec r1  movy a, @r1  inc a  movy @r1, a
+                        if_nz  ret  then
+                next r7 ret
+                end-code
+
+code UNDER1-    ( x1 x2 -- x1' x2 )             c( subtract 1 from NOS)
+\16             mov r7, #2
+\32             mov r7, #4
+                mov a, r0  add a, r7  mov r1, a
+                for     dec r1  movy a, @r1  dec a  movy @r1, a
+                        inc a
+                        if_nz  ret  then
+                next r7 ret
+                end-code
+
+code >DIGIT     ( n -- c )                      c( convert digit to ASCII)
+\ : >DIGIT  dup 9 > 7 and + [char] 0 + ;
+                mov a, dpl  add a, #0F6 \ - 10
+                if_c    add a, #07
+                then    add a, #3A      \ + 58
+                mov dpl, a  mov dph, #0
+                ret  c;
+
+code BYTE-SPLIT ( n -- cl ch )                  c( split into lo and hi bytes)
+                clr a
+\32             mov r2, a     mov r3, a
+\32             mov r4, a     mov r5, a
+                mov r6, a     mov r7, dpl
+                mov dpl, dph  mov dph, #0
+                goto NOS>  c;
+
+code WORD-SPLIT ( n -- nl nh )                  c( split 32 --> lo-16 hi-16)
+                goto (word-split) c;
+
+code BYTE-JOIN  ( cl ch -- n )                  c( join lo and hi bytes)
+                call >NOS
+                mov dph, dpl  mov dpl, r7
+                ret  c;
+
+code WORD-JOIN  ( nl nh -- n )                  c( join  lo-16 hi-16 --> 32)
+\16             goto DROP  c;
+\32             call >NOS               \ r6r7 = lo,  dptr = hi
+\32             mov r2, dph  mov r3, dpl
+\32             mov dph, r6  mov dpl, r7  ret  c;
+
+code BYTE-SWAP  ( n -- n' )                     c( swap lower 2 bytes of n)
+                mov a, dpl  xch a, dph  mov dpl, a
+                ret  c;
+
+: PALIGNED      ( addr -- addr )  ;             c( align tos with word boundary)
+: PALIGN        ( -- )  ;                       c( align dp with word boundary)
+
+
+code DIGIT      ( char base -- n f )            c( convert ASCII to digit)
+\ If the character is equivalent to a digit in the specified base,
+\ converts the character and return a TRUE flag, else leaves
+\ char and FALSE.
+                mov a, r0
+\16             inc a
+\32             add a, #3
+                mov r1, a                       \ @r1 = char
+                mov r7, #0                      \ flag
+                movy a, @r1  add a, #-30
+                mov r6, a                       \ n
+                if_c    add a, #-0A                             \ >= '0'
+                        if_c    add a, #3  mov r6, a            \ >  '9'
+                                rlc a
+                                if_nc   mov r7, #-1             \ >= 'A'
+                                then
+                        else    mov r7, #-1                     \ '0'..'9'
+                        then
+                then
+                mov a, r7                       \ r7 = -1 if r6 maybe valid
+                if_nz   clr c  mov a, r6  subb a, dpl
+                        if_nc   mov r7, #0      \ above base, mark as bogus
+                        then
+                then
+                mov a, r7
+                if_nz   mov a, r6  movy @r1, a
+                        mov dptr, #-1
+                else    mov dptr, #0
+                then
+\32             mov a, dpl  mov r2, a  mov r3, a \ sign extend flag
+                ret  c;
+
+: COUNTER<      ( d1 d2 -- f )
+c( compare time values, T if t2>t1)
+\16             d- nip 0< ;
+\32             drop nip - 0< ;
+
+temp-tokens
+: (%TO@)        ( a-addr -- x )                 c( runtime part of value read)
+                DUP TEMP'VALUE ! @ ;
+
+: (%TO!)        ( x1 x2 -- )                    c( runtime part of value write)
+                DROP TEMP'VALUE @ ! ;
+
+low-tokens
+
+code -SCAN      ( a n1 c -- a n2 )
+c( remove trailing characters)  \ : -trailing bl -scan ;
+                push dpl  call >NOS  call DROP  \ r6r7 = n1  dptr = a1
+                call DUP                        ( a a )
+                mov a, dpl  add  a, r7  mov dpl, a
+                mov a, dph  addc a, r6  mov dph, a  ( a aend )
+                pop reg5
+                begin   mov a, r6  orl a, r7
+                while_nz
+                        call 1-
+                        call (C@)  xrl a, r5    \ test char
+                        if_nz   mov dph, r6  mov dpl, r7
+                                ret
+                        then    mov a, r7
+                        if_z    dec r6
+                        then    dec r7
+                repeat  mov dptr, #0
+                ret c;
+
+code COMP       ( a1 a2 n1 -- f1 )              c( string compare a1 a2 len)
+                call rot                        \ dptr = a1
+                call >NOSNOS                    \ r4r5 = a2  r6r7 = n
+        begin   mov a, r6  orl a, r7
+        while_nz
+                call (C@)  inc dptr
+                mov r2, a                       \ r2 = char[dptr]
+                call swapdptr
+                call (C@)  inc dptr
+                mov r3, a                       \ r3 = char[r4r5]
+                call swapdptr
+                clr c
+                mov a, r2  subb a, r3           \ difference between chars
+                if_nz   if_c    mov dptr, #1
+                        else    mov dptr, #-1
+                        then
+\32                     mov a, dph  mov r2, a  mov r3, a \ sign extend 
+                        ret
+                then
+                mov a, r7
+                if_z   dec r6
+                then   dec r7
+        repeat  mov dptr, #0                    \ match = 0
+\32             clr a  mov r2, a  mov r3, a
+        ret  c;
+
+code SCAN       ( a1 n1 c1 -- a2 n2 )           c( scan string for character)
+                call rot                \ dptr = a1
+                call >NOSNOS            \ r4r5 = len  r7 = char
+                begin   mov a, r4  orl a, r5
+                        if_nz   call (C@)
+                                xrl a, r7
+                        then            \ 0 = done
+                while_nz
+                        inc dptr
+                        mov a, r5
+                        if_z   dec r4
+                        then   dec r5
+                repeat
+                mov a, r4  mov r6, a
+                mov a, r5  mov r7, a
+\32             clr a  mov r4, a  mov r5, a
+                call NOS>  goto SWAP  c;
+
+code SKIP       ( a1 n1 c -- a2 n2 )            c( skip leading characters c)
+                call rot                \ dptr = a1
+                call >NOSNOS            \ r4r5 = len  r7 = char
+                begin   mov a, r4  orl a, r5
+                        if_nz   call (C@)
+                                xrl a, r7
+                                if_z    inc a
+                                else    clr a
+                                then
+                        then            \ 0 = done
+                while_nz
+                        inc dptr
+                        mov a, r5
+                        if_z   dec r4
+                        then   dec r5
+                repeat
+                mov a, r4  mov r6, a
+                mov a, r5  mov r7, a
+\32             clr a  mov r4, a  mov r5, a
+                call NOS>  goto SWAP  c;
+
+: EXECUTE       ( xt -- )                       c( execute bound code)
+                'bind executeCFA ;
+
+: ERASE         ( a n -- )      0 FILL ;        c( fill array with zeros)
+: BLANK         ( a n -- )      BL FILL ;       c( fill array with blanks)
+
+
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+code (swap2andor) ( header f -- f' )    c( used by EVAL, SWAP 2 AND OR)
+\32             inc r0  inc r0
+                inc r0  movy a, @r0     \ a = header
+                inc r0  anl a, #2
+                orl dpl, a  ret c;
+
+code CODEHERE   ( -- a )                c( code space only HERE )
+                call DUP
+                mov dph, _chere1  mov dpl, _chere0
+\32             clr a  mov r2, a  mov r3, a
+                ret c;  
+
+{{ EEPROMpart 9 > }} [IF]
+
+\ EEPROM or non-volatile storage access ----------------------------------
+
+\ The generic kernel section uses this section to talk to an I2C (2-wire)
+\ serial EEPROM using general purpose I/O pins. Not included if EEPROMpart < 10.
+
+code _e-clock   ( -- )
+c( issue a clock pulse) \ While the clock is high the value on the
+\ sda line is placed in the carry flag.  When a read is taking
+\ place the carry flag will indicate the value from the dut.
+                setb __scl
+                nop nop nop nop
+                mov c, __sda
+                clr __scl
+                ret  c;
+
+code _e-stop    ( -- )                  c( main EE stop command)
+                clr  __sda
+                setb __scl  nop nop
+                setb __sda
+                ret  c;
+
+code _e-start   ( -- )                  c( main EE start command)
+                setb __sda
+                setb __scl  nop nop
+                clr  __sda  nop nop
+                clr  __scl
+                ret  c;
+
+code _e-nack?   ( -- f )                c( issue a non-ack, return status)
+                setb __sda  call _e-clock  goto cy>f  c;
+
+code _e-ack     ( -- )                  c( issue an acknowledge)
+                clr  __sda  goto _e-clock  c;
+
+code _e-inbyte  ( -- c )                c( read 8 bits from the EEPROM)
+                call DUP  setb __sda
+                mov r7, #8
+                for     call _e-clock
+                        rlc a
+                next r7 mov dpl, a  mov dph, r7
+                ret c;
+
+code _e-outbyte ( c -- )                c( write 8 bits to the EEPROM)
+                mov r7, #8  mov a, dpl
+                for     rlc a  mov __sda, c
+                        call _e-clock
+                next r7 goto DROP  c;
+
+[THEN]
+
+CORE DEFINITIONS  main-tokens
+
+code B@@+       ( a -- c )              c( lift byte from an input stream)
+\ Assume the pointer will always be in RAM data space,
+\ data is in data space.
+\32             inc dptr  inc dptr              \ use lower 16 bits for address
+                mov r6, dph  mov r7, dpl
+                clr a  movc a, @a+dptr  inc dptr  mov r5, a
+                clr a  movc a, @a+dptr  mov dpl, a  mov dph, r5
+                call (c@)  inc dptr  mov r4, a
+                mov a, dph  mov r5, dpl         \ Ar5 = new addr
+                mov dph, r6  mov dpl, r7
+                movx @dptr, a  inc dptr  mov a, r5
+                movx @dptr, a  mov dpl, r4  mov dph, #0
+\32             clr a  mov r2, a  mov r3, a
+                ret c;
+
+code B@@+P      ( a -- c )              c( lift byte from an input stream)
+\ Assume the pointer will always be in RAM data space,
+\ data is in code space.
+\32             inc dptr  inc dptr              \ use lower 16 bits for address
+                mov r6, dph  mov r7, dpl
+                clr a  movc a, @a+dptr  inc dptr  mov r5, a
+                clr a  movc a, @a+dptr  mov dpl, a  mov dph, r5
+                clr a  movc a, @a+dptr  inc dptr  mov r4, a
+                mov a, dph  mov r5, dpl         \ Ar5 = new addr
+                mov dph, r6  mov dpl, r7
+                movx @dptr, a  inc dptr  mov a, r5
+                movx @dptr, a  mov dpl, r4  mov dph, #0
+\32             clr a  mov r2, a  mov r3, a
+                ret c;
+
+: REBIND        ( xtsrc xtdest -- )             c( bind a new action to a word)
+                >R BIND@ R> BIND! ;             \ used by IS
+: BIND[         ( xtsrc xtdest -- | R: -- xt cfa )      c( bind a new action to a word)
+                DUP c[ pop dph pop dpl ]c
+                over >R over bind@ >R
+                c[ push dpl push dph ]c DROP
+                rebind ; call-only                   \ put under return address
+: ]BIND         ( -- | R: xt cfa -- )                   c( restore old action )
+                DUP c[ pop dph pop dpl ]c
+                R> R> bind!
+                c[ push dpl push dph ]c DROP ; call-only
+
+
+1 constant CPUTYPE                              c( cpu code type: 1 = 8051)
+
+code ORG        ( addr -- )                     c( change dictionary pointer)
+                if_b    __RAM
+                        mov _dhere1, dph  mov _dhere0, dpl
+                else    mov _chere1, dph  mov _chere0, dpl
+                then    goto DROP  c;
+
+code RAM        ( -- )                          c( set to compile to data space)
+                setb __RAM  ret c;              MACRO
+
+code ROM        ( -- )                          c( set to compile to code space)
+                clr __RAM  ret c;               MACRO
+
+\ From this point on, definitions use dynamic binding.
+
+dynamic \ ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
+
+\ ------------------------------------------------------------------------
+\ Compiling words for 8051
+
+HIDDEN DEFINITIONS  temp-tokens
+
+ variable last            c( -> last created header)
+
+CORE DEFINITIONS    main-tokens
+
+defer EGETCH    ( -- c )  c( get next byte from input stream)
+
+HIDDEN DEFINITIONS  temp-tokens
+
+variable callhere         c( dest of last call compiled)
+
+: nocall        ( -- )   callhere off ; c( inhibit call>jmp conversion)
+: ,ret          ( -- )   22 c, ;        c( compile RET instruction)
+: ,dptr!        ( n -- ) 90 c, w, ;     c( compile MOV DPTR,# instruction)
+
+: ,call         ( a -- )
+c( compile lcall/acall to a)
+\ calls are usually to binding table, might as well make them all long.
+                rom here callhere !
+                12 c, w, ;
+
+: ,macro        ( a -- )
+c( compile inline code to a) \ copy from code space
+\ You'd want to would perform peephole optimization on some processors, but
+\ not on puny 8-bit processors like this one.
+                begin   dup c@p >r 1+
+                        r> dup 22 <>            \ RET is delimiter:
+                while   c,                      \ compile inline code
+                repeat  2drop  nocall ;         \ instead of a call
+
+variable calledXT               c( last called XT)
+
+: ,bcall        ( xt -- )
+c( compile lcall/acall to xt)
+                dup 'bind ,call                 \ compile call
+                calledXT ! ;                    \ save the xt called
+
+: ,ccall        ( xt -- )
+c( compile lcall/acall to CFA of xt)
+                dup bind@ ,call                 \ compile call
+                calledXT ! ;                    \ save the xt called
+
+: xt>header     ( xt -- c )  bind@ 1- c@p ;
+c( get header char of an xt) \ from program space
+
+: ,exit         ( -- )
+c( compile an exit or tail recurse) \ convert last call to a jump
+                rom here callhere @ - 3 =       \ last was an LCALL
+                calledXT @ xt>header 01 and 0=  \ call-only flag is not set
+                and  callhere on? and           \ and not disabled?
+                if      02 callhere @ c!p       \ place LJMP opcode
+                else    ,ret                    \ else compile RET
+                then    nocall ;
+
+variable tokenbase                      c( base value for relative tokens)
+
+CORE DEFINITIONS    main-tokens
+
+code UNUSED     ( -- n )                        c( number of unused data bytes)
+                call DUP
+                if_b    __RAM
+                        {{ data-bounds? nip }}
+                        >DPTR
+                else
+                        {{ code-bounds? nip }}  \ code space
+                        >DPTR
+                        call maxtoken@          \ last free token
+                        call DUP  mov dptr, #3
+                        call *                  \ subtract binding table
+                        call -
+                then
+                call HERE  goto - c;
+
+: (COMPILE)     ( <xt> -- )
+c( compile call to xt's address)        \ used by [COMPILE]
+                ,bcall nocall ;         \ to be safe, not convertible to jmp
+
+: ,lit          ( n -- )
+c( compile code for a literal)
+                [compile] DUP
+\32             word-split byte-split
+\32             7A c, c,  7B c, c,              \ mov r2r3, #n3n2
+                ,dptr! ;                        \ mov dptr, #n1n0
+
+slowpoke [IF]
+: egetch16      ( -- n )                c( get the next 16-bit value)
+                egetch egetch swap byte-join ;
+[ELSE]
+code egetch16   ( -- n )                c( get the next 16-bit value)
+                call egetch  call egetch        \ s=hi dpl=lo
+\32             inc r0  inc r0
+                inc r0  movy a, @r0  mov dph, a  inc r0
+                ret c;
+[THEN]
+
+slowpoke [IF]
+: lifttoken     ( -- xt )               c( get next token# from input stream)
+                egetch ?dup
+                if      dup 0xFFE0 and 0=       ( 100..1FFF )
+                        if      egetch swap byte-join
+                        then
+                else    egetch16                ( 0..1F, 2000..FFFF )
+                then
+                dup 0F000 and 1000 =            ( 1000..1FFF )
+                if      1000 - tokenbase @ +    \ absolute --> relative
+                then
+                dup maxtoken @ max maxtoken !  \ update highest seen token value
+                ;
+[else]
+code lifttoken  ( -- xt )               c( get next token# from input stream)
+                call egetch  mov a, dpl
+        if_nz   mov a, dpl  anl a, #E0
+                if_z    call egetch             \ s=hi dpl=lo
+\32                     inc r0  inc r0
+                        inc r0  movy a, @r0  mov dph, a  inc r0
+                then
+        else    call drop  call egetch16
+        then    mov a, dph  anl a, #0F0  xrl a, #10
+        if_z    mov a, dph  clr c  subb a, #10  mov dph, a
+                call tokenbase  call @  call +
+        then    mov a, dph  mov r4, a  mov r5, dpl
+                call maxtoken                   \ dptr -> maxtoken, s = token#
+\32             inc dptr  inc dptr
+                mov r6, dph  mov r7, dpl        \ r6r7 = pointer, r4r5 = max value
+                clr a  movc a, @a+dptr  mov b, a   inc dptr  clr c
+                clr a  movc a, @a+dptr  subb a, r5
+                mov a, b  subb a, r4            \ cy if r4r5 > maxval
+        if_c    mov dph, r6  mov dpl, r7
+                mov a, r4  movx @dptr, a  inc dptr
+                mov a, r5  movx @dptr, a
+        then    goto drop c;
+[then]
+
+HIDDEN DEFINITIONS  temp-tokens
+
+: ,header       ( -- xt )       rom here last ! 0 c,  lifttoken ;
+c( compile a header, get token#)
+
+: ,header!      ( -- )          ,header here swap bind! ;
+c( compile a header, patch now) \ used by variable, constant, etc.
+
+
+variable 'doespatch             c( patching info left by CREATE)
+
+: >MARK         ( -- addr )     c( mark forward branch)
+                02 C, HERE  0 W, ;
+: >0MARK        ( -- addr )     c( mark conditional forward branch)
+                [compile] (%IF) >MARK ;
+: >RESOLVE      ( addr -- )     c( resolve forward branch)
+                HERE >R ORG R@ W, R> ORG NOCALL ;
+: <MARK         ( -- addr )     c( mark backward branch)
+                HERE ;
+: <RESOLVE      ( addr -- )     c( resolve backward branch)
+                02 C, W, NOCALL ;
+: <0RESOLVE     ( addr -- )     c( resolve cond backward branch)
+                [compile] (%IF) <RESOLVE ;
+
+: (%TO)         ( n xt -- )     execute (%to!) ;
+c( runtime code for TO)
+
+CORE DEFINITIONS    low-tokens
+
+: MULTI         ( -- addr1 addr2 )              c( compile code for MULTI)
+\ MULTI ... REPEAT is equivalent to
+\ BEGIN R@ 0< 0= WHILE R> 1- >R ... REPEAT
+                <MARK [COMPILE] (%MULTI) >MARK SWAP ;  immediate
+
+: CREATE        ( <xt> -- )
+c( compile code for data structure) \ uses data space
+                ,header!
+                ram here ,lit
+                rom here 'doespatch !  ,exit    \ patch point for does>
+                0 w, ram ;                      \ room for the patch
+
+\ CREATed code: LITERAL-CODE RET 00 00
+\                            ^^^^^^^^^ patched by DOES>
+
+code DOES>      ( -- )
+c( patch last create, point to code) \ also stop defining the definition
+                call 'doespatch  call @         \ dptr = addr of code to patch
+                mov a, #2   movx @dptr, a  inc dptr     \ lay LJMP opcode
+                pop acc  movx @dptr, a  inc dptr        \ lay address
+                pop acc  movx @dptr, a
+                goto DROP c;            call-only
+
+code >BODY      ( xt -- pfa )
+c( address of data field of an xt)
+\ assumes that xt is a CREATEd item that starts with code for a literal,
+\ extracts the literal from the machine code:
+\ 16-bit cells:  CALL DUP  MOV DPTR, #XXXX
+\ 32-bit cells:  CALL DUP  MOV R2, #XX  MOV R3, #XX  MOV DPTR, #XXXX
+                call bind@              \ xt --> cfa
+                clr a  movc a, @a+dptr  \ opcode of CALL
+                xrl a, #12              \ lcall or acall?
+                if_z    mov a, #3       \ LC __ __ MO __ __
+                else    mov a, #2       \          ^^
+                then    add a, dpl  mov dpl, a
+                if_c    inc dph
+                then
+                clr a  movc a, @a+dptr  \ opcode of MOV DPTR, #XXXX or MOV R2, #XX
+\16             xrl a, #90
+\16             if_nz   mov dptr, #0    \ can't convert, return 0
+\16             else    inc dptr  clr a  movc a, @a+dptr  push acc
+\16                     inc dptr  clr a  movc a, @a+dptr  mov dpl, a  pop dph
+\16             then
+\32             xrl a, #7A
+\32             if_nz   mov dptr, #0     \ can't convert, return 0
+\32                     clr a  mov r2, a  mov r3, a
+\32             else    inc dptr  clr a  movc a, @a+dptr  mov r2, a  inc dptr
+\32                     inc dptr  clr a  movc a, @a+dptr  mov r3, a  inc dptr
+\32                     inc dptr  clr a  movc a, @a+dptr  push acc
+\32                     inc dptr  clr a  movc a, @a+dptr  mov dpl, a  pop dph
+\32             then
+                ret c;
+decimal
+
+CORE DEFINITIONS  main-tokens
+
+: CON$          ( -- addr len )
+c( raw buffer for virtual console)
+                0xFF00 0xF0 ;                   \ space at top of RAM
+
+

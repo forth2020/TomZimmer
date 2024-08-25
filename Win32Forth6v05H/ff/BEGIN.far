@@ -1,0 +1,55 @@
+((
+        Setup for 8051 processor model:
+
+        Hardware configuration,
+        Bit and register assignments.
+
+        No code is laid down here, you can use NEEDS to load this file.
+))
+
+homeorder
+new-image decimal               \ clear the ROM image
+
+needs BLDAVR.G                  \ use AVR target compiler
+needs ALABAVR.FF                \ port labels
+
+building static                 \ start defining the ROM
+
+hex
+ROM_FREE org                    \ start of code
+
+decimal
+
+\ best baud rate calculator
+
+host homeorder also forth
+21 constant baudtolerance       \ how much error is allowable (in 0.1%ths)
+variable    nobaudyet           \ T if baud rate hasn't been determined yet
+ 1 constant xtaldivisor         \ creep mode divisor
+
+: baudok?       ( desired -- T reload | F )
+\ calculate reload value for desired baud rate, return T if error <= 2%
+                s>f xtalfreq s>f                           ( F: baud xtal )
+                16 s>f f/ fswap f/ 1 s>f f-                ( F: ideal_UBRR )
+                fdup fround fswap fover f/ 1 s>f f- fabs   ( F: UBRR error )
+                1000 s>f f* f>s baudtolerance <
+                nobaudyet @ and
+        if      f>s               true
+                nobaudyet off
+        else    fdrop             false
+        then    ;
+
+homeorder building
+
+{{ nobaudyet on }}   \ try to get within 2% of all the autobaud rates
+                     \ if all else fails, set for 2400 bps
+{{ 115200 baudok? }} [IF] asmlabel UBRRinit [THEN]
+{{  57600 baudok? }} [IF] asmlabel UBRRinit [THEN]
+{{  38400 baudok? }} [IF] asmlabel UBRRinit [THEN]
+{{  19200 baudok? }} [IF] asmlabel UBRRinit [THEN]
+{{  14400 baudok? }} [IF] asmlabel UBRRinit [THEN]
+{{   4800 baudok? }} [IF] asmlabel UBRRinit [THEN]
+{{ nobaudyet @ }} [IF] {{ xtalfreq xtaldivisor / 8 + 16 / 2400 / 1- }}
+                          asmlabel UBRRinit [THEN]
+
+

@@ -1,0 +1,101 @@
+\ Multitasker for TOF                        by Brad Eckert
+\ Based on eForth and Win32forth multitasker by Bill Muench
+
+\ Uses: TID and PAUSE
+\ TID returns the value of the TP register plus an offset.
+\ PAUSE takes a lap around the task queue.
+
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / userdata...
+\ cell offsets:   -2    -1    0    1    2    3        4      5...
+\ TP register points to -----^               ^-------- link points to status of next task
+\ TID of a task points to its status --------^
+
+: WAKE          ( tid -- )      ON ;            c( Turn on a task)
+: SLEEP         ( tid -- )      OFF ;           c( Turn off a task)
+: STOP          ( -- )          TID OFF PAUSE ; c( Stop the current task)
+
+: REASSIGN      ( xt tid -- )                   c( Assign a new xt to a task)
+                [ {{ 5 cells }} ] literal - A! bind@
+                @A+ @A+ >R >R                   ( cfa | rp0 sp0 )
+                !A+ R> CELL-
+                !A+ R> CELL- !A+ ;              \ set address, clear stacks
+
+: LOCAL         ( tid n -- a )                  c( Access another task's data)
+\ Access another task's user variables
+                + [ {{ 2 cells }} ] literal + ;
+
+hidden
+: USER          ( n <xt> -- )                   c( compile code for user variable)
+\ run-time:     ( -- addr )
+                ,header! [ {{ 2 cells }} ] literal + ,lit
+                [compile] tid [compile] + ;
+
+: NEWTASK       ( user dstack rstack <xt> -- )
+\ Create a new task. run-time: ( -- tid )
+\ Three memory areas sizes are in bytes
+\ TCB structure: sp0  rp0  pc  sp  rp  status  link  userdata
+\ cell offsets:  -5   -4   -3  -2  -1    0       1     2
+\ MEM USAGE: TCB USER DSTACK| RSTACK|
+                ,header! ram align here [ {{ 5 cells }} ] literal + ,lit ,exit
+                ram
+                >r + dup r> + dup>r             ( sp0 rp0 )
+                here + swap here +              ( rp0 sp0 )
+                dup , over , 0 , 0 , 0 , cell- , cell- , 0 ,
+                r> allot
+                rom ;
+
+: ALSOTASK      ( tid -- )                      c( add to the task queue)
+\ Places a new task between current and next tasks
+                >r tid cell+ dup @              ( 'link link | tid )
+                r@ cell+ !                      \ new task jumps to next tcb
+                r> swap ! ;                     \ current task jumps to this one
+core
+
+\ added 9/25/00, not tested yet
+
+: SEM-GET       ( semaphore -- )                c( Acquire access to a semaphore)
+\ Get a semaphore, locking out other tasks from using the resource related
+\ to this semaphore.
+                PAUSE  DUP @ TID XOR                    ( do we own it? )
+        IF      BEGIN  DUP @ WHILE  PAUSE  REPEAT       ( no, wait for release )
+                TID SWAP ! ( lock ) EXIT
+        THEN    DROP ;
+
+: SEM-RELEASE   ( semaphore -- )                c( Release a semaphore)
+\ Release a semaphore, allowing other tasks to access the resource related
+\ to this semaphore
+                DUP @ TID XOR
+        IF      DROP EXIT
+        THEN    OFF !    ( unlock ) ;
+
+((
+sample usage:
+
+0 user testvar
+
+: MyTask        ( -- )
+        begin   testvar incr
+                pause
+        again   ;
+
+: YourTask      ( -- )
+        begin   testvar decr
+                pause
+        again   ;
+
+64 128 128 NEWTASK FOO1
+64 128 128 NEWTASK FOO2
+
+: INIT          ( initialization stuff ... )
+                ...                     \ this would be in ROM...
+                FOO1 ALSOTASK           \ link tcbs into the queue
+                FOO2 ALSOTASK
+                ['] MYTASK FOO1 REASSIGN \ assign actions to tasks
+                ['] YOURTASK FOO2 REASSIGN
+                FOO1 WAKE               \ enable tasks
+                FOO2 WAKE
+                ...
+                ;
+
+))
+

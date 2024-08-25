@@ -1,0 +1,151 @@
+-- Color configuration for winview
+-- n1 n2 name:  n1 = action  n2 = color  name = blank-delimited string
+
+-- 1 = colorize single word              n1=non-number is a comment
+-- 2 = same color to end of line
+-- 3 = same color to )
+-- 4 = same color to "
+-- 5 = same color to }
+-- 6 = same color to ]
+-- 7 = same color to >
+-- 8 = color the first word of a pair, the second word is black
+-- 9 = same color in a pair
+
+--  0 black      1 red         2 green      3 yellow
+--  4 blue       5 magenta     6 cyan       7 ltgray
+--  8 dkgray     9 ltred      10 ltgreen   11 ltyellow
+-- 12 ltblue    13 ltmagenta  14 ltcyan    15 gray
+
+-- Special parsing modes: command = 256..511
+-- lower bits of special mode number enable the following:
+-- b0 = ; marks comment to EOL
+-- b1 = * in 1st column marks comment to EOL
+-- b2 = $ in first char of string --> check if hex number
+-- b3 = ;?-- is a special comment line where ? sets the color
+-- b4 = number checking handles VHDL literals
+-- b5 = test for traditional string literals
+
+304             -- VHDL parsing, string literals
+
+2  2    --      -- Comment to EOL
+
+-- Synthesizable subset of VHDL is magenta:
+
+1  12   <=
+1  12   =
+1  12   /=
+1  12   >
+1  12   <
+1  12   >=
+1  12   AND
+1  12   NAND
+1  12   OR
+1  12   NOR
+1  12   XOR
+1  12   XNOR
+1  12   NOT
+1  12   IF
+1  12   ELSE
+1  12   ELSIF
+9  12   END
+1  12   THEN
+1  12   FOR
+1  12   TO
+1  12   DOWNTO
+1  12   CASE
+1  12   WAIT
+1  12   WHEN
+1  12   BEGIN
+1  12   PORT
+1  12   IS
+1  12   ENTITY
+
+
+-- Operators                                                    Yellow
+
+1   3   **
+1   3   ABS
+1   3   *
+1   3   /
+1   3   MOD
+1   3   REM
+1   3   +
+1   3   -
+1   3   &
+1   3   ROL
+1   3   ROR
+1   3   SLA
+1   3   SLL
+1   3   SRA
+1   3   SRL
+
+-- Reserved words used in VHDL-87                               LtBlue (usually)
+-- Reserved words used in VHDL-93 that aren't in VHDL-87        Magenta
+
+1  12   ACCESS
+1  12   AFTER
+1  12   ALIAS
+1  12   ALL
+1  12   ARCHITECTURE
+1  12   ARRAY
+1  12   ASSERT
+1  12   ATTRIBUTE
+1  12   BLOCK
+1  12   BODY
+1  12   BUFFER
+1  12   BUS
+1  12   COMPONENT
+1  12   CONFIGURATION
+1  12   CONSTANT
+1  12   DISCONNECT
+1  12   EXIT
+1  12   FILE
+1  12   FUNCTION
+1  12   GENERATE
+1  12   GENERIC
+1  13   GROUP
+1  12   GUARDED
+1  13   IMPURE
+1  12   IN
+1  13   INERTIAL
+1  12   INOUT
+1  12   LABEL
+1  12   LIBRARY
+1  12   LINKAGE
+1  13   LITERAL
+1  12   LOOP
+1  12   MAP
+1  12   NEW
+1  12   NEXT
+1  12   NULL
+1  12   OF
+1  12   ON
+1  12   OPEN
+1  12   OTHERS
+1  12   OUT
+1  12   PACKAGE
+1  13   POSTPONED
+1  12   PROCEDURE
+1  12   PROCESS
+1  13   PURE
+1  12   RANGE
+1  12   RECORD
+1  12   REGISTER
+1  13   REJECT
+1  12   REPORT
+1  12   RETURN
+1  12   SELECT
+1  12   SEVERITY
+1  13   SHARED
+1  12   SIGNAL
+1  12   SUBTYPE
+1  12   TRANSPORT
+1  12   TYPE
+1  13   UNAFFECTED
+1  12   UNITS
+1  12   UNTIL
+1  12   USE
+1  12   VARIABLE
+1  12   WHILE
+1  12   WITH
+

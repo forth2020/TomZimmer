@@ -1,0 +1,71 @@
+\ Error reporting for 68K.
+
+\ When an exception is invoked, an error number is saved and the CPU rebooted.
+\ After startup, the system is in a known good state and invokes .booterror
+\ if an error value was saved.
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+: .hexline      ( addr cells -- addr' ) c( display consecutive cells)
+                swap >r
+        begin   ?dup
+        while   @r+ 0 <# # # # # # # # # #> space type
+                1-
+        repeat  r> cr ;
+
+ram align 0x20 asmarray StackLog rom    \ 8 top stack items after error
+code _stacklog  ( -- addr )
+        T>S move.l #StackLog,tos next c;
+
+
+
+pcreate ErrorStrings    \ error strings in ROM
+        ," Unimplemented"
+        ," Bus Error"
+        ," Address Error"
+        ," Illegal Instruction"
+        ," Zero Divide"
+        ," CHK trap"
+        ," TRAP trap"
+        ," Privilege Violation"
+        ," Line A"
+        ," Line F"
+        ," Hardware Break"
+        ," Coprocessor"
+        ," Format Error"
+        ," Uninitialized"
+        ," Spurious Interrupt"
+        ," Reserved"
+
+: .booterror    ( addr n -- )           c( log the cause of reboot)
+\ This executes if an exception caused a cold reboot.
+\ addr points to memory containing D0-D7/A0-A7/SR/PC,
+\ addr = register image at exception
+\ n = error code 1..32
+                decimal
+                cr ." Exception " dup 0x20 and
+        if      (.)
+        else    0x0F and >r ErrorStrings
+                multi   count + paligned  \ ROMed strings use code alignment
+                repeat  r>drop
+                count
+        then    type cr hex
+                ." D0..D3 =" 4 .hexline
+                ." D4..D7 =" 4 .hexline
+                ." A0..A3 =" 4 .hexline
+                ." A4..A7 =" 4 .hexline
+                ." SR, PC =" 2 .hexline
+                ." Return >" 4 .hexline
+                ." stack   " 4 .hexline
+                drop decimal ;
+
+: .hline      ( addr cells -- addr' ) c( display consecutive cells)
+                swap >r
+        begin   ?dup
+        while   @r+ 0 <# 8 >r multi # repeat #> space type
+                1-
+        repeat  r> cr ;
+
+CORE DEFINITIONS  main-tokens \ ===========================================
+
+

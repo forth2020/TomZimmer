@@ -1,0 +1,49 @@
+\ Other colors for miscellaneous processors
+
+\ 8051 opcodes
+
+1  4    ACALL
+1  4    ADD
+1  4    ADDC
+1  4    AJMP
+1  4    ANL
+1  4    CJNE
+1  4    CLR
+1  4    CPL
+1  4    DA
+1  4    DEC
+1  4    DIV
+1  4    DJNZ
+1  4    INC
+1  4    JB
+1  4    JBC
+1  4    JC
+1  4    JMP
+1  4    JNC
+1  4    JNZ
+1  4    JZ
+1  4    LCALL
+1  4    LJMP
+1  4    MOV
+1  4    MOVC
+1  4    MOVX
+1  4    MUL
+1  4    NOP
+1  4    ORL
+1  4    POP
+1  4    PUSH
+1  4    RET
+1  4    RETI
+1  4    RL
+1  4    RLC
+1  4    RR
+1  4    RRC
+1  4    SETB
+1  4    SJMP
+1  4    SUBB
+1  4    XCH
+1  4    XCHD
+1  4    XRL
+
+\ Coldfire / 68K opcodes
+

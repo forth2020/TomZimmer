@@ -1,0 +1,44 @@
+\ ACE 32/32->32 unsigned divide routine
+\ adapted from Motorola's web site, unfortunately doesn't give remainder
+
+hex
+code U/         ( numerator denom -- quotient )
+        move.l  (s)+,d0         \ d0 = numerator (quot when done)
+        move.l  d0,d2
+        move.l  d7,d0           \ d7 = denominator
+        sub.l   #1,d0    and.l   d7,d0    bne     locala
+        move.l  d2,d0    lsr.l   #1,d7    beq     localb
+localc: lsr.l   #1,d0    lsr.l   #1,d7    bne     localc      \ div by 2^n
+        bra     localb
+locala: move.l  d7,d1    or.l    d2,d1    move.l  #FF000000,d3
+        move.l  d3,d0    and.l   d1,d0    bne     locald
+        asr.l   #8,d3    move.l  d3,d0    and.l   d1,d0     bne     locald
+        asr.l   #8,d3    move.l  d3,d0    and.l   d1,d0     bne     locald
+        asr.l   #8,d3
+locald: moveq   #0,d1    move.l  d3,d0    and.l   d7,d0     bne     locale
+        lsl.l   #8,d7    moveq   #8,d1    move.l  d3,d0     and.l   d7,d0    bne locale
+        lsl.l   #8,d7    moveq   #10,d1   move.l  d3,d0     and.l   d7,d0    bne locale
+        lsl.l   #8,d7    moveq   #18,d1
+locale: tst.l   d2       bpl     localf
+        tst.l   d7       ble     localg
+localh: add.l   #1,d1    add.l   d7,d7    bmi     localg
+        add.l   #1,d1    add.l   d7,d7    bpl     localh
+localg: add.l   #1,d1    bra     locali
+localf: cmp.l   d2,d7    bhi     localj
+localk: add.l   d7,d7    add.l   #1,d1    cmp.l   d2,d7     bhi     localj
+        add.l   d7,d7    add.l   #1,d1    cmp.l   d2,d7     bls     localk
+localj: lsr.l   #1,d7
+locali: moveq   #0,d0    tst.l   d1       beq     localb
+        sub.l   #1,d1    ble     locall
+localo: cmp.l   d7,d2    bcs     localn
+        sub.l   d7,d2    or.l    #1,d0
+localn: lsr.l   #1,d7    add.l   d0,d0    sub.l   #1,d1     ble     locall
+        cmp.l   d7,d2    bcs     localm
+        sub.l   d7,d2    or.l    #1,d0
+localm: lsr.l   #1,d7    add.l   d0,d0    sub.l   #1,d1     bgt     localo
+locall: cmp.l   d7,d2    bcs     localb
+        or.l    #1,d0
+localb: move.l  d0,d7
+        rts c;
+decimal
+

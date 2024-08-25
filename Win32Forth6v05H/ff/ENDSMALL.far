@@ -1,0 +1,202 @@
+
+
+HIDDEN DEFINITIONS  \ ========================================================
+temp-tokens
+\ ============================================================================
+\ DEBUG MONITOR, return stack viewing is stripped out in this version.
+
+code b_ack      ldi r16,25  ret c;
+code b_nack     ldi r16,52  ret c;
+code b_ff       ldi r16,-1  ret c;
+
+\ [1] available features bit assignments:
+\       b7 : T = single stepping is supported
+\       b6 : T = calling is supported
+
+code b_env$     c;
+        10 c, 05 c,             \ 16 bit cells, 5 address nibbles
+        FC c, 40 c,             \ binding cell size, door features [1]
+        07 c, {{ device }} c,   \ AVR family, [device] device
+     {{ xtalfreq word-split swap byte-split rot byte-split }}
+        c, c, c, c,             \ XTAL frequency in Hz.
+        00 c, 00 c,             \ user data
+        00 c, 01 c,             \ backdoor revision number
+        08 c, 08 c,             \ bits/char, # of cell-wide parameters to follow
+\ system parameters, cell-wide values
+        00 c, 00 c, 80 c, 00 c, \ code memory 0000..FFFF
+        00 c, 00 c, 00 c, 30 c, \ registers and ports
+        00 c, 00 c, 80 c, 00 c, \ data memory 0000..FFFF
+        00 c, 00 c, 02 c, 00 c, \ EEPROM
+
+ram     asmbyte b_P asmbyte b_P1 \ P
+        asmbyte b_A asmbyte b_A1 \ A
+rom
+
+code b_[z]++    clr r17  sec    \ bump 16-bit word at Z
+                ld r18,z  adc r18,r17  st z+,r18
+                ld r18,z  adc r18,r17  st z+,r18  ret c;
+code b_A++      ldiw z,b_A  rjmp b_[z]++  c;
+code b_P++      ldiw z,b_P  rjmp b_[z]++  c;
+
+code b_pis      ldiw z,b_P      ; r17:r16 = P
+                ld R16,Z+  ld R17,Z+
+                ret  c;
+
+code b_env@     rcall b_pis     ; return envstring[P] ---------------------
+                ldiw z,b_env$
+                add  zl,R16  adc  zh,R17
+                lpm | mov  R16,R0
+                rjmp b_P++  c;
+
+code b_seta     lds R16,b_P  sts b_A,R16  ; A = P -------------------------
+                lds R16,b_P1 sts b_A1,R16
+                rjmp b_ack  c;
+
+code b_p?       lds R16,b_P     ; unpack parameter byte  ------------------
+                lds R17,b_P1  sts b_P,R17
+                clr R17       sts b_P1,R17
+                ret c;
+
+code b_z=a      lds zl,b_A      ; load Z with address
+                lds zh,b_A1
+                ret c;
+
+code b_p@       rcall b_z=a     ; get program[A] --------------------------
+                push R0  lpm
+                mov  R16,R0
+                pop  R0  rjmp b_A++  c;
+
+code b_d@       rcall b_z=a     ; get data[A] -----------------------------
+                ld R16,Z  rjmp b_A++  c;
+
+code b_putd     rcall b_z=a     ; put data[A] -----------------------------
+                ldiw x,b_P
+                ld r16,x  st z,r16
+                rjmp b_ack c;
+
+code b_clear                    ; clear stack -----------------------------
+                ldiw y,b_sp0
+                ldiw R16,b_rp0
+                rcall b_ack
+                ijmp  c;
+
+code b_p=18     sts b_P,R18             ; P = r19:r18
+                sts b_P1,R19
+                rjmp b_ack c;
+
+code b_depth    ldiw z,b_P              ; get stack depth -----------------
+                ldi  R16,b_sp0  sub R16,yl   asr R16    st Z+,R16
+                ldi  R16,0                              st Z+,R16
+                rjmp b_ack c;           \ assume stack size < 256 bytes
+
+code b_pushd    rcall b_pis     ; push data -------------------------------
+                pushd r16  pushd r17
+                rjmp b_ack  c;
+
+code b_popd     ldiw z,b_p      ; pop data --------------------------------
+                popd R17   popd R16
+                st Z+,R16  st Z+,R17
+                rjmp b_ack  c;
+
+code b_pickd    rcall b_pis     ; pick data -------------------------------
+                lsl  r16
+                add  r16,yl  adc  r17,yh
+                mov  zl,r16  mov  zh,r17
+                ld   r19,z+  ld   r18,z
+                rjmp b_p=18  c;
+
+code b_call
+\ don't need to view return stack data
+                ldiw x,b_P
+                ld zl,x+  ld zh,x+
+                lsr zh    ror zl
+                popt            ; cache TOS in X
+                icall           ; callee expects one return address (this one)
+                pusht
+                rjmp b_ack c;
+
+code b_waitee
+        begin   sbic EECR,EEWE  ; wait for EEWE to be low
+        again   rjmp b_z=a c;
+
+
+code b_gete     rcall b_waitee  ; fetch from EEPROM -----------------------
+                out  EEARL,ZL
+{{ device 2 > }} [IF] out EEARH,ZH [THEN]
+                sbi  EECR,EERE  ; get data
+                in   R16,EEDR
+                rjmp b_A++  c;
+
+code b_pute     rcall b_waitee  ; store to EEPROM -------------------------
+                out  EEARL,ZL
+{{ device 2 > }} [IF] out EEARH,ZH [THEN]
+                rcall b_pis
+                out  EEDR,R16
+            cli sbi  EECR,EEMWE  sbi  EECR,EEWE  ; start write cycle
+            sei rjmp b_A++  c;
+
+code b_table    rjmp b_ff       ; FF    19200 autobaud response
+                rjmp b_ff       ; FE    38400 autobaud response
+                rjmp b_nack     ; FD    reserved
+                rjmp b_ff       ; FC    57600 autobaud response
+                rjmp b_ff       ; FB    pick P from backdoor return stack, depth P  [4]
+                rjmp b_pickd    ; FA    pick P from backdoor data stack, depth P    [4]
+                rjmp b_popd     ; F9    pop P from backdoor data stack              [4]
+                rjmp b_pushd    ; F8    push P onto backdoor data stack             [4]
+                rjmp b_ack      ; F7    end EEPROM write sequence
+                rjmp b_pute     ; F6    next sequential EEPROM byte = P
+                rjmp b_seta     ; F5    start EEPROM write sequence at P
+                rjmp b_gete     ; F4    get last sequential EEPROM byte, end sequence
+                rjmp b_gete     ; F3    get next sequential EEPROM byte
+                rjmp b_seta     ; F2    start EEPROM read sequence at P
+                rjmp b_putd     ; F1        data_byte[A] = P, A=A+1
+                rjmp b_ack      ; F0        code_byte[A] = P, A=A+1
+                rjmp b_putd     ; EF    register_byte[A] = P, A=A+1
+                rjmp b_d@       ; EE    get     data_byte[A], A=A+1
+                rjmp b_p@       ; ED    get     code_byte[A], A=A+1
+                rjmp b_d@       ; EC    get register_byte[A], A=A+1
+                rjmp b_env@     ; EB    get byte P of environment string, P=P+1
+                rjmp b_call     ; EA    call function at address P                  [4]
+                rjmp b_seta     ; E9    A = P, return P
+                rjmp b_nack     ; E8
+                rjmp b_nack     ; E7
+                rjmp b_nack     ; E6
+                rjmp b_nack     ; E5
+                rjmp b_nack     ; E4
+                rjmp b_clear    ; E3    clear backdoor stacks                       [4]
+                rjmp b_depth    ; E2    P = returnstack_depth<<8 + datastackdepth   [4]
+                rjmp b_p?  c;   \ E1    get low byte of P, P=P<<8
+code b_xtbl     rjmp b_ff  c;   \ E0    115200 autobaud response
+
+code b_exec     ; ( R16 -- R16' ) evaluate command byte in R16
+                mov  R17,R16
+                swap R17
+                andi R17,0F   ; 0 1 2 3
+                subi R17,0C   ; P x C C
+        if_c    rjmp b_nack
+        then
+        if_z    ldiw z,b_p              ; Z -> param lo:med:hi
+                ldi  R17,2              ; P = 2 bytes
+                for     andi R16,00F    ; param = param<<4 + R16
+                        ld   R18,Z    swap R18
+                        andi R18,0F0  or   R18,R16
+                        ld   R16,Z
+                        st   Z+,R18   swap R16
+                next r17
+                ldiw z,b_p
+                ld   R16,Z
+                ret
+        then    dec  R17
+        if_z    rjmp b_nack
+        then
+                mov  R17,R16            ; E0..FF = command
+                andi R17,01F            ; jump offset
+                ldzp b_xtbl             ; jump origin
+                sub  zl,R17
+                sbci zh,0
+                push xl push xh
+                icall                   ; do command
+                pop xh pop xl
+                ret c;
+
+

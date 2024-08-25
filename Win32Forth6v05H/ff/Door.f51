@@ -1,0 +1,789 @@
+\ backdoor debugging support            9/8/97 bne
+
+     2 to cellsize      \ 2 bytes per cell
+
+needs bld8051.g         \ use 8051 target compiler
+
+anew backdoor_program
+
+new-image building      \ start a new image
+
+vocabulary door
+also door definitions   ( order: ROOT FORTH DOOR BUILDER | DOOR )
+headers off             \ no header generation
+
+hex
+
+ram 08 org rom
+
+asmbyte _bpc1           \ last grabbed PC
+asmbyte _bpc0
+asmbyte _steppc1        \ pc for trace thread
+asmbyte _steppc0
+asmbyte _breakpt1       \ breakpoint for trace thread
+asmbyte _breakpt0
+asmbyte _sbuf           \ byte grabbed by UART interrupt
+asmbyte _tempsp         \ temporary register for trace
+
+ram 10 org rom
+
+asmbyte _workregs       \ a, psw, dph, dpl, r0..r7
+asmbyte _workregs+1
+asmbyte _workregs+2
+asmbyte _workregs+3
+asmbyte _workregs+4
+asmbyte _workregs+5
+asmbyte _workregs+6
+asmbyte _workregs+7
+
+asmbyte _workregs+8
+asmbyte _workregs+9
+asmbyte _workregs+10
+asmbyte _workregs+11
+asmbyte _traceRP        \ sp for the trace thread
+asmbyte _tempIE         \ temporary register for trace
+asmbyte _a1             \ current address
+asmbyte _a0
+
+ram 20 org rom
+
+asmbyte _status
+asmbyte _d0             \ parameter for backdoor debugger, little endian
+asmbyte _d1
+asmbyte _d2
+asmbyte _d3
+asmbyte _indata         \ input buffer for keyhole protocol
+asmbyte _keyrd0         \ raw input data
+asmbyte _keytd1         \ raw output data
+asmbyte _keytd0
+
+ram 2A org rom
+
+asmbyte _time3          \ 32-bit raw time (period = 18.2 hours) big-endian
+asmbyte _time2          \ upper = seconds, lower = fraction
+asmbyte _time1          \ 65536ths of a second
+asmbyte _time0
+asmbyte _dph            \ temporary storage used by B.EXEC to save TOS
+asmbyte _dpl
+asmbyte _callret1       \ temporary storage used by B.CALL to save return addr
+asmbyte _callret0
+asmbyte _keyalive       \ keyhole "alive" flag, 0 = inactive
+
+asmlabel? P1.3 asmlabel __SDA           \ EEPROM clk/data
+asmlabel? P1.6 asmlabel __SCL
+\ asmlabel? P1.0 asmlabel __SDA         \ test board |||
+\ asmlabel? P1.1 asmlabel __SCL
+asmlabel? P3.5 asmlabel __clonetip      \ clone key and keyhole lines
+asmlabel? P1.5 asmlabel __clonering
+asmlabel? P1.4 asmlabel __watchdog      \ pulse to keep alive
+
+100 asmlabel __TI               \ UART transmitter ready
+101 asmlabel __RI               \ UART has a character
+102 asmlabel __suspended        \ backdoor has total control
+103 asmlabel __steppending
+104 asmlabel __keypending       \ keyhole input buffer has a character
+
+ 7C asmlabel sp051
+ 34 asmlabel rp051
+ 25 asmlabel b-ack
+ 52 asmlabel b-nack
+  2 asmlabel cellsize
+
+33 org
+
+code b.$env
+\ environment header, always 16 bytes
+        10 c, 02 c,             \ cell size = 16 bits, 2 address units
+        6A c,                   \ endian-ness
+        8E c,                   \ available features
+        01 c, 00 c,             \ 8031 family, 8031 device
+        01 c, 51 c, 80 c, 00 c, \ XTAL = 22.11 MHz              {xtal}
+        8A c,                   \ data stack: down/little-endian/reg/reg
+        4A c,                   \ return stack: up/big-endian/reg/reg
+        00 c, 01 c,             \ backdoor revision number
+        00 c,                   \ reserved
+        16 c,                   \ # of cell-wide parameters to follow
+\ system parameters, cell-wide values
+        0000 , FFFF ,           \ overall main memory bounds
+        0000 , 01FF ,           \ overall register space bounds
+        0000 , 7FFF ,           \ overall I/O space bounds
+        0000 , 1FFF ,           \ overall EEPROM bounds
+        7C ,                    \ base address of data stack
+        34 ,                    \ base address of return stack
+        00 ,                    \ location of data sp
+        181 ,                   \ location of return sp
+        0010 ,                  \ location of CPU-specific special registers
+        8000 , FF00 ,           \ user memory bounds
+        0010 , 1FFF ,           \ eeprom: clonable data area bounds
+        1000 , 1FFF ,           \ eeprom: boot area bounds
+        0 ,                     \ CFA of block receive
+        0 ,                     \ CFA of block send
+        0030 ,                  \ CFA of backdoor poller
+        0 ,                     \ CFA of binding table initializer
+        0 ,                     \ CFA of Flex loader
+        end-code
+
+code b.emit             \ send acc to UART
+        clr __TI
+        mov sbuf, a
+        begin   until_b __TI
+        ret  end-code
+
+code b.ack              \ OK
+        mov a, #25  ret
+        end-code
+
+code b.nack             \ error
+        mov a, #52  ret
+        end-code
+
+code b.FF               \ 0xFF for autobaud
+        mov a, #-1  ret
+        end-code
+
+\ ======================= serial eeprom    =========================
+
+code e-stop
+\ Issue a stop command
+        clr  __sda
+        setb __scl  nop nop
+        setb __sda
+        ret  end-code
+
+code e-start
+\ Issue a start command
+        setb __sda
+        setb __scl  nop nop
+        clr  __sda  nop nop
+        clr  __scl
+        ret  end-code
+
+code e-clock
+\ Issue a clock pulse.  While the clock is high the value on the
+\ sda line is placed in the carry flag.  When a read is taking
+\ place the carry flag will indicate the value from the dut.
+        setb __scl
+        nop nop nop nop
+        mov c, __sda
+        clr __scl
+        ret  end-code
+
+code e-nack
+\ Send sda high. The nack routine does not check
+\ to see if the dut actually issues an acknowledge.
+        setb __sda  goto e-clock
+        end-code
+
+code e-ack
+\ Issue an acknowledge.
+        clr  __sda  goto e-clock
+        end-code
+
+code e-inbyte
+\ read 8 bits from the dut. the results are returned in acc
+        setb __sda
+        mov r7, #8
+        for     call e-clock
+                rlc a
+        next r7 ret
+        end-code
+
+code e-outbyte
+\ write 8 bits to the dut. the data to send is in acc
+        mov r7, #8
+        for     rlc a  mov __sda, c
+                call e-clock
+        next r7 ret
+        end-code
+
+code e-control  ( dptr -- )
+\ send control byte(s), copy control byte to r5
+\ 24C32/64/65 version.
+\ change this section to support different devices.
+\ **** uses dptr
+        call e-start
+        mov a, dph
+        swap a  anl a, #0E                              \ device select
+        orl a, #0A0  mov r5, a
+        call e-outbyte  call e-nack                     \ control byte
+        mov a, dph  anl a, #1F                          \ hi address
+        call e-outbyte  call e-nack
+        mov a, dpl
+        call e-outbyte  goto e-nack                     \ lo address
+        end-code
+
+code e-waitack
+\ Perform acknowledge polling to determine when the write cycle
+\ completes.  Upon return from this routine the carry bit indicates
+\ whether the dut ever acknowledged the write.  carry=0 part
+\ acknowledged, carry=1 no acknowledge received.
+        mov r6, #-1
+        for     call e-start    mov a, #0A0
+                call e-outbyte  call e-nack
+                if_nc   goto e-stop
+                then
+        next r6 goto e-stop
+        end-code
+
+code (ee@)      ( -- )
+\ set up for read
+        call e-control
+        call e-start
+        mov a, r5  orl a, #1
+        call e-outbyte  goto e-nack             \ control byte
+        end-code
+
+
+code b.@EEstart         \ start eeprom block read
+        mov dph, _d1  mov dpl, _d0
+        call (ee@)
+        goto b.ack
+        end-code
+
+code b.@EEnext          \ fetch next eeprom byte
+        call e-inbyte   \ read in data
+        push acc
+        call e-ack
+        pop acc  ret
+        end-code
+
+code b.@EElast          \ fetch next eeprom byte
+        call e-inbyte   \ read in data
+        push acc
+        call e-nack
+        call e-stop
+        pop acc  ret
+        end-code
+
+code b.!EEstart         \ start eeprom block write
+        mov dph, _d1  mov dpl, _d0
+        call e-control
+        goto b.ack
+        end-code
+
+code b.!EEnext          \ store next byte to eeprom
+        mov a, _d0
+        call e-outbyte
+        call e-nack
+        goto b.ack
+        end-code
+
+code b.!EElast          \ store last byte to eeprom
+        mov a, _d0
+        call e-outbyte
+        call e-nack
+        call e-stop
+        call e-waitack
+        mov a, #b-nack
+        if_nc   mov a, #b-ack
+        then    ret
+        end-code
+
+\ ====================================================================
+
+code jmpd1d0            \ jump to _d1_d0  call to invoke "call d1d0"
+        push _d0  push _d1  ret
+        end-code
+
+code b.bumpa            \ dptr := addr, bump addr
+        mov dph, _a1  mov dpl, _a0
+        inc _a0  mov a, _a0
+        if_z    inc _a1
+        then    ret
+        end-code
+
+code b.addr--           \ decrement address
+        mov a, _a0
+        if_z    dec _a1
+        then    dec _a0
+        goto b.ack
+        end-code
+
+code b.address          \ set start address for byte operations
+        mov _a1, _d1
+        mov _a0, _d0
+        goto b.ack
+        end-code
+
+code b.loadexec
+\ load executable code for direct@ and direct!
+        mov dptr, #FFF0
+        mov r6, #5              \ start loading immediately after ret
+        mov r7, #0E
+        for     mov a, r6  inc r6
+                movc a, @a+pc
+                movx @dptr, a  inc dptr
+        next r7 ret
+        lcall b.bumpa           \ FFF0: read from ROM via ext program mem
+        clr a  movc a, @a+dptr
+        ret
+        mov a, _d0              \ FFF6:
+        mov b, a                \ write: addr byte is at FFF9
+        ret
+        mov a, b                \ FFFB:
+        ret end-code            \ read: addr byte is at FFFC
+
+code b.direct@                  \ acc = direct[acc]
+        mov dptr, #FFFC
+        movx @dptr, a  mov dpl, #FB
+        clr a jmp @a+dptr
+        end-code
+
+code b.direct!                  \ direct[acc] = _d0
+        mov dptr, #FFF9
+        movx @dptr, a  mov dpl, #F6
+        clr a jmp @a+dptr
+        end-code
+
+code b.@main                    \ read byte at _a, bump _a
+\ executed from external memory so as not to defeat IROM security
+        call b.loadexec
+        mov dptr, #FFF0
+        clr a  jmp @a+dptr
+        end-code
+
+code b.@reg                     \ fetch from register space
+        mov r1, _a0  mov a, _a1
+        if_z    mov a, @r1              \ 00..FF = IRAM
+        else    call b.loadexec         \ 100..1FF = direct
+                mov a, _a0
+                call b.direct@
+        then    push acc
+        call b.bumpa
+        pop acc  ret
+        end-code
+
+code b.!reg                     \ store to register space
+        mov r1, _a0  mov a, _a1
+        if_z    mov @r1, _d0            \ 00..FF = IRAM
+        else    call b.loadexec         \ 100..1FF = direct
+                mov a, _a0
+                call b.direct!
+        then    call b.bumpa
+        goto b.ack
+        end-code
+
+code b.pushdigit        \ push nibble into 8-nibble stack
+        anl a, #0F  mov r6, a
+        mov r7, #4  mov r1, #_d0
+        for     mov a, @r1  swap a  anl a, #0F0  orl a, r6
+                xch a, @r1  swap a  anl a, #00F  mov r6, a
+                inc r1
+        next r7 mov a, _d0  ret \ return low byte of n
+        end-code
+
+code b.n?               \ send lower byte of n
+        mov a, _d0
+        mov _d0, _d1    mov _d1, _d2
+        mov _d2, _d3    mov _d3, #0
+        ret  end-code
+
+code b.call2
+\ the second part of the call routine, see b.call below.
+        dec r0  mov @r0, dpl
+        dec r0  mov @r0, dph
+\32     dec r0  mov a, r3  mov @r0, a   \ uncache
+\32     dec r0  mov a, r2  mov @r0, a
+        push _callret0  push _callret1
+        goto b.ack
+        end-code
+
+code b.call             \ call function
+\ The return stack contains the following data:
+\   Return address of this routine
+\   ...data... Return stack data
+\   Return address of b.backdoor
+\ The top return address is patched to return to the remainder
+\ of the call routine, call2.  This is done so that the callee
+\ sees only one return address on top of the stacked data.
+        pop _callret1  pop _callret0
+        dptr= b.call2
+        push dpl       push dph         \ force return to b.call2
+\32     mov a, @r0  mov r2, a  inc r0   \ cache
+\32     mov a, @r0  mov r3, a  inc r0
+        mov dph, @r0  inc r0
+        mov dpl, @r0  inc r0
+        push _d0  push _d1              \ jump to exec address
+        ret
+        end-code
+
+code b.pc@              \ n = last grabbed PC
+        clr a  mov _d3, a  mov _d2, a
+        mov _d1, _bpc1  mov _d0, _bpc0
+        goto b.ack
+        end-code
+
+code b.pushd            \ push n to data stack
+        dec r0  mov @r0, _d0
+        dec r0  mov @r0, _d1
+\32     dec r0  mov @r0, _d2
+\32     dec r0  mov @r0, _d3
+        goto b.ack
+        end-code
+
+code b.popd             \ pop n from data stack
+\32     mov _d3, @r0  inc r0
+\32     mov _d2, @r0  inc r0
+        mov _d1, @r0  inc r0
+        mov _d0, @r0  inc r0
+        goto b.ack
+        end-code
+
+\ One return address is on the stack, which returns to b.backdoor.
+\ Temporary data is stored under this and must be gone before resuming
+\ execution (leaving b.backdoor).
+
+code b.pushr            \ push n to return stack
+        pop dph  pop dpl
+        mov r6, #cellsize  mov r1, #_d0
+        for     mov a, @r1  inc r1
+                push acc
+        next r6
+        push dpl  push dph
+        goto b.ack
+        end-code
+
+code b.popr             \ pop n from return stack
+        pop dph  pop dpl
+        mov r6, #cellsize  mov a, r6
+        add a, #_d0  mov r1, a
+        for     pop acc
+                dec r1  mov @r1, a
+        next r6
+        push dpl  push dph
+        goto b.ack
+        end-code
+
+code b.@env             \ fetch byte n of the environment string
+        mov a, _d0  dptr= b.$env
+        movc a, @a+dptr  inc _d0  ret
+        end-code
+
+code b.@io              \ fetch byte from XRAM
+        call b.bumpa
+        movx a, @dptr  ret
+        end-code
+
+code b.!io              \ store to XRAM
+        call b.bumpa
+        mov a, _d0  movx @dptr, a
+        goto b.ack
+        end-code
+
+code b.suspend          \ suspend foreground task
+        setb __suspended  goto b.ack
+        end-code
+
+code b.resume           \ resume foreground task
+        clr __suspended  goto b.ack
+        end-code
+
+
+\ ---------------------------------------------------------------------
+\ Single Step Utility, uses T1 interrupt to execute a separate single step
+\ thread one instruction at a time.
+
+code b.ssaddr           \ set new trace address
+        mov _steppc1, _d1
+        mov _steppc0, _d0
+        goto b.ack
+        end-code
+
+code b.ssbrkpt          \ set new breakpoint, return current trace address
+        mov _breakpt1, _d1
+        mov _breakpt0, _d0
+        mov _d1, _steppc1
+        mov _d0, _steppc0
+        goto b.ack
+        end-code
+
+code b.swapregs ( -- )
+\ Save/restore the register set for the trace thread.
+        push psw  push _workregs+1      \ psw
+        pop  psw  pop  _workregs+1
+        xch a, _workregs  push acc      \ acc
+        mov a, _workregs+2   xch a, dph  mov _workregs+2, a
+        mov a, _workregs+3   xch a, dpl  mov _workregs+3, a
+        mov a, _workregs+4   xch a, r0   mov _workregs+4, a
+        mov a, _workregs+5   xch a, r1   mov _workregs+5, a
+        mov a, _workregs+6   xch a, r2   mov _workregs+6, a
+        mov a, _workregs+7   xch a, r3   mov _workregs+7, a
+        mov a, _workregs+8   xch a, r4   mov _workregs+8, a
+        mov a, _workregs+9   xch a, r5   mov _workregs+9, a
+        mov a, _workregs+10  xch a, r6   mov _workregs+10, a
+        mov a, _workregs+11  xch a, r7   mov _workregs+11, a
+        pop acc  ret  end-code
+
+code b.stepISR
+\ Interrupt Service Routine for the single stepping thread
+\ This is meant to execute within b.step.  Working regs are changed.
+        if_b    __steppending
+                clr __steppending       \ 1: execute the instruction
+                mov _tempsp, sp  mov sp, _traceRP
+                mov _traceRP, _tempsp   \    switch to trace stack
+                push _steppc0
+                push _steppc1
+                setb TF1  setb ET1      \    set up to stepISR again
+                reti                    \    after 1 instruction executes
+        then                            \ 2: update registers
+        clr ET1                         \    disable further interrupts
+        pop _steppc1
+        pop _steppc0
+        mov _tempsp, sp  mov sp, _traceRP
+        mov _traceRP, _tempsp           \    switch to normal stack
+        reti
+        end-code
+
+code b.step             \ perform single step n times, loads final PC to n
+        call b.swapregs                 \ use trace register image
+        push acc
+        begin   mov a, _d0  orl a, _d1
+        while_nz
+                setb __steppending
+                pop acc
+                mov _tempIE, IE
+                mov IE, #80             \ disable interrupts for the trace
+                setb TF1  setb ET1      \ immediately enter step ISR
+                nop nop nop
+                mov IE, _tempIE
+                push acc
+                mov a, _d0
+                if_z    dec _d1         \ --count
+                then    dec _d0
+        repeat
+        pop acc
+        call b.swapregs                 \ get back our real registers
+        mov _d1, _steppc1
+        mov _d0, _steppc0
+        goto b.ack
+        end-code
+
+code b.run               \ step until address matches breakpoint
+        call b.swapregs                 \ use trace register image
+        push acc
+        begin   setb __steppending
+                pop acc
+                mov _tempIE, IE
+                mov IE, #80             \ disable interrupts for the trace
+                setb TF1  setb ET1      \ immediately enter step ISR
+                nop nop nop
+                mov IE, _tempIE
+                push acc
+                mov a, _breakpt1  xrl a, _steppc1  mov r7, a
+                mov a, _breakpt0  xrl a, _steppc0  orl a, r7
+        until_z
+        pop acc
+        call b.swapregs                 \ restore registers
+        goto b.ack  end-code
+
+
+\ ---------------------------------------------------------------------
+\ Execution table for backdoor command interpreter
+
+code b.table            \ execution table
+\ note: this table must not cross a 2K page boundary
+        goto b.FF       \ E0
+        goto b.n?       \  1
+        goto b.suspend  \  2
+        goto b.resume   \  3
+        goto b.step     \  4
+        goto b.run      \  5
+        goto b.ssaddr   \  6
+        goto b.ssbrkpt  \  7
+        goto b.pc@      \  8
+        goto b.address  \  9
+        goto b.call     \  A
+        goto b.@env     \  B
+        goto b.@reg     \  C
+        goto b.@main    \  D
+        goto b.@io      \  E
+        goto b.!reg     \  F
+        goto b.!io      \ F0
+        goto b.!io      \  1
+        goto b.@eestart \  2
+        goto b.@eenext  \  3
+        goto b.@eelast  \  4
+        goto b.!eestart \  5
+        goto b.!eenext  \  6
+        goto b.!eelast  \  7
+        goto b.pushd    \  8
+        goto b.popd     \  9
+        goto b.pushr    \  A
+        goto b.popr     \  B
+        goto b.FF       \  C
+        goto b.addr--   \  D
+        goto b.FF       \  E
+        goto b.FF       \ FF
+        end-code
+
+code b.exec     ( -- )
+\ execute command in acc, return result in acc
+\ **** uses dptr
+        mov r7, a  cpl a  anl a, #0E0
+        if_z    mov a, r7  rlc a  anl a, #3E    \ E0..FF
+                dptr= b.table  jmp @a+dptr
+        then    mov a, r7
+        anl a, #0F0  xrl a, #0C0
+        if_z    mov a, r7  goto b.pushdigit     \ C0..CF
+        then    goto b.nack                     \ D0..DF
+        end-code
+
+code nextkeybit ( -- )
+\ output next keyhole bit, assemble incoming input data
+\ 22M xtal, 2 or 5 usec delay = 2 or 7 machine cycles
+        setb c
+        mov a, _keytd1  rrc a  mov _keytd1, a
+        mov a, _keytd0  rrc a  mov _keytd0, a   \ CY = output bit
+        if_c
+                clr EA
+                clr  __clonering  nop nop       \  3      2.5 usec
+                setb __clonering                \  1
+                nop nop nop nop nop nop         \  6
+        else                                    \  2
+                clr EA
+                clr  __clonering                \     1   5.7 usec
+                nop nop nop nop nop nop         \     6
+                nop nop nop nop                 \     4
+                setb __clonering                \     1
+        then    nop nop                         \  2  2
+        mov c, __clonering                      \  1  1
+        setb EA
+        mov a, _keyrd0  rrc a  mov _keyrd0, a   \ shift in next bit
+        if_nc   mov _indata, a                  \ finished
+                mov _keyrd0, #-1
+                setb __keypending
+                mov _keyalive, #-1
+        else    mov a, _keyalive                \ _keyalive = 0
+                if_nz   dec _keyalive           \ if no recent keyhole action
+                then
+        then    mul ab mul ab                   \ kill some time
+        ret end-code
+
+code keyemit    ( -- )
+\ send acc out the keyhole port
+        add a, acc  mov _keytd0, a  mov a, #-1
+        rlc a       mov _keytd1, a
+        ret  end-code
+
+code b.backdoor
+\ UART-based backdoor polling
+\ PUSHR and POPR operate on the stack immediately above this routine's
+\ return address.  SUSPEND must be in effect whenever the stacks are
+\ changed so that there is zero net depth change within this routine.
+\ Otherwise, a bogus return address will cause a crash.
+        clr __suspended
+        begin   call nextkeybit
+                clr  __watchdog
+                mov _dph, dph  mov _dpl, dpl
+                if_b    __RI            \ accept command from UART
+                        clr __RI
+                        mov a, _sbuf
+                        call b.exec
+                        call b.emit
+                then
+                if_b    __keypending    \ accept command from keyhole
+                        clr __keypending
+                        mov a, _indata
+                        call b.exec
+                        call keyemit
+                then
+                mov dph, _dph  mov dpl, _dpl
+                setb __watchdog
+        until_nb __suspended
+        ret  end-code
+
+code b.uartisr
+\ quick ISR: grab PC and UART data, wait for pause to get around to
+\ servicing the data.
+        if_b    RI
+                mov _sbuf, sbuf                 \ read input buffer
+                clr RI  setb __RI
+                push acc  mov a, r1  push acc
+                mov r1, sp  dec r1  dec r1
+                mov _bpc1, @r1  dec r1          \ grab PC
+                mov _bpc0, @r1
+                pop acc  mov r1, a  pop acc
+                reti
+        then    clr TI  setb __TI
+        reti
+        end-code
+
+code TimebaseBump
+\ ripple carry through _time
+        inc _time1  mov a, _time1    if_nz  ret  then
+        inc _time2  mov a, _time2    if_nz  ret  then
+        inc _time3  ret
+        end-code
+
+code TimebaseISR ( -- )
+\ bump the long count _time
+\ period = 12/22.1184 * 225 usec = 8/65536 sec
+        push psw   push acc
+        mov a, _time0  add a, #8  mov _time0, a             \   {xtal}
+        if_c   call TimeBaseBump
+        then
+        pop acc    pop psw
+        reti end-code
+
+code preemptable
+        reti end-code
+
+code main       ( -- )
+        setb ES
+        begin   call b.backdoor
+                mov a, _keyalive        \ is keyhole port cold?
+                if_z    mov pcon, #81   \ sleep until interrupt
+                then
+        again   end-code
+
+code cold       ( -- )
+\ 22.1 MHz xtal
+\ note: frequency dependent lines are marked by {xtal}
+        mov  PSW, #0    mov PCON, #80   \ SMOD = 1
+        mov  IE, #00                    \ disable interrupts
+        mov  IP, #08                    \ T1 is high priority
+        mov  TMOD, #22                  \ configure timers, 8-bit auto-reload
+        mov  TCON, #55                  \ INT01 are edge triggered, run timers
+        mov  TH1, #-1                   \ 115200 bps            {xtal}
+        mov  TL1, #-1
+        mov  TH0, #1F                   \ 8192 Hz               {xtal}
+        mov  TL0, #1F
+        mov  a, #80
+        for     mov r1, a               \ erase IRAM
+                mov @r1, #0
+        next acc
+        mov  a, #-1
+        mov  P1, a  mov P2, a  mov P3, a
+        mov  SCON, #54                  \ 8-bit characters
+        mov  A, SBUF                    \ Clear receiver buffer
+        mov  _status, #0
+        setb __TI
+        mov  IE, #82                    \ enable T0 interrupts
+        mov  r0, #sp051                 \ initialize data stack
+        mov  SP, #rp051                 \ return stack
+        clr P1.6 clr P1.7               \ ||| for test board
+        dptr= main
+        push dpl  push dph              \ jump to return address and
+        reti                            \ reset interrupt hardware
+        end-code
+
+\ System reset and interrupt vectors
+\
+        here
+
+00 org  code ==reset    goto cold                            end-code
+03 org  code ==EXT0     reti                                 end-code
+0B org  code ==T0       call preemptable  goto TimebaseISR   end-code
+13 org  code ==EXT1     reti                                 end-code
+1B org  code ==T1       goto b.stepISR                       end-code
+23 org  code ==UART     goto b.uartISR                       end-code
+30 org  code ==backdoor goto b.backdoor                      end-code
+
+        org
+
+decimal
+
+forthing
+
+hsave door.hex
+

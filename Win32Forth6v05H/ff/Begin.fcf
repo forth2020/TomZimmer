@@ -1,0 +1,44 @@
+((
+        Setup for 68000/coldfire processor model:
+
+        No code is laid down here, you can use NEEDS to load this file.
+))
+
+homeorder
+new-image decimal               \ clear the ROM image
+
+needs BLDMCF.G                  \ use Coldfire target compiler
+hex
+{{ chiptype  5307 = }} [IF] include ALAB5307.FCF [THEN]  \ hardware labels
+{{ chiptype 68332 = }} [IF] include ALAB6332.FCF [THEN]
+{{ chiptype 68331 = }} [IF] include ALAB6331.FCF [THEN]
+
+building static                 \ start defining the ROM
+
+vocabulary user
+
+{{ RomBase dup RomSize + 1- }}          rom-bounds  \ physical address of ROM
+{{ RamBase dup RamSize RamPartition 0x64 */ + 1- }}     data-bounds \ user data
+data-bounds? {{ 1+ -2 and tuck - Ramsize + over + 1- }} code-bounds \ user code
+
+ram asmlong RawCounter          \ raw 32-bit time count
+    asmlong tempvalue           \ used by VALUE
+rom
+
+{{ code-bounds? nip 1+ }}       \ -> 0th binding table entry
+       asmlabel bindorigin      \ binding table origin, grows downward
+
+\S memory usage:
+     ROM
+        Hardwired vectors, most point to binding table entries
+        Kernel and application
+        Debugger
+        Startup code
+     RAM
+        ROMed kernel variables, TCBs, etc.
+        Debugger stacks
+        Main stacks
+        User Area grows toward high memory
+        ...
+        Binding table grows toward low memory
+

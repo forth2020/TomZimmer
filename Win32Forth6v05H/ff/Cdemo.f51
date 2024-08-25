@@ -1,0 +1,60 @@
+((
+        Call support for Keil 8051 procedures
+
+        Assumes 16-bit Forth cells.
+
+        preliminary                             3/15/00 BNE
+))
+
+code c{         ( -- )          c( save forth parameters )
+                pop acc   pop B
+                push reg0  push dpl  push dph   \ save 4th regs
+                push B  push acc
+                ret c;                          call-only
+
+code }c         ( -- )          c( restore forth parameters )
+                pop acc   pop B
+                pop dph  pop dpl  pop reg0      \ restore 4th regs
+                push B  push acc
+                ret c;                          call-only
+
+code >ptr       ( a -- )        c( set up pointer )
+                mov r2, dph  mov r1, dpl
+                goto DROP c;
+
+code >p1        ( x -- )        c( set up param p1 )
+                mov r6, dph  mov r7, dpl
+                goto DROP c;
+
+code >p2        ( x -- )        c( set up param p2 )
+                mov r4, dph  mov r5, dpl
+                goto DROP c;
+
+code >p3        ( x -- )        c( set up param p3 )
+                mov r2, dph  mov r3, dpl
+                goto DROP c;
+
+code ptr>       ( -- a )        c( get returned pointer )
+                call DUP
+                mov dph, r2  mov dpl, r1        \ return pointer R2R1
+                ret c;
+
+code p1>        ( -- x )        c( get returned param #1 )
+                call DUP
+                mov dph, r6  mov dpl, r7        \ return int R6R7
+                ret c;
+
+code p2>        ( -- x )        c( get returned param #1 )
+                call DUP
+                mov dph, r4  mov dpl, r5        \ return int R4R5
+                ret c;
+
+code p3>        ( -- x )        c( get returned param #1 )
+                call DUP
+                mov dph, r2  mov dpl, r3        \ return int R2R3
+                ret c;
+
+
+
+
+

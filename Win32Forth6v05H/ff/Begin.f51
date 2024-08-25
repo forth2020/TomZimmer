@@ -1,0 +1,160 @@
+((
+        Setup for 8051 processor model:
+
+        Hardware configuration,
+        Bit and register assignments.
+
+        No code is laid down here, you can use NEEDS to load this file.
+))
+
+homeorder
+new-image decimal               \ clear the ROM image
+
+needs bld8051.g                 \ use 8051 target compiler
+
+building static                 \ start defining the ROM
+
+hex
+0x0000 0x7FFF rom-bounds        \ physical address of ROM
+0x8000 0x9FFF data-bounds       \ kernel data +user data
+0xA000 0xFCFF code-bounds       \ user code + binding table
+
+0xFE asmlabel doorstack         \ stack area for door = FE00..FEFF
+0xFD asmlabel xsp051            \ external data stack
+\ FF00 = console image + some door stuff
+\ FE00 = door virtual stack
+\ FD00 = external data stack (unused if internal stack)
+
+0 org
+/IRAM/ 0 org
+
+asmbyte reg0            \ r0
+asmbyte reg1            \ r1
+asmbyte reg2            \ r3
+asmbyte reg3            \ r3
+asmbyte reg4            \ r4
+asmbyte reg5            \ r5
+asmbyte reg6            \ r6
+asmbyte reg7            \ r7
+
+asmbyte _bpc1           \ grabbed PC for profiling
+asmbyte _bpc0
+asmbyte _steppc1        \ pc for trace thread
+asmbyte _steppc0
+asmbyte _breakpt1       \ breakpoint for trace thread
+asmbyte _breakpt0
+asmbyte _tempsp         \ temporary register for trace
+asmbyte _temprp         \ temporary storage used by B.CALL
+
+10 org
+
+asmbyte _workregs       \ a, psw, dph, dpl, r0..r7
+asmbyte _workregs+1     \ register image for low level debugger
+asmbyte _workregs+2
+asmbyte _workregs+3
+asmbyte _workregs+4
+asmbyte _workregs+5
+asmbyte _workregs+6
+asmbyte _workregs+7
+
+asmbyte _workregs+8
+asmbyte _workregs+9
+asmbyte _workregs+10
+asmbyte _workregs+11
+asmbyte _traceRP        \ sp for the trace thread
+asmbyte _tempIE         \ temporary register for trace
+asmbyte _a1             \ current door address pointer
+asmbyte _a0
+
+20 org
+
+asmbyte _status
+asmbyte _flags0         \ bit addressable storage for user
+asmbyte _flags1
+asmbyte _flags2
+asmbyte _d0             \ parameter for door, little endian
+asmbyte _d1
+asmbyte _d2
+asmbyte _d3
+asmbyte _indata         \ input buffer for keyhole protocol
+asmbyte _keyrd0         \ raw input data for keyhole protocol
+asmbyte _keytd1         \ raw output data for keyhole protocol
+asmbyte _keytd0
+asmbyte _chere1         \ code dictionary pointer
+asmbyte _chere0
+asmbyte _dhere1         \ data dictionary pointer
+asmbyte _dhere0
+asmbyte _addr1          \ A register
+asmbyte _addr0
+\32 asmbyte _index3     \ i = index stack cache
+\32 asmbyte _index2
+    asmbyte _index1
+    asmbyte _index0
+asmbyte _time3          \ 32-bit raw time counter, big-endian
+asmbyte _time2
+asmbyte _time1
+asmbyte _time0
+
+asmbyte _sp051          \ data stack pointer origin
+asmbyte _rp051          \ return stack pointer origin
+asmbyte _bsp            \ door data stack pointer
+asmbyte _brp            \ door return stack pointer
+/IRAM/
+
+\ _status bit variable assignments:
+/bit/ 100 org
+asmbyte __RAM           \ compiling to data space
+asmbyte __steppending   \ single stepper is ready to step
+asmbyte __keypending    \ keyhole input buffer has a character
+/bit/
+
+{{ internalstack 0 = }} [IF] 000 [THEN]         \ stack is in XRAM
+{{ internalstack 1 = }} [IF] 07C [THEN]         \ 8031
+{{ internalstack 2 = }} [IF] 0FC [THEN]         \ 8032
+
+        asmlabel sp051          \ data stack, grows downward
+
+     25 asmlabel b-ack          \ door ack/nack responses
+     52 asmlabel b-nack
+
+\16  2 asmlabel cellsize
+\32  4 asmlabel cellsize
+
+decimal
+
+\ define baud rate calculator
+
+host homeorder also forth
+30 constant baudtolerance       \ how much error is allowable (in 0.1%ths)
+variable    nobaudyet           \ T if baud rate hasn't been determined yet
+
+: baudok?       ( desired -- T reload | F )
+\ calculate reload value for desired baud rate, return T if error < 2%
+\ assumes SMOD = 1 (high baud rate)
+\ this handles oddball crystal frequencies down to 450 kHz.
+                16 / >R
+                xtalfreq 12 / R@ 2/ + R> /      \ reload * 256 (rounded)
+                dup>r 0xFFFF00 and 1000 r@ */
+                1000 - abs baudtolerance <
+                nobaudyet @ and
+        if      r> 8 rshift negate true
+                nobaudyet off
+        else    r>drop             false
+        then    ;
+
+
+homeorder building
+
+{{ nobaudyet on }}   \ try to get within 2% of all the autobaud rates
+                     \ if all else fails, set for 2400 bps
+{{ 115200 baudok? }} [IF] asmlabel TH1init [THEN]
+{{  57600 baudok? }} [IF] asmlabel TH1init [THEN]
+{{  38400 baudok? }} [IF] asmlabel TH1init [THEN]
+{{  19200 baudok? }} [IF] asmlabel TH1init [THEN]
+{{  14400 baudok? }} [IF] asmlabel TH1init [THEN]
+\ Note: Autobaud scheme can't hit 9600, so we don't use it.
+{{   4800 baudok? }} [IF] asmlabel TH1init [THEN]
+{{ nobaudyet @ }} [IF] {{ xtalfreq 230400 + 460800 / negate 255 and }}
+                          asmlabel TH1init [THEN]
+
+

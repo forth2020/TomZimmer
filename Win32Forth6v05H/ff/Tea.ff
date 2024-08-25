@@ -1,0 +1,111 @@
+\ Tiny Encryption Algorithm
+\ Translation from C code (see below) to 32-bit or 16-bit Forth.
+\ Data to encode/decode is 8 bytes, key is 16 bytes.
+
+{{ decimal }}
+{{ 1 cells 2 > }} [IF] \ 32-bit cells ==========================================
+0x9E3779B9 constant delta
+variable sum
+variable keyptr
+
+: grunge        ( y z offset -- y z z' )        c( diffuse the key into the data)
+                cells keyptr @ + 2@ >r >r       ( y z | kn+1 kn )
+                dup  sum @ +
+                over 4 lshift r> + xor
+                over 5 rshift r> + xor ;        ( y z . )
+
+: +grunge       ( y z offset -- z z" )  grunge rot + ;
+: -grunge       ( y z offset -- z z" )  grunge negate rot + ;
+
+: encode        ( y z 'key -- y' z' )           c( encode double using key)
+\ encode dy, dz with 16-byte key
+                keyptr !  0 sum !  32 >R
+        multi   delta sum +!
+                0 +grunge 2 +grunge
+        repeat  r>drop ;
+
+: decode        ( y z 'key -- y' z' )           c( decode double using key)
+\ decode dy, dz with 16-byte key
+                keyptr !  delta 5 lshift sum !  32 >R
+                swap                            ( z y .. )
+        multi   2 -grunge 0 -grunge
+                delta negate sum +!
+        repeat  r>drop swap ;
+
+create mykey    \ 4-cell (16-byte) key
+                123456789 , 987654321 , 314159265 , 111111111 ,
+
+[ELSE] \ 16-bit cells ==========================================================
+
+0x9E3779B9. 2constant delta
+2variable sum
+variable keyptr
+
+: d+xor         ( d1 d2 d3 -- d1xord2+d3 )
+                d+ >r rot xor swap r> xor ;
+
+: d16*  d2* d2* d2* d2* ;
+: d32/  ud2/ ud2/ ud2/ ud2/ ud2/ ;
+
+: grunge        ( dy dz offset -- dy dz dz' )   c( diffuse the key into the data)
+                2* cells keyptr @ + >r          ( y z | 'kn )
+                2dup sum 2@ d+
+                2over d16* r@       2@ d+xor
+                2over d32/ r> cell+ 2@ d+xor ;  ( y z . )
+
+: 2rot+         ( d e f -- e f+d )          2>r 2swap 2r> d+ ;
+: +grunge       ( dy dz offset -- dz dz" )  grunge 2rot+ ;
+: -grunge       ( dy dz offset -- dz dz" )  grunge dnegate 2rot+ ;
+
+: encode        ( dy dz 'key -- dy' dz' )       c( encode quad using key)
+\ encode dy, dz with 16-byte key
+                keyptr !  0.0 sum 2!  32 >R
+        multi   sum 2@ delta d+ sum 2!
+                0 +grunge 2 +grunge
+        repeat  r>drop ;
+
+: decode        ( dy dz 'key -- dy' dz' )       c( decode quad using key)
+\ decode dy, dz with 16-byte key
+                keyptr !
+                delta d2* d16* sum 2!
+                2swap 32 >R               ( z y )
+        multi   2 -grunge 0 -grunge
+                sum 2@ delta d- sum 2!
+        repeat  r>drop 2swap ;
+
+create mykey    \ 8-cell (16-byte) key
+                123456789. , , 987654321. , , 314159265. , , 111111111. , ,
+[THEN]
+
+((
+Excerpt from a Tiny Encryption Algorithm by David Wheeler & Roger Needham
+...
+Routine, written in the C language, for encoding with key k[0] - k[3].
+Data in v[0] and v[1].
+
+void code(long* v, long* k)  {
+unsigned long y=v[0],z=v[1], sum=0,   /* set up */
+ delta=0x9e3779b9, n=32 ;             /* a key schedule constant */
+while (n-->0) {                       /* basic cycle start */
+  sum += delta ;
+    y += (z<<4)+k[0] ^ z+sum ^ (z>>5)+k[1] ;
+    z += (y<<4)+k[2] ^ y+sum ^ (y>>5)+k[3] ;   /* end cycle */
+              } 
+v[0]=y ; v[1]=z ; }
+
+void decode(long* v,long* k)  {
+ unsigned long n=32, sum, y=v[0], z=v[1],
+ delta=0x9e3779b9 ;
+sum=delta<<5 ;
+                       /* start cycle */
+while (n-->0) {
+    z-= (y<<4)+k[2] ^ y+sum ^ (y>>5)+k[3] ;
+    y-= (z<<4)+k[0] ^ z+sum ^ (z>>5)+k[1] ;
+   sum-=delta ;  }
+                       /* end cycle */
+v[0]=y ; v[1]=z ;  }
+
+Details on how TEA works is at:
+http://www.cl.cam.ac.uk/ftp/papers/djw-rmn/djw-rmn-tea.html
+))
+

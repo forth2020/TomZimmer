@@ -1,0 +1,503 @@
+\ processor-independent part of kernel
+
+dynamic
+HIDDEN DEFINITIONS  temp-tokens
+variable CON$PTR                                c( pointer for virtual console)
+CORE DEFINITIONS  main-tokens
+
+: _CLS          ( -- )   con$ptr off ;  c( clears virtual console screen)
+: _EMIT         ( c -- )                c( output to the virtual console)
+                pause           \ put a pause in all EMITs, even this one
+                con$ 1- -rot  con$ptr @ + c!    \ store char
+                con$ptr @ 1+ min  con$ptr ! ;
+
+variable BASE   c( radix for number conversion) \ 2..36 is valid
+variable HLD    c( pointer for numeric conversion)
+variable STATE  c( T if compile, F if interpret)
+
+defer CLS       ( -- ) ' _CLS  is CLS           c( clear screen)
+defer DOORPAUSE ( -- )                          c( backdoor debugger hook )
+
+
+: VCON$         ( -- a len )                    c( virtual console output data)
+                con$ con$ptr @ umin ;
+low-tokens
+defer EMIT      ( char -- )     ' _EMIT is EMIT c( output a character)
+
+HIDDEN DEFINITIONS  temp-tokens
+: _TYPE         ( addr len -- )                 c( output a string via EMIT)
+                >r
+        multi   count emit
+        repeat  r>drop drop ;
+
+CORE DEFINITIONS  low-tokens
+defer TYPE      ( addr len -- ) ' _TYPE is TYPE c( output a string)
+
+: EMITS         ( n char -- )                   c( output repeated characters)
+                swap >r
+        multi   dup emit
+        repeat  r>drop drop ;
+
+main-tokens
+84 string PAD$  c( scratchpad/conversion area)  \ 84-byte minimum
+: $TYPE  ( $addr -- ) count type ;              c( output a counted string)
+low-tokens
+: CR     ( -- )   13 emit 10 emit ;             c( new line on the console)
+: NUMPAD ( -- addr ) pad$ + ; datatype cell     c( -> numeric conversion area)
+: PAD    ( -- addr ) pad$ drop ; datatype cell  c( address of scratchpad area)
+: <#     ( -- )   numpad hld ! ;                c( start pictured numeric output)
+: HOLD   ( char -- ) hld @ 1- dup hld ! c! ;    c( insert character into number)
+: #      ( ud1 -- ud2 ) base @ mu/mod rot >digit hold ; c( convert one digit)
+: #S     ( ud -- 0 ) begin # 2dup d0<> while repeat ; c( convert remaining digits)
+: SIGN   ( x -- ) 0< if [char] - hold then ;    c( insert minus sign if n<0)
+: #>     ( ud -- addr len ) 2drop hld @ numpad over - ; c( finish pictured numeric output)
+: SPACE  ( -- )   bl emit ;                     c( emit a blank)
+: SPACES ( x -- ) bl emits ;                    c( emit blanks)
+: TYPE.  ( addr len -- ) type space ;           c( type string and space)
+
+: ,"            ( -- )                          c( copy string to dictionary)
+\ Lay a counted incoming string to the dictionary.
+                egetch dup>r c,                 \ byte count
+        multi   egetch c,                       \ actual string
+        repeat  r>drop ;
+
+HIDDEN DEFINITIONS  temp-tokens
+
+ variable evaluating                            c( T if evaluator is enabled)
+2variable xtpatch                               c( xt,addr of last definition)
+
+: (number)      ( n -- ? )                      c( compile or push a literal)
+                state on?  if ,lit then ;       \ depending on state
+
+: (.rj)         ( a sublength fieldwidth -- a ) c( right justify numeric data)
+\ keep data in tn the conversion area
+                swap - 0max       ( a w-n )
+                tuck - dup rot    ( a'a'm )
+                blank ;
+
+: setheader     ( c a -- )                      c( set bits in a program char)
+                tuck c@p or swap c!p ;
+
+: datablock,    ( -- )                          c( copy counted string to dictionary)
+                ram here ,lit ram
+                ,"  rom ;
+
+: datablock     ( -- a )                        c( copy counted string to pad$)
+                egetch >r pad r@ lay            \ byte count    ( n a )
+        multi   egetch lay
+        repeat  r>drop drop pad ;
+
+: (array)       ( n <xt> -- 'data )             c( compile code for array of bytes)
+                ,header! ram align here         \ -> data space ( n a )
+                tuck over allot  swap erase     \ allocate space and clear it
+                ,lit ;
+
+: (marker)      ( romhere ramhere -- )          c( reset the dictionary pointers)
+                ram org  rom org  ;
+
+variable databound0      c( lower bound of user memory)
+
+CORE DEFINITIONS  low-tokens
+
+: (U.)          ( u -- a len )        0  <# #s #> ;
+               c( convert unsigned to string)
+: (.)           ( n -- a len )        dup abs 0 <# #s  rot sign  #> ;
+               c( convert signed to string)
+: (UD.)         ( ud -- a len )       <# #s #> ;
+               c( conv unsigned double to string)
+: (D.)          ( d -- a len )        tuck dabs <# #s rot sign #> ;
+               c( convert signed double to string)
+: .             ( x -- )              (.) type. ;
+               c( display signed to output device)
+main-tokens
+: (.R)          ( n width -- a len )  >r (.)  r@ (.rj) r> ;
+               c( signed to string right justify)
+: (U.R)         ( n width -- a len )  >r (u.) r@ (.rj) r> ;
+               c( unsigned to string rt justify)
+
+: (LIT32)       ( <l> -- )
+               c( compile 32-bit literal)
+                egetch16 egetch16 swap word-join (number) ; IMMEDIATE
+low-tokens
+: (LIT8)        ( <c> -- )      egetch c>n (number) ;       IMMEDIATE
+               c( compile signed 8-bit literal)
+: (LIT16)       ( <w> -- )      egetch16 w>n (number) ;     IMMEDIATE
+               c( compile signed 16-bit literal)
+
+: LITERAL       ( n -- )        ,lit ;                      IMMEDIATE
+c( compile code for a literal) \ pop from stack at compile time
+
+: [             ( -- ) state off ; IMMEDIATE    c( enter interpretive state)
+: ]             ( -- ) state on ;               c( enter compiling state)
+
+: CONSTANT      ( x <xt> -- ) ,header! ,lit ,exit ;     c( compile code for a constant)
+\ <xt> returns ( -- x )
+: 2CONSTANT     ( d <xt> -- ) ,header! swap ,lit ,lit ,exit ; c( compile code for double constant)
+\ <xt> returns ( -- d )
+: ARRAY         ( x <xt> -- ) (array) ,exit ;           c( compile code for array of bytes)
+\ <xt> returns ( -- addr )
+: STRING        ( x <xt> -- ) dup (array) ,lit ,exit ;  c( compile code for array of bytes)
+\ <xt> returns ( -- addr len )
+: VARIABLE      ( <xt> -- )   cell array ;              c( compile code for cell variable)
+\ <xt> returns ( -- addr )
+: 2VARIABLE     ( <xt> -- )   2 cells array ;           c( compile code for double variable)
+\ <xt> returns ( -- addr )
+
+: VALUE         ( x <xt> -- )                   c( compile code for a value)
+\ <xt> returns ( -- x )
+                ram align here cell (array) !   \ store in data space
+                [COMPILE] (%TO@) ,exit ;
+
+: :             ( <xt> -- )                     c( start a colon definition)
+\ Object code for the definition is compiled into the dictionary.
+\ Semicolon binds this definition to the XT's table entry.
+                ,header
+                here swap xtpatch 2! ] ;        \ save for ;
+
+: ;             ( -- )                          c( end a colon definition)
+\ Also link this definition into the binding table.
+                ,exit xtpatch 2@ dup
+        if      bind!                           \ : definition
+        else    drop                            \ :noname definition
+        then    state off ;                     IMMEDIATE
+
+: :NONAME       ( -- cfa )                      c( start a headerless definition)
+\ ** Warning **: This returns a static address, not an xt.
+\ Not ANS compilant: you must use EXECUTECFA to execute the cfa.
+                rom align here 0 xtpatch 2! ] ; \ xt=0, ; recognizes as :noname
+
+: RECURSE       ( -- )                          c( compile static call to this word)
+                xtpatch cell+ @ ,call ;         IMMEDIATE
+
+\ -------------------- Structured Conditionals --------------------
+
+: AHEAD         ( -- addr )  >MARK ;     IMMEDIATE  c( compile code for AHEAD)
+: IF            ( -- addr )  >0MARK ;    IMMEDIATE  c( compile code for IF)
+: THEN          ( addr -- )  >RESOLVE ;  IMMEDIATE  c( compile code for THEN)
+: ENDIF         ( addr -- )  >RESOLVE ;  IMMEDIATE  c( compile code for ENDIF)
+: ELSE          ( addr -- addr' )                   c( compile code for ELSE)
+                >MARK  SWAP  >RESOLVE ;  IMMEDIATE
+: BEGIN         ( -- addr )  <MARK ;     IMMEDIATE  c( compile code for BEGIN)
+: UNTIL         ( addr -- )  <0RESOLVE ; IMMEDIATE  c( compile code for UNTIL)
+: AGAIN         ( addr -- )  <RESOLVE ;  IMMEDIATE  c( compile code for AGAIN)
+: WHILE         ( addr -- addr' )                   c( compile code for WHILE)
+                >0MARK SWAP ;            IMMEDIATE
+: REPEAT        ( addr addr -- )                    c( compile code for REPEAT)
+                <RESOLVE >RESOLVE ;      IMMEDIATE
+: DO            ( -- addr1 addr2 )                  c( compile code for DO)
+                [COMPILE] (%DO)  >MARK <MARK ;  IMMEDIATE
+: ?DO           ( -- addr1 addr2 )                  c( compile code for ?DO)
+                [COMPILE] (%?DO) >MARK <MARK ;  IMMEDIATE
+: LOOP          ( addr1 addr2 -- )                  c( compile code for )
+                [COMPILE] (%LOOP)
+                <RESOLVE  >RESOLVE ;            IMMEDIATE
+: +LOOP         ( addr1 addr2 -- )                  c( compile code for +LOOP)
+                [COMPILE] (%+LOOP)
+                <RESOLVE  >RESOLVE ;            IMMEDIATE
+
+\ -------------------- Eaker CASE statement --------------------
+
+: CASE          ( -- 0 )                        c( compile code for CASE)
+                0 ;                                     IMMEDIATE
+: OF            ( ... -- ... a )                c( compile code for OF)
+                [COMPILE] (%OF)  >MARK ;                IMMEDIATE
+: ENDOF         ( a -- a' )                     c( compile code for ENDOF)
+                >MARK SWAP >RESOLVE ;                   IMMEDIATE
+: ENDCASE       ( ... -- )                      c( compile code for ENDCASE)
+                [COMPILE] DROP
+                BEGIN ?DUP WHILE >RESOLVE REPEAT ;      IMMEDIATE
+
+: ."            ( <string> -- )                 c( compile a string to type)
+                state on?
+        if      datablock,
+                [COMPILE] $TYPE
+        else    datablock $type
+        then    ;                                       IMMEDIATE
+
+: C"            ( <string> -- )                 c( compile string, returns addr)
+                state on?
+        if      datablock,
+        else    datablock
+        then    ;                                       IMMEDIATE
+
+: S"            ( <string> -- )                 c( compile string, returns a,len)
+                state on?
+        if      datablock,
+                [COMPILE] COUNT
+        else    datablock count
+        then    ;                                       IMMEDIATE
+
+: '             ( <xt> -- )    lifttoken ;      c( gets xt from the input stream)
+: [']           ( n -- ) lifttoken ,lit ; IMMEDIATE c( compiles XT as a literal)
+: CHAR          ( <char> -- )  egetch ;         c( gets char from the input stream)
+: EXIT          ( -- )        ,exit ; IMMEDIATE c( compile an exit )
+
+: CODE          ( <c><xt><length16><data> -- )  c( create a header for raw code)
+\ creates a header with no code attached to it, if the CPU type matches
+                egetch
+                dup cputype =  swap 0= or       ( c f )
+        if      ,header!
+        else    lifttoken 2drop         \ consume <xt>
+        then    egetch16 >R             \ get length16
+        multi   egetch c,
+        repeat  r>drop ;
+
+\ At this point, token# must not have gone beyond 0xFF.
+{{ token# 0xFF > }} [IF] {{ cr .( Warning: too many low tokens) }} [THEN]
+
+0x0FF >token#   \ last token in low-tokens
+
+: END           ( -- )                          c( terminates the evaluator)
+                evaluating off ;                        IMMEDIATE
+
+main-tokens     \ resume definition of main tokens
+
+: RETRY         ( -- )                          c( compile static jump to this word)
+\ Wil Baden invented RETRY, which jumps back to the beginning of a word.
+                >MARK  here xtpatch cell+ @ org  ( a here )
+                swap >RESOLVE org ;             IMMEDIATE
+
+: #IF#          ( f -- )                        c( skip forward if zero)
+\ Used to conditionally evaluate incoming bytecode.
+                egetch16 swap 0=
+        if      >r
+                multi   egetch drop
+                repeat  r>
+        then    drop ;
+
+: NOOP          ( -- )  ;                       c( does nothing)
+: HEX           ( -- )    16 base ! ;           c( use base 16 for numeric output)
+: DECIMAL       ( -- )    10 base ! ;           c( use base 10 for numeric output)
+
+: UD*           ( ud1 u -- ud2 )                c( unsigned 32*16 -> 32 multiply)
+                dup >r um* drop  swap r> um* rot + ;
+
+: >NUMBER       ( ud addr len -- ud' addr' len' )
+c( convert string to a number)
+        begin   dup
+        while   over c@ base @ digit 0=
+                if drop exit then
+                >r 2swap base @ ud*
+                r> 0 d+ 2swap
+                1 /string
+        repeat  ;
+
+: IMMEDIATE     ( -- )    2 last @ setheader ;  c( set IMMEDIATE bit of header)
+: CALL-ONLY     ( -- )    1 last @ setheader ;  c( set CALL-ONLY bit of header)
+: MACRO         ( -- )    4 last @ setheader ;  c( set MACRO bit of header)
+
+: ABORT         ( -- )                          c( terminate evaluator input)
+                evaluating off
+                state off  decimal
+                clear  ;                \ clear data stack
+
+: TO            ( n <xt> -- )                   c( prefix store to a VALUE)
+\ compile: ( <xt> -- )  *** STATE SMART ***
+                lifttoken  state on?
+        if      ,lit
+                [COMPILE] (%TO)
+        else    (%TO)
+        then    ;                       IMMEDIATE
+
+: <EVAL         ( addr -- )     drop ;          c( set start address for evaluator)
+: EVAL>         ( -- c )     0 ; ( return ior ) c( terminate evaluator input)
+
+
+HIDDEN DEFINITIONS  temp-tokens  \ ========================================
+
+variable datamemptr                     c( next memory byte for evaluator)
+
+: DM@           ( -- c )        datamemptr B@@+ ;       c( read next data memory byte)
+: PM@           ( -- c )        datamemptr B@@+P ;      c( read next program memory byte)
+: <DM@          ( a -- )        datamemptr ! ;          c( set start address of DM read)
+: DM@>          ( -- c )        DM@ ;                   c( read last data memory byte)
+: PM@>          ( -- c )        PM@ ;                   c( read last program memory byte)
+
+CORE DEFINITIONS    main-tokens  \ ========================================
+
+: MARKER        ( <xt> -- )                     c( create a marker that resets HERE)
+\ Compile code to reset 'here to previous value
+                rom here ,header! ,lit          \ runtime gets the old HERE
+                ram here rom      ,lit
+                [compile] (marker)
+                ,exit ;
+
+: [COMPILE]     ( <xt> -- )                     c( compiles code to compile a def)
+\ The created code compiles a call to xt at run time.
+                lifttoken ,lit
+                [compile] ,bcall
+                ; IMMEDIATE
+
+: COMPILE,      ( xt -- )                       c( compile xt into the definition)
+\ Compiles a call into the binding table except when:
+\ 1. The word is inlineable (it's macro bit is set)
+\ 2. The XT is the same as that of the definition being built.
+\    To avoid accidental recursion, we bypass the binding table
+\    with a direct call.
+                dup xt>header 04 and    \ macro flag set?
+        if      bind@ ,macro            \ copy in-line code
+        else    dup xtpatch @ =         \ same xt as this definition?
+                if      ,ccall          \ call to CFA (not bound)
+                else    ,bcall          \ call to binding table
+                then
+        then    ;
+
+: POSTPONE      ( <xt> -- )                     c( compile next token in stream)
+                lifttoken dup xt>header 02 and
+        if      compile,
+        else    ,lit
+                [compile] ,bcall
+        then    ;                               IMMEDIATE
+
+: RELATIVE      ( -- )                          c( reset base for relative tokens)
+                maxtoken @ 1+ tokenbase ! ;
+
+: EVAL          ( -- )
+c( evaluate the input stream) \ until 0x000000 or END is encountered
+                evaluating on
+        begin   lifttoken dup
+                if      dup xt>header           ( xt hdr )
+                        state off?              \ interpret mode
+                        (swap2andor)            \ or immediate word
+                        if      execute         \ execute immediately
+                        else    compile,
+                        then
+                else    drop evaluating off     \ zero token# encountered
+                then
+                pause
+                evaluating off?
+        until   ;
+
+: EVALUATE      ( addr -- ior )                 c( evaluate a block of input)
+\ test checksum before loading
+\ ior: 0 = ok, 1000 = bad checksum, 1001 = bad header,
+\ other = stack changed
+                dup <eval               \ set start address
+                egetch16 0x07C9 =
+        if      egetch16                \ get checksum
+                egetch egetch16 swap word-join \ and length
+                >r 0                    ( a csum 0 )
+                multi   egetch +        \ egetch should PAUSE if it's a time hog
+                repeat r>drop
+                0xFFFF and =            \ checksum ok?
+                if      eval> drop
+                        7 +  <eval      \ skip header information
+                        depth >r
+                        relative        \ reset relative xt base
+                        state off       \ interpret mode
+                        eval            \ evaluate block of bytecode
+                        depth r> -      \ amount of stack change
+                else    drop 1000
+                then
+        else
+                drop 1001               \ header doesn't match
+        then    eval> drop ;
+
+HIDDEN DEFINITIONS  temp-tokens  \ ========================================
+
+: <EVAL>        ( -- )                          c( evaluate without error check)
+                <EVAL EVAL EVAL> DROP ;
+
+CORE DEFINITIONS    main-tokens  \ ========================================
+
+: EVAL=MEM      ( -- )                          c( set up to evaluate from memory)
+                ['] dm@  is egetch              \ input device = data memory
+                ['] <dm@ is <eval
+                ['] dm@> is eval>  ;
+
+: EVAL=CODE     ( -- )                          c( set up to evaluate program mem)
+                eval=mem
+                ['] pm@  is egetch              \ input device = code memory
+                ['] <dm@ is <eval
+                ['] pm@> is eval>  ;
+
+: EMPTY         ( -- )                          c( empty the user dictionary)
+                [ {{ code-bounds? drop }} ]  literal databound0 @ (marker) ;
+
+: MAINEVENT     ( -- )  ;                       c( called forever in a loop)
+
+: _UNINIT       ( -- )                          c( report call to uninitialized xt)
+                6 ." Execution of uninitialized XT, Ret =" cr
+        begin   ?dup
+        while   1- r@ (u.) type. r> swap
+        repeat  6 cr
+        begin   ?dup
+        while   1- swap >r
+        repeat  reboot ;
+
+' _uninit is uninitialized
+
+static
+
+: NEWBINDINGS   ( addr -- )
+c( initialize binding table) \ using values in ROM table at addr
+\ table is in program space, format is [n,data[0]..data[n-1]] all cells
+                p@+ dup>r maxtoken !  0 swap ( idx a | cnt )
+        multi   watchdog+ p@+ pluck bind!
+                under1+
+                watchdog-       \ keep watchdog from timing out
+        repeat  r>drop 2drop ;
+
+: NEWVALUES     ( addr -- )
+c( initialize data space table) \ using values in ROM table at addr
+\ table is in program space, format is dest,R,D,R,D,...,R,D,0  (reps,data)
+                p@+                     ( src dest )
+        begin   >r p@+ r> over          ( s' reps d . )
+        while   >r >r p@+ r>            ( s' data reps | d )
+                begin   dup
+                while   1- over !R+     \ fill reps cells
+                repeat  2drop r>
+        repeat  3drop ;
+
+: SYSINIT       ( -- ) ;                        c( Initialize drivers)
+
+dynamic
+
+\ * * * * * * * * *   T I M E R   F U N C T I O N S   * * * * * * * * * * * *
+
+: TICKS         ( d -- )                c( make time delay, timer ticks)
+\ Invokes PAUSE for the double-cell number of timebase ticks.
+                counter@ d+                     ( endtime )
+        begin   pause
+                2dup counter@ counter<          \ time elapsed
+        until   2drop ;
+
+HIDDEN DEFINITIONS  temp-tokens  \ ========================================
+
+: ms>ticks      ( d -- rem d' )         c( convert Dmsec to Dticks)
+                0 swap CTRscale mu/mod ;  \ ms --> ticks
+
+CORE DEFINITIONS    main-tokens  \ ========================================
+
+: MS            ( u -- )                c( make time delay, milliseconds)
+\ Invokes PAUSE until the desired number of milliseconds
+\ has elapsed.  For better performance, use TICKS.
+                ms>ticks ticks drop ;   \ would be better to COUNTER@ before MU/MOD
+
+: PREMATURE?    ( addr -- f )           c( tests a timer for timeout)
+\ Compares a variable against the present time,
+\ returns F and clears it if it has timed out.
+\ Uses double variable: mark|threshold
+                dup 2@ +                ( a threshold+mark )
+                counter@ drop tuck -    ( a ctr thr-ctr )
+                0<
+        if      swap ! false            \ set a new time marker
+        else    2drop  true             \ too early
+        then    ;
+
+: CALTIMER      ( addr msec -- )        c( calibrates a short timer)
+\ Run this at startup to calibrate timers
+                ms>ticks drop nip       \ threshold
+                counter@ drop           \ mark
+                rot 2! ;
+
+
+
+only definitions
+{{ vocabulary system  }}        \ for system peripherals, etc.
+{{ vocabulary app    }}         \ for user application
+also core also system also app also
+core definitions
+\ order: CORE SYSTEM APP CORE | CORE
+
+

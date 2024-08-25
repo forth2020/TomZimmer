@@ -1,0 +1,616 @@
+\ Backdoor monitor, bootup and interrupt vector resolution
+
+building hex
+static
+
+ALSO HIDDEN DEFINITIONS temp-tokens
+
+pcreate ROMvalues   values,             \ resolve value initialization table
+                                        \ RAM after this point is uninitialized
+ram align
+here asmlabel DoorRegisters  40 allot   \ hardware register image D0-D7/A0-A7
+asmword _doorSR
+asmword _doorSR+2                       \                         SR
+asmlong _doorPC                         \                         PC
+asmlong _doorRS8  1C allot              \ 8 cells of stack storage at exception
+asmlong _doorBRK                        \ debugger breakpoint
+asmlong DoorPROPC                       \ profiler grabbed PC
+asmlong _doordata                       \ P     register address 050
+asmlong _dooraddr                       \ A
+asmlong _doortemp
+asmlong _bootcode                       \ special bootup value
+asmlong _doorTID  20 allot              \ task control block for debugger
+100 allot                               \ room for user variables
+asmlong _mainTID  20 allot              \ task control block for main program
+100 allot                               \ room for user variables
+ 80 allot here asmlabel DoorDstack      \ Backdoor data stack image
+ 80 allot here asmlabel DoorRstack      \ Backdoor return stack image
+  8 allot                               \ 2-cell buffer zone for a little safety
+{{ chiptype 5307 = }} [IF]
+{{  qrambase 100 +  dup }} asmlabel MainDstack  \ put stacks in quick RAM
+{{           100 +      }} asmlabel MainRstack
+[ELSE]
+    100 allot here asmlabel MainDstack
+    100 allot here asmlabel MainRstack
+[THEN]
+
+here constant databound00       c( low end of user's data space)
+rom
+
+pcreate ROMbindings bindings,           \ resolve binding initialization table
+
+400 >token#
+headers-off
+
+\ At this point, no further XTs will be available for binding.  They will
+\ be in the hidden wordlist but not in the initialization table.
+
+\ Backdoor monitor -------------------------------------------------------
+
+\ [1] available features bit assignments:
+\       b7 : T = single stepping is supported
+\       b6 : T = calling is supported
+\       b3 : memory endian-ness:   T = big endian
+\       b2 : register endian-ness: T = big endian
+
+rom here asmlabel b_$env
+\ environment header, always 16 bytes
+     {{ cellbits }} c,          \ cell size
+     {{ addrnibbles }} c,       \ nibbles in backdoor address
+        -6 c,                   \ cell size of binding table in bytes
+        0C8 c,                  \ available features                    [1]
+        03 c, {{ family }} c,   \ 68000 family
+     {{ xtalfreq word-split swap byte-split rot byte-split }}
+        c, c, c, c,             \ XTAL frequency in Hz.
+        0 c, 0 c,               \ user data
+        01 c, 01 c,             \ backdoor revision number
+     {{ charbits }} c,          \ bits per character
+        1B c,                   \ # of cell-wide parameters to follow
+\ system parameters, cell-wide values
+     {{ 0 FFFFFF bounds>na }} , , \ overall code memory address & length
+     {{ 0 01FF bounds>na }} , , \ overall register space address & length
+     {{ 0 FFFFFF bounds>na }} , , \ overall data memory address & length
+     {{ EEPROMpart 9 > }} [if] EEMAX [else] 0 [then]
+     {{ 0 swap bounds>na }} , , \ overall EEPROM address & length
+        asmlabel? MainDstack ,  \ base address of data stack
+        asmlabel? MainRstack ,  \ base address of return stack
+        34 ,                    \ location of data sp    = A5
+        3C ,                    \ location of return sp  = A7
+        0 ,                     \ location of CPU-specific special registers
+     {{ Code-Bounds? bounds>na }} , , \ user code memory address & length
+     {{ Data-Bounds? bounds>na }} , , \ user data memory address & length
+     {{ Code-Bounds? nip }} ,         \ binding table origin
+        dynamic
+        CFA VCON$ ,  CFA EXECUTE ,          \ anonymous host connection:
+        CFA CODEHERE ,  CFA EVAL=MEM ,      \ enables host/target interaction
+        CFA EVALUATE ,  CFA <EVAL> ,        \ without knowledge of token
+        CFA MAXTOKEN@ ,                     \ assignments.
+        static
+
+loco b_ack      ( OK )          moveq #25,d0  rts c;
+loco b_nack     ( ERROR )       moveq #52,d0  rts c;
+loco b_abd      ( AutoBaud )    moveq #-1,d0  rts c;
+
+loco b_bumpa    ( A0 := addr, bump addr )
+                movea.l _dooraddr,a0
+                addq.l #1,_dooraddr
+                rts c;
+
+loco b_address  ( set start address for byte operations )
+                move.l _doordata,d0
+                move.l d0,_dooraddr
+                goto b_ack
+                c;
+
+loco b_@reg     ( fetch from register space )
+                move.l _dooraddr,d0
+                movea.l #DoorRegisters,a0  adda.l d0,a0
+                move.b (a0),d0
+                addq.l #1,_dooraddr
+                rts c;
+
+loco b_!reg     ( store to register space )
+                move.l _dooraddr,d0   movea.l #DoorRegisters,a0
+                move.l _doordata,d1   adda.l d0,a0
+                move.b d1,(a0)
+                addq.l #1,_dooraddr  rts c;
+
+loco b_@env     ( fetch byte n of the environment string )
+                move.l _doordata,d0  andi.l #00FF,d0
+                movea.l #b_$env,a0
+                adda.l d0,a0  move.b (a0),d0
+                addq.l #1,_doordata  rts c;
+
+loco b_@data    ( fetch byte from code/data space )
+                movea.l _dooraddr,a0   move.b (a0)+,d0
+                move.l a0,_dooraddr    rts c;
+
+loco b_!data    ( store byte to code/data space )
+                call b_bumpa  move.l _doordata,d0
+                move.b d0,(a0)  rts c;
+
+loco b_n?        ( send lower byte of n )
+                move.l _doordata,d0  move.l d0,d1
+                lsr.l #8,d1  move.l d1,_doordata  rts c;
+
+loco b_pc@       ( n = last grabbed PC )
+                move.l DoorPROPC,d0  move.l d0,_doordata  rts c;
+
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offsets:       -8    -4    0    4    8    0C       10     14...
+\ TP register points to -----^               ^-------- link points to status
+\ TID of a task points to its status --------^         of next task
+
+loco b_call     \ run function
+\ at this point, the return address to b_exec caller is on the return stack.
+\ we need to empty the return stack before this call
+                movea.l _doordata,a0
+                move.l (sp)+,_doortemp
+                jsr (a0)                        \ do the deed
+                move.l _doortemp,-(sp)
+                move.l _doordata,d0  rts c;
+
+loco b_depth    \ depths of virtual stacks
+                move.l (sp)+,a0
+                move.l #DoorDstack,d0  sub.l  s,d0  asr.l #2,d0
+                move.l #DoorRstack,d1  sub.l sp,d1  lsl.l #6,d1
+                andi.l #00FF,d0  andi.l #FF00,d1
+                or.l d1,d0  move.l d0,_doordata
+                call b_ack
+                jmp (a0) c;
+
+loco b_clear            \ clear virtual stacks
+                move.l (sp)+,a0
+                move.l #DoorDstack,d0  movea.l d0,s
+                move.l #DoorRstack,d0  movea.l d0,sp
+                call b_ack
+                jmp (a0) c;
+
+loco b_pushd            \ push n to door's data stack
+                T>S  move.l _doordata,tos
+                goto b_ack c;
+
+loco b_popd             \ pop n from data stack
+                move.l tos,_doordata  S>T
+                goto b_ack  c;
+
+loco b_pickd            \ pick n from data stack
+                move.l _doordata,d0
+                tst.l d0
+        if_eq   move.l tos,_doordata
+        else    subq.l #1,d0  lsl.l #2,d0
+                movea.l s,a0  adda.l d0,a0
+                move.l (a0),_doordata
+        then    goto b_ack  c;
+
+loco b_pickr            \ pick n from return stack
+                move.l _doordata,d0
+                lsl.l #2,d0   movea.l sp,a0  addq.l #4,a0
+                adda.l d0,a0  move.l (a0),_doordata
+                goto b_ack  c;
+
+{{ EEPROMpart }} [if]
+\ ======================= serial eeprom    =========================
+
+loco b_@EEstart ( start eeprom block read )
+        move.l tos,-(s)  move.l _doordata,tos
+        call <EE@  goto b_ack c;
+
+loco b_@EEnext          \ fetch next eeprom byte
+        call EE@   move.l tos,d0  move.l (s)+,tos  rts c;
+
+loco b_@EElast          \ fetch last eeprom byte
+        call EE@>  move.l tos,d0  move.l (s)+,tos  rts c;
+
+loco b_!EEstart         \ start eeprom block write
+        move.l tos,-(s)  move.l _doordata,tos
+        call <EE!  goto b_ack c;
+
+loco b_!EEnext          \ store next byte to eeprom
+        move.l tos,-(s)  move.l _doordata,tos
+        call EE!   goto b_ack c;
+
+loco b_!EElast          \ finish store, return result
+        call EE!>       \ perform the actual write, return IOR
+        move.l tos,d0  move.l (s)+,tos
+        tst.l d0
+        if_eq   goto b_ack
+        then    goto b_nack c;
+
+[else]
+loco b_@EEstart         goto b_ack  c;
+loco b_@EEnext          clr.l d0  rts c;
+loco b_@EElast          clr.l d0  rts c;
+loco b_!EEstart         goto b_ack  c;
+loco b_!EEnext          goto b_ack  c;
+loco b_!EElast          goto b_ack  c;
+[then]
+
+
+\ ====================================================================
+
+\ single step works as follows:
+\ 1. b_singlestep sets up a return stack frame to enable one instruction
+\ 2. RTE causes our instruction to execute and a trace exception commences
+\ 3. the trace ISR saves the new PC and modifies the return stack so that
+\    the trace ISR's RTE returns to the caller of b_singlestep
+
+loco b_ssaddr           \ set new trace address
+                move.l _doordata,d0  move.l d0,_doorPC
+                goto b_ack  c;
+
+loco b_ssbrkpt          \ set new breakpoint, return current trace address
+                move.l _doordata,d0  move.l d0,_doorBRK
+                move.l _doorPC,d0    move.l d0,_doordata
+                goto b_ack  c;
+
+{{ family 0 = }} [if]                                           \ 68000
+code b_singlestep
+                move.l _doorPC,-(sp)
+                move.w _doorSR+2,-(sp)  rte c;
+[then]
+{{ family 1 = }} [if]                                           \ CPU32
+code b_singlestep
+                move.l #0,-(sp)                 \ instruction address
+                move.w #2024,-(sp)              \ format for trace exception
+                move.l _doorPC,-(sp)
+                move.w _doorSR+2,-(sp)  rte c;
+[then]
+{{ family 2 = }} [if]                                           \ Coldfire
+code b_singlestep
+\ Set b15 of _doorSR before calling this. Trace ISR will
+\ find RA, PC and SR on the stack and will return to RA.
+                move.l _doorPC,-(sp)
+                move.l _doorSR,-(sp)  rte c;
+[then]
+
+loco b_step             \ perform single step n times, loads final PC to n
+\ DoorRegisters = d0...d7,a0...a7
+                move.l _doordata,d0  move.l d0,_dooraddr \ count
+                movea.l #DoorRegisters,a0
+                movem.l (a0),d0/d1/d2/d3/d4/d5/d6 \ assume tos = D7
+                addq.l #8,a0  addq.l #8,a0
+                addq.l #8,a0  addq.l #8,a0
+                move.l (a0)+,-(sp)
+                movem.l (a0),a1/a2/a3/a4     \ assume A5..A7 are Forth regs
+                movea.l (sp)+,a0
+       begin    tst.l _dooraddr
+       while_gt subq.l #1,_dooraddr
+                move.l _doorsr,d0  andi.l #3FFF,d0  ori.l #4024A000,d0
+                move.l d0,_doorSR
+                move.l DoorRegisters,d0  call b_singlestep
+                move.l d0,DoorRegisters
+       repeat   move.l a0,-(sp)
+                movea.l #DoorRegisters,a0
+                movem.l d0/d1/d2/d3/d4/d5/d6/d7,(a0)
+                addq.l #8,a0  addq.l #8,a0
+                addq.l #8,a0  addq.l #8,a0
+                move.l (sp)+,(a0)+
+                movem.l a1/a2/a3/a4/a5/a6,(a0)
+                move.l _doorPC,d0  move.l d0,_doordata
+                goto b_ack  c;
+
+loco b_run               \ step until address matches breakpoint
+                movea.l #DoorRegisters,a0
+                movem.l (a0),d0/d1/d2/d3/d4/d5/d6 \ assume tos = D7
+                addq.l #8,a0  addq.l #8,a0
+                addq.l #8,a0  addq.l #8,a0
+                move.l (a0)+,-(sp)
+                movem.l (a0),a1/a2/a3/a4     \ assume A5..A7 are Forth regs
+                movea.l (sp)+,a0
+       begin    move.l _doorsr,d0  andi.l #3FFF,d0  ori.l #4024A000,d0
+                move.l d0,_doorSR
+                move.l DoorRegisters,d0  call b_singlestep
+                move.l d0,DoorRegisters
+                move.l _doorPC,d0
+                cmp.l _doorBRK,d0
+       until_eq move.l a0,-(sp)
+                movea.l #DoorRegisters,a0
+                movem.l d0/d1/d2/d3/d4/d5/d6/d7,(a0)
+                addq.l #8,a0  addq.l #8,a0
+                addq.l #8,a0  addq.l #8,a0
+                move.l (sp)+,(a0)+
+                movem.l a1/a2/a3/a4/a5/a6,(a0)
+                move.l _doorPC,d0  move.l d0,_doordata
+                goto b_ack  c;
+
+\ ---------------------------------------------------------------------
+\ Execution table for backdoor command interpreter
+
+\ [3] performs b_nack if single stepping is not supported
+\ [4] performs b_nack if calling is not supported
+
+loco b_exectable
+        XBRA b_abd      \ E0    115200 autobaud response
+        XBRA b_n?       \  1    get low byte of P, P=P<<8
+        XBRA b_depth    \  2    P = returnstack_depth<<8 + datastackdepth   [4]
+        XBRA b_clear    \  3    clear backdoor stacks                       [4]
+        XBRA b_step     \  4    single step P machine cycles                [3]
+        XBRA b_run      \  5    single step until breakpoint                [3]
+        XBRA b_ssaddr   \  6    trace start address = P                     [3]
+        XBRA b_ssbrkpt  \  7    trace breakpoint = P                        [3]
+        XBRA b_pc@      \  8    P = last grabbed PC for crude profiling
+        XBRA b_address  \  9    A = P, return P
+        XBRA b_call     \  A    call function at address P                  [4]
+        XBRA b_@env     \  B    get byte P of environment string, P=P+1
+        XBRA b_@reg     \  C    get register_byte[A], A=A+1
+        XBRA b_@data    \  D    get     code_byte[A], A=A+1
+        XBRA b_@data    \  E    get     data_byte[A], A=A+1
+        XBRA b_!reg     \  F    register_byte[A] = P, A=A+1
+        XBRA b_!data    \ F0        code_byte[A] = P, A=A+1
+        XBRA b_!data    \  1        data_byte[A] = P, A=A+1
+        XBRA b_@eestart \  2    start EEPROM read sequence at P
+        XBRA b_@eenext  \  3    get next sequential EEPROM byte
+        XBRA b_@eelast  \  4    get last sequential EEPROM byte, end sequence
+        XBRA b_!eestart \  5    start EEPROM write sequence at P
+        XBRA b_!eenext  \  6    next sequential EEPROM byte = P
+        XBRA b_!eelast  \  7    next sequential EEPROM byte = P, end sequence
+        XBRA b_pushd    \  8    push P onto backdoor data stack             [4]
+        XBRA b_popd     \  9    pop P from backdoor data stack              [4]
+        XBRA b_pickd    \  A    pick P from backdoor data stack, depth P    [4]
+        XBRA b_pickr    \  B    pick P from backdoor return stack, depth P  [4]
+        XBRA b_abd      \  C    57600 autobaud response
+        XBRA b_nack     \  D    reserved
+        XBRA b_abd      \  E    38400 autobaud response
+        XBRA b_abd      \ FF    19200 autobaud response
+        c;
+
+loco b_exec     ( D0 -- D0 )
+\ execute command in D0, return result in D0,  d0/d1/a0/a1 may be trashed
+                andi.l #FF,d0
+                subi.l #C0,d0
+        if_mi   goto b_nack                     \ less than C0 = invalid
+        then    move.l d0,d1
+                subi.l #20,d1
+        if_ge   move.l #b_exectable,a0          \ E0..FF (20..3F)
+                andi.l #1F,d0  lsl.l #2,d0
+                adda.l d0,a0   jmp (a0)
+        then    move.l d0,d1
+                andi.l #F0,d1
+        if_eq   andi.l #0F,d0                   \ C0..CF
+                move.l _doordata,d1  lsl.l #4,d1
+                or.l d1,d0  move.l d0,_doordata  rts
+        then    goto b_nack c;
+
+        0 c, 0 c,
+
+{{ chiptype 5307 = }}   [IF]
+code b_doorpoll
+\ Background debugger task: process character from UART2 if one is present.
+                call b_clear
+        begin   call watchdog+                  \ this task turns on watchdog
+                move.b USR2,d0  lsr.l #1,d0     \ bit, main task turns it off
+        if_cs   move.b URB2,d0  call b_exec     \ d0 -> d0
+                move.b d0,UTB2
+        then    call pause
+        again   c;      [THEN]
+
+{{ chiptype 68332 = chiptype 68331 = or }}  [IF]
+code b_doorpoll
+\ Background debugger task: process character from UART if one is present.
+                call b_clear
+        begin   call watchdog+                  \ this task turns on watchdog
+                move.w SCSR,d0  andi.l #40,d0   \ bit, main task turns it off
+        if_ne   move.w SCDR,d0  call b_exec     \ d0 -> d0
+                andi.l #FF,d0
+                move.w d0,SCDR
+        then    call pause
+        again   c;      [THEN]
+
+
+\ *****************************************************************************
+\ **********      E V A L   B O A R D   S T A R T U P   C O D E      **********
+\ *****************************************************************************
+
+{{ ROMbase 4 + >@@0  FinalVectors >@@1 }}
+
+                0 c, 0 c,
+code premain    ( -- )
+\ Reload exception vectors into RAM upon startup. We assume that these vectors
+\ will be in RAM since the hardware necessary to map them there is trivial.
+                movea.l #@@0,a0                 \ Load exception vectors
+                movea.l #@@1,a1  move.l #100,d0
+                move.l a1,d1  movec d1,VBR      \ set VBR
+                begin   move.l (a0)+,(a1)+
+                        subq.l #1,d0
+                until_eq
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offsets:       -8    -4    0    4    8    0C       10     14...
+\ set up main TCB and door TCB, start out in main task
+                movea.l #_mainTID,a0            \ set up main task
+                move.l s,(a0)+
+                move.l sp,(a0)+
+                movea.l a0,tp
+                addq.l #4,a0  addq.l #8,a0
+                move.l a0,d1  moveq #-1,tos     \ d1 -> this status
+                move.l tos,(a0)+                \ mark as active
+                movea.l #_doorTID,a1            \ make sure door TCB is set up
+                move.l #DoorDstack,d0  move.l d0,(a1)+
+                move.l #DoorRstack,d0  move.l d0,(a1)+
+                move.l #b_doorpoll,(a1)+        \ pc = debugger
+                move.l #DoorDstack,(a1)+
+                move.l #DoorRstack,(a1)+
+                move.l a1,d0  moveq #-1,d2      \ -> this status
+                move.l d2,(a1)+                 \ mark as active
+                move.l d1,(a1)+                 \ door -> main
+                move.l d0,(a0)+                 \ main -> door
+                move.w #2000,sr                 \ allow interrupts
+                rts c;
+
+                0 c, 0 c,
+code bootcode@  ( -- a n )              c( get special reset code)
+\ An abnormal exception saves a magic number in RAM and reboots. Upon startup,
+\ this RAM location is checked to see if the last reset was caused by an error.
+\ a -> captured register list  n: 0=none, 1..32
+                T>S  move.l #DoorRegisters,tos
+                T>S
+                move.l _bootcode,tos  move.l tos,d0
+                andi.l #FFFFFFE0,tos  move.l #3C519780,d1
+                eor.l  d1,tos  seq tos  extT   \ tos = -1 if valid value
+                andi.l #1F,d0  addq.l #1,d0  and.l d0,tos
+                clr.l  _bootcode
+                next c;
+
+: main          ( -- )                  c( startup code)
+                premain
+                ROMvalues newvalues             \ initialize values
+                ROMbindings newbindings         \ initialize bindings
+                ['] pause        ['] mainevent rebind
+                databound00 databound0 !
+                ROM decimal empty
+                bootcode@ StartMain dup
+                [dynamic]
+        if      .booterror                      \ report cause of reboot, if any
+        else    2drop
+        then
+        begin   mainevent pause watchdog-       \ main loop (turns off wdog bit)
+        again   [static] ;
+
+
+\ *****************************************************************************
+\ **********      C O L D   S T A R T   C O D E                      **********
+\ *****************************************************************************
+
+{{ chiptype 5307 = }}  [IF]      \ Coldfire 5307
+{{ standalone }} #if     include cold5307.fcf
+                 #else   include warm5307.fcf
+                 #then [THEN]
+
+{{ chiptype 68330 68360 between }} [IF]      \ basic 683XX startup
+{{ standalone }} #if     include cold332.fcf
+                 #else   include warm332.fcf
+                 #then [THEN]
+
+                       here
+{{ standalone 0= }}    [IF]     \ demo needs jump to start of executable code
+{{ RomBase 2 + }}      org
+CFA COLD {{ ROMbase - 2 - byte-split }} c, c, \ resolve BRA COLD
+                       org
+                       [THEN]
+
+\ *****************************************************************************
+\ **********      E X C E P T I O N   V E C T O R S                  **********
+\ *****************************************************************************
+
+{{ family 2 = }} [if]
+code -Timebase                          c( Timebase ISR )
+\ bump the raw timebase counter
+                move.l d0,-(sp)
+                moveq #3,d0  move.b d0,TER1  \ clear interrupt pending
+                addq.l #1,RawCounter
+                move.l (sp)+,d0
+                rte c;
+[else]
+code -Timebase                          c( Timebase ISR )
+\ bump the raw timebase counter
+                addq.l #1,RawCounter    \ plain 68K version
+                rte c;
+[then]
+
+{{ family 0 = }} [if]   \ 68000:        stack = ... 'sstep.32 PC.32 SR.16
+code -Trace                             c( Trace Exception for Debugger)
+                move.w (sp)+,_doorSR+2  move.l (sp)+,_doorPC
+                rts c;
+[then]
+{{ family 1 = }} [if]   \ CPU32:        stack = ... 'sstep.32 fmt.16 PC.32 SR.16
+code -Trace                             c( Trace Exception for Debugger)
+                move.w (sp)+,_doorSR+2  move.l (sp)+,_doorPC
+                addq.l #6,sp            \ discard format and other data
+                rts c;
+[then]
+{{ family 2 = }} [if]   \ Coldfire:     stack = ... 'sstep.32 PC.32 SR.32
+code -Trace                             c( Trace Exception for Debugger)
+                move.l (sp)+,_doorSR  move.l (sp)+,_doorPC
+                rts c;
+[then]
+
+code -Unimplemented     move.l #3C519780,d0  move.l d0,_bootcode  goto Cold  c;
+code -BusError          move.l #3C519781,d0  move.l d0,_bootcode  goto Cold  c;
+code -AddrError         move.l #3C519782,d0  move.l d0,_bootcode  goto Cold  c;
+code -Illegal           move.l #3C519783,d0  move.l d0,_bootcode  goto Cold  c;
+code -ZeroDivide        move.l #3C519784,d0  move.l d0,_bootcode  goto Cold  c;
+code -CHKtrap           move.l #3C519785,d0  move.l d0,_bootcode  goto Cold  c;
+code -TRAPtrap          move.l #3C519786,d0  move.l d0,_bootcode  goto Cold  c;
+code -Privilege         move.l #3C519787,d0  move.l d0,_bootcode  goto Cold  c;
+code -LineA             move.l #3C519788,d0  move.l d0,_bootcode  goto Cold  c;
+code -LineF             move.l #3C519789,d0  move.l d0,_bootcode  goto Cold  c;
+code -HardwareBreak     move.l #3C51978A,d0  move.l d0,_bootcode  goto Cold  c;
+code -Coprocessor       move.l #3C51978B,d0  move.l d0,_bootcode  goto Cold  c;
+code -FormatError       move.l #3C51978C,d0  move.l d0,_bootcode  goto Cold  c;
+code -Uninitialized     move.l #3C51978D,d0  move.l d0,_bootcode  goto Cold  c;
+code -SpuriousInt       move.l #3C51978E,d0  move.l d0,_bootcode  goto Cold  c;
+code -Reserved          move.l #3C51978F,d0  move.l d0,_bootcode  goto Cold  c;
+
+code -Trap00     rte c;
+code -Trap01     rte c;
+code -Trap02     rte c;
+code -Trap03     rte c;
+code -Trap04     rte c;
+code -Trap05     rte c;
+code -Trap06     rte c;
+code -Trap07     rte c;
+code -Trap08     rte c;
+code -Trap09     rte c;
+code -Trap10     rte c;
+code -Trap11     rte c;
+code -Trap12     rte c;
+code -Trap13     rte c;
+code -Trap14     rte c;
+code -Trap15     rte c;
+
+\ Vectors are placed in bottom 1K of ROM
+\ Non-Standalone version: Vectors are pushed up 4 butes by BRA COLD
+
+                here
+                {{ RomBase standalone 0= }} [IF] {{ 4 + }} [THEN] org
+                asmlabel? MainRstack ,  \ initial SP
+                CFA COLD ,              \ initial PC
+                CFA -BusError ,         \ Bus Error
+                CFA -AddrError ,        \ Address Error
+                CFA -Illegal ,          \ Invalid Instruction
+                CFA -ZeroDivide ,       \ Division by zero (reserved on CF)
+                CFA -CHKtrap ,          \ CHK, CHK2        (reserved on CF)
+                CFA -TRAPtrap ,         \ TRAPcc, TRAPV    (reserved on CF)
+                CFA -Privilege ,        \ Privilege Violation
+                CFA -Trace ,            \ Trace
+                CFA -LineA ,            \ Line A emulation
+                CFA -LineF ,            \ Line F emulation
+                CFA -HardwareBreak ,    \ Hardware Breakpoint
+                CFA -Coprocessor ,      \ Coprocessor Violation (reserved on CF)
+                CFA -FormatError ,      \ Format Error
+                CFA -Uninitialized ,    \ Uninitialized Interrupt
+                CFA -Reserved , CFA -Reserved , CFA -Reserved , CFA -Reserved ,
+                CFA -Reserved , CFA -Reserved , CFA -Reserved , CFA -Reserved ,
+                CFA -SpuriousInt ,      \ Spurious Interrupt
+                CFA -Timebase ,         \ Level 1 autovector
+                CFA -Unimplemented ,    \ Level 2 autovector
+                CFA -Unimplemented ,    \ Level 3 autovector
+                CFA -Unimplemented ,    \ Level 4 autovector
+                CFA -Unimplemented ,    \ Level 5 autovector
+                CFA -Unimplemented ,    \ Level 6 autovector
+                CFA -Unimplemented ,    \ Level 7 autovector
+                CFA -Trap00 ,           \ Trap  0 instruction
+                CFA -Trap01 ,           \ Trap  1 instruction
+                CFA -Trap02 ,           \ Trap  2 instruction
+                CFA -Trap03 ,           \ Trap  3 instruction
+                CFA -Trap04 ,           \ Trap  4 instruction
+                CFA -Trap05 ,           \ Trap  5 instruction
+                CFA -Trap06 ,           \ Trap  6 instruction
+                CFA -Trap07 ,           \ Trap  7 instruction
+                CFA -Trap08 ,           \ Trap  8 instruction
+                CFA -Trap09 ,           \ Trap  9 instruction
+                CFA -Trap10 ,           \ Trap 10 instruction
+                CFA -Trap11 ,           \ Trap 11 instruction
+                CFA -Trap12 ,           \ Trap 12 instruction
+                CFA -Trap13 ,           \ Trap 13 instruction
+                CFA -Trap14 ,           \ Trap 14 instruction
+                CFA -Trap15 ,           \ Trap 15 instruction
+{{ RomBase standalone 0= }} [IF] {{ 4 + }} [THEN] {{ 0x100 + }} org
+\ User-defined vectors
+                CFA -Timebase ,         \ User vector 0x40
+                org
+
+decimal
+
+previous definitions main-tokens
+

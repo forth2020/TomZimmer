@@ -1,0 +1,31 @@
+\ Demo: Extend the BUILDER lexicon from within the ROM builder
+
+host also forth builder definitions forth
+((  host        Switch to the regular Forth interpreter
+    also        Make space at the top of the search order
+    forth       Forth search order lets us get to the builder vocabulary
+    builder
+    definitions We are adding definitions to the builder vocabulary
+    forth       The search order contains Forth but not builder
+))
+
+: STR           ( len <name> -- )       \ runtime: ( -- a len )
+\ Create a defining word for strings.  See TBUILD.G for more examples.
+                dt.string makeheader               \ code: 2literal
+                thisdata compilelit dup compilelit compileexit
+                fillzeros ;                        \ data: zeros
+
+previous building definitions
+((  previous    Remove the top of the search order
+    building    Switch to the ROM builder interpreter
+    definitions Add definitions to the current target vocabulary
+))
+
+\ ------------------------------------------------------------------------
+
+host also home definitions
+vocabulary system  }}        \ for system peripherals, etc.
+{{ vocabulary app    }}         \ for user application
+also core also system also app also
+core definitions
+

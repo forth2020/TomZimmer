@@ -1,0 +1,45 @@
+\ Support for local variables           2/24/00 BNE
+
+\ Return stack grows down, SP points to the free byte just below the stack.
+\ Most other micros' SP points to the last active byte on the stack.
+hex
+code (%local@)  ( -- x )
+                pop zh  pop zl  pusht
+                in xh,SPH  in xl,SPL  clr R19
+                add xl,R16  adc xh,R19
+                ld R16,x+  ld xh,x  mov xl,R16
+                ijmp c;                         call-only
+
+code (%local!)  ( x -- )
+                pop zh  pop zl  movw R16,tosl   \ R16 = x
+                in xh,SPH  in xl,SPL  clr R19
+                add xl,R16  adc xh,R19
+                st x+,R16  st x+,R17
+                popt  ijmp c;                   call-only
+
+code (%local[)  ( -- ) \ R16 = extras | #locs
+                pop zh  pop zl  clr R0
+                mov R19,R16  swap R19  andi R19,0F
+        begin   tst R19
+        while_ne push R0 push R0        \ space for uninitialized data
+                dec R19                 \ init to 0 just to be nice
+        repeat  andi R16,0F
+        if_ne   push tosh  push tosl  dec R16   \ push TOS register
+          begin    tst R16                      \ then other params
+          while_ne popd R17  push R17
+                   popd R17  push R17
+                   dec R16
+          repeat popt
+        then    ijmp c;                         call-only
+
+code (%]local)  ( -- ) \ R16 = offset to add to SP
+\ Remove R16 cells from return stack
+                pop zh  pop zl
+                in R18,SPH  in r17,SPL  clr r19
+                add r17,R16  adc R18,R19
+                out SPH,R18 out SPL,R17
+                ijmp c;                         call-only
+
+decimal
+
+

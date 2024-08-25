@@ -1,0 +1,165 @@
+\ 8031 demonstration program            10/99 by Brad Eckert
+
+\ Use as a template for your hardware.
+
+host decimal
+anew demo_8051_program
+homeorder
+1       constant hardware       \ hardware configuration
+
+4       >addrnibbles            \ debugger addresses span 0000..FFFF
+
+{{ hardware 1 = }} [IF]         \ board 1 = 8031 VM Evaluation Board
+        14745600 constant xtalfreq      \ crystal frequency in Hz
+\        20000000 constant xtalfreq      \ crystal frequency in Hz
+        0        constant internalstack \ 0=XRAM, 1=IRAM128, 2=IRAM256
+        0x24128  constant EEPROMpart    \ IIC EEPROM type [2401,2402,..,24128]
+        1        constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.F51
+        2        constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.F51
+        16       >cellbits              \ 16-bit cells [16,32]
+        include begin.f51               \ 8051 basic register assignments
+        asmlabel? P1.7 asmlabel __keyhole
+        asmlabel? P1.0 asmlabel __watchdog
+        asmlabel? P1.5 asmlabel __SDA   \ board-specific pin declarations
+        asmlabel? P1.6 asmlabel __SCL
+        asmbyte _myvec                  \ for demo state machine
+        asmbyte _myvec1
+[THEN]
+{{ hardware 2 = }} [IF]         \ board 2 = DCNS 2127 Interface Board
+        12000000 constant xtalfreq      \ crystal frequency in Hz
+        1        constant internalstack \ 0=XRAM, 1=IRAM128, 2=IRAM256
+        0x2464   constant EEPROMpart    \ IIC EEPROM type [2401,2402,..,24128]
+        2        constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.F51
+        1        constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.F51
+        16       >cellbits              \ 16-bit cells [16,32]
+        include begin.f51               \ 8051 basic register assignments
+        asmlabel? P1.4 asmlabel __keyhole
+        asmlabel? P1.1 asmlabel __SDA   \ board-specific pin declarations
+        asmlabel? P1.0 asmlabel __SCL
+[THEN]
+{{ hardware 3 = }} [IF]         \ your target board
+        *** Your Configuration Here ***
+[THEN]
+
+include kernel.f51              \ CPU specific part of kernel for the 8051
+include kernel.ff               \ Portable part of kernel
+include locals.f51              \ Support for local variables. You can remove
+                                \ if you don't use local variables.
+include eeprom.ff               \ Basic EEPROM support
+
+app definitions
+
+: MyStuff       ( -- )          c( Main program, called within loop )
+                pause ;
+
+\ assemble clr p1.4 setb p1.4 macro: tick
+\ code thing  tick tick tick ret c;  \ Example: type SEE THING to disassemble this
+
+: EEbootup      ( 'src n -- )
+\ attempt to load bytecode from a serial boot EEPROM if the device exists
+                EEpoll                  \ make sure boot device exists
+        if      over EE@N 0x07C9 <>
+        else    true
+        then    if      2drop exit      \ make sure it has a valid header
+                then
+                >r eval=ee evaluate
+                r> over
+        if      ." Boot load #" .       \ display error if any
+                ." ERROR=" . cr
+        else    2drop
+        then    ;
+
+code premain    ( -- )
+c( misc. setup for main program)
+                setb ET0                \ enable T0 interrupts
+                ret  c;
+
+: StartMain     ( -- )          c( Initialization for MAIN )
+                ." Demo Ver 1.0."
+                premain  8 0
+        do      i EEdevice !
+                primaryboot   i EEbootup \ load from IIC memory bus
+        loop    EEdevice off
+                secondaryboot 8 EEbootup \ post-load fixes
+                ['] MyStuff ['] mainevent rebind ;
+
+\ demonstration of some assembler features, use SEE FOO to see the result
+
+: foo   reg@: P1  negate        \ read P1
+        reg!: P2                \ write P2
+        [ 6 ] ifclr swap then       \ swap if bit 6 of TOS is set
+        [ 9 ] ifset drop then       \ drop if bit 9 of TOS is set
+        drop ;
+
+: PRIMES        DO  2   BEGIN I OVER /MOD PLUCK >= OVER AND
+                        WHILE DROP 1+
+                        REPEAT
+                NIP IF I (.) type. THEN
+                LOOP ;
+
+: GCD           ( a b -- gcd ) ?DUP IF TUCK MOD RECURSE THEN ;
+
+: d1-           ( d -- d+1 ) -1. d+ ;
+
+: sqrt          ( d -- n )              \ binary search for SQRT(d)
+                -1 1 rshift invert  0 >r   ( d guess | result )
+        begin   dup
+        while   dup r@ + dup um*        ( d guess [r+g]^2 | res )
+                rot >r 2over d- d1- nip 0<  ( d f | res guess )
+                if      r> r> over + >r ( d guess | result )
+                else    r>
+                then    u2/
+        repeat  drop 2drop r> ;
+
+: dist          { x0 y0 x1 y1 -- distance }
+                x0 x1 - abs dup um*
+                y0 y1 - abs dup um* d+ sqrt ;
+
+: test          ( c -- )
+         qcase: [ 1 ] ?[ sqrt ]?
+                [ 3 ] ?[ dist ]?
+                [ 5 ] ?[ dup over rot ]?
+                ;
+
+
+1 [IF]
+pcreate tokencode               c( -> MYPROGRAM )
+
+tokenizing                      \ TOKENIZED CODE
+program myprogram                       c( tokenized program)
+42 constant asterisk
+: star    ( -- )     asterisk emit ;    c( emit an asterisk)
+: stars   ( n -- )   0 do star loop ;   c( emit a row of asterisks)
+end
+building
+[THEN]                  \ type SEE MYPROGRAM to disassemble this
+
+{{ debugstyle dup 0 = swap 2 = or }}    \ Using UART for debugger?
+[IF]
+{{ cr .( Debugger baudrate = ) decimal }} \ display actual baud rate
+{{ asmlabel? TH1init  negate 255 and 192 *  xtalfreq swap / . }}
+[THEN]
+
+\ State machine demo: SEE STATES to view the resulting code
+static
+/iram/  asmbyte _myvec          \ for demo state machine
+        asmbyte _myvec1
+/iram/
+
+code states     vector{ _myvec  ret c;
+loco state2     vector _myvec, states  ret c;
+loco state1     vector _myvec, state2  ret c;
+                }vector state1
+loco sISR       push _myvec1  push _myvec  ret c;
+
+
+
+
+/iram/  here asmlabel rp051     \ rstack, no asmbyte after this point!
+/iram/
+include end.f51         \ finish up processing, resolve stuff
+
+hsave rom.hex           \ save a ROM image
+tsave rom.hh            \ save header data for later use by tokenizer or debugger
+ndxsave winview.ndx \ build a hyperlink index for this project
+

@@ -1,0 +1,38 @@
+((
+\       This is an extended version of REBIND.          3/10/00 BNE
+
+\       INSTALL appends old binding data to an un-install list.
+\       UNINSTALL restores the original bindings.
+
+\       Sample Usage (tokenized code):
+        marker temporary
+        installed off                   \ marks a new installation
+        ( definitions of temporary I/O words )
+        ' myemit ' emit  install
+        ' mytype ' type  install
+        ' mycr   ' cr    install
+        ' myat   ' at-xy install
+        ( do your thing )
+        uninstall                       \ restore old bindings
+        temporary                       \ remove this code from the dictionary
+
+\       INSTALL and UNINSTALL are for short-lived components.  Making multiple
+\       components arbitrarily de-installable requires garbage collection and
+\       a lot more complexity.  The complex case is best handled by a reboot,
+\       since bootup is pretty quick.
+))
+
+variable INSTALLED                              c( link to last installed binding)
+
+: INSTALL       ( xt1 xt2 -- )                  c( bind a new action to a word)
+                here installed @ , installed !  \ create node in linked list
+                dup bind@ ,  dup ,              \ save the old binding
+                rebind ;                        \ make the new binding
+
+: UNINSTALL     ( addr -- )                     c( un-bind installed components)
+                installed @
+        begin   ?dup
+        while   A! @A+ @A+ @A+ bind!            \ restore previous bindings
+        repeat  installed off ;
+
+

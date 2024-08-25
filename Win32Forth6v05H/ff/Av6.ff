@@ -1,0 +1,18 @@
+\ ------------------------------------------------------------------------
+newscreen
+
+\ ------------------------------------------------------------------------
+s" TESTING  LOCALS " report
+{ : LT2 { a b -- b a } b a ; -> }          \ equ SWAP
+{ : LT3 { a b c -- c b a } c b a ; -> }
+{ : LT4 { in1 in2 \ temp -- out } in1 2* in2 + to temp  in1 temp + ; -> }
+
+{ 111 222     LT2 -> 222 111 }
+{ 111 222 333 LT3 -> 333 222 111 }
+{ 111 456     LT4 -> 789 }
+
+
+\ yet to test: mu/mod m/mod u/mod [compile]
+
+s" AV6" endreport
+

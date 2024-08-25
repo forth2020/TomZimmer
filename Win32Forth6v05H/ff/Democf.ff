@@ -1,0 +1,173 @@
+\ Coldfire/68000 demonstration program            6/99 by Brad Eckert
+
+\ Use as a template for your hardware.
+
+host decimal
+anew demo_Coldfire/68000
+homeorder
+2 constant hardware             \ hardware configuration (see below)
+
+2 constant optimization         \ 0 = few code words  1 = string ops & math
+                                \ 2 = token lifting   3 = peephole optimizer
+8 >addrnibbles                  \ debugger addresses span 0..FFFFFFFF
+7 constant #TOS                 \ TOS cache Data register
+5 constant #DSP                 \ data stack pointer address register
+
+{{ hardware 1 = }} [IF]         .( MCF5307 Evaluation Board )   \ board 1
+    2           constant family        \ CPU: 0=68K 1=CPU32 2=Coldfire
+    0           constant standalone    \ 0 = no startup code
+    0x5307      constant chiptype      \ processor part#
+    45000000    constant xtalfreq      \ clock frequency in Hz
+    0x20000     constant RomBase       \ ROM code's base address (test area)
+    0x10000     constant RomSize       \ bytes of ROM
+    0x40000     constant RamBase       \ base address of main system RAM
+    0x10000     constant RamSize       \ bytes of RAM
+    50          constant RamPartition  \ percentage of RAM for data
+    0           constant FinalVectors  \ address of vectors
+    0x80000     constant QRamBase      \ base address of on-chip RAM
+    0           constant EEPROMpart    \ Serial EEPROM type [2401,2402,..,2464]
+    0           constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.FCF
+    0           constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.FCF
+    0           constant slowmath      \ T = avoid hardware multiply and divide
+                include BEGIN.FCF      \ 68K/Coldfire basic register assignments
+[THEN]
+{{ hardware 2 = }} [IF]         .( 68332 BCC module )           \ board 2
+    1           constant family        \ CPU: 0=68K 1=CPU32 2=Coldfire
+    0           constant standalone    \ 0 = no startup code
+    0x68332     constant chiptype      \ processor part#
+    14745600    constant xtalfreq      \ clock frequency in Hz
+    0x3000      constant RomBase       \ ROM code's base address (test area)
+    0x7000      constant RomSize       \ bytes of ROM
+    0xA000      constant RamBase       \ base address of main system RAM
+    0x6000      constant RamSize       \ bytes of RAM
+    50          constant RamPartition  \ percentage of RAM for data
+    0           constant FinalVectors  \ address of vectors
+    0           constant EEPROMpart    \ Serial EEPROM type [2401,2402,..,2464]
+    0           constant watchdogstyle \ 0=none, 1=I/O-pin, 2=WATCHDG0.FCF
+    0           constant debugstyle    \ 0=UART, 1=pin, 2=both, 3=DOORPOL0.FCF
+    0           constant slowmath      \ T = avoid hardware multiply and divide
+                include BEGIN.FCF      \ 68K/Coldfire basic register assignments
+[THEN]
+{{ hardware 3 = }} [IF]         \ board 3
+        *** Your Configuration Here ***
+[THEN]
+
+include KERNEL.FCF              \ 68K specific kernel
+include KERNEL.FF               \ generic kernel
+include ERRORLOG.FCF            \ error logging
+
+: dum+   { a b \ c -- sum }      \ locals usage: a & b are initialized from stack
+        a b + to c  c ;
+
+: PRIMES        DO  2   BEGIN I OVER /MOD PLUCK >= OVER AND
+                        WHILE DROP 1+
+                        REPEAT
+                NIP IF I (.) type. THEN
+                LOOP ;
+
+: GCD           ( a b -- gcd ) ?DUP IF TUCK MOD RECURSE THEN ;
+
+code foo        addq.l #1,d0      \ some code examples
+                addq.l #2,d1
+                beq localz
+                addq.l #3,d2
+                addq.l #4,d3
+                beq localz
+                addi.l #1000,d4
+                addq.l #4,a0
+                moveq #9,d6
+        begin   tst.l d6
+        while_gt subq.l #1,d6
+                addq.l #1,d0
+        repeat  nop
+localz:         move.l 20000,d0
+                nop
+                rts c;
+
+: foo1          over -
+                [ assemble mulu.l tos,tos c; ]       \ embedded code
+                rot
+                [ 6 ] ifset <# then        \ bit tests on TOS
+                [ 9 ] ifclr #> then
+                drop ;
+
+code foo2       ( -- )  c( state machine interrupt example)
+\ A3 is not used by Forth, so the exception can trash it.
+\ This is probably the fastest state machine you can implement on a 68K.
+\ This Forth doesn't step on A3, so you can use it for whatever.
+                jmp (a3) c;
+loco state3     ( code for state 3 ... )
+                vector{         \ mark the operand of next instruction
+                movea.l #0,a3           rte c;
+loco state2     ( code for state 2 ... )
+                movea.l #state3,a3      rte c;
+loco state1     ( code for state 1 ... )
+                movea.l #state2,a3      rte c;
+                }vector state1  \ resolve the address marked by vector{
+
+
+
+code d1-        ( d -- d-1 )
+                tst.l (s)
+        if_eq   subq.l #1,tos
+        then    subq.l #1,(s)
+                next c;
+
+: sqrt          ( d -- n )              \ binary search for SQRT(d)
+                -1 1 rshift invert  0 >r   ( d guess | result )
+        begin   dup
+        while   dup r@ + dup um*        ( d guess [r+g]^2 | res )
+                rot >r 2over d- d1- nip 0<  ( d f | res guess )
+                if      r> r> over + >r ( d guess | result )
+                else    r>
+                then    u2/
+        repeat  drop 2drop r> ;
+
+: test          ( c -- )                \ quickie CASE structure
+         qcase: [ 1 ] ?[ rot gcd ]?
+                [ 3 ] ?[ primes  ]?
+                [ 5 ] ?[ 0 sqrt  ]?
+                ;
+
+include LOCALS.FCF              \ support for tokenized locals (AV6.FF tests)
+
+
+include TASKER.FF               \ multitasker
+
+0 user me
+4 user you
+
+64 128 128 newtask mytask
+
+variable specdepth
+
+: bumpme        ( -- )  depth specdepth !  begin me incr pause again ;
+
+: MyStuff       ( -- )  ;       c( this called forever by main)
+
+: StartMain     ( -- )          c( Initialization for MAIN )
+                mytask alsotask
+                ['] bumpme mytask reassign
+                mytask wake
+                ['] MyStuff ['] mainevent rebind ;
+
+include END.FCF
+
+hidden previous \ previous
+tsave rom.hh                    \ save header data for tokenizer/debugger
+ssave test.s                    \ save s-record version
+also hidden
+ndxsave winview.ndx             \ build a hyperlink index for this project
+previous
+
+\ Shortcut keys to get you to a terminal emulator:
+{{ hardware 1 = }} [IF] \ MCF5307 eval board
+( F11 programs thru COM1 ) 11 defmacro DOS TERM 19200 TEST.S
+( F12 programs thru COM2 ) 12 defmacro DOS TERM 2 19200 TEST.S
+[THEN]
+{{ hardware 2 = }} [IF] \ BCC331 eval board
+( F11 programs thru COM1 ) 11 defmacro DOS TERM TEST.S
+( F12 programs thru COM2 ) 12 defmacro DOS TERM 2 TEST.S
+[THEN]
+
+

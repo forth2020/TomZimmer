@@ -1,0 +1,11 @@
+\ Watchdog for LIA board, definitions for WATCHDOG- and WATCHDOG+
+
+code WATCHDOG+  ( -- )                          c( set the watchdog bit)
+\ hit watchdog by reading from the now-nonexistent secondary UART
+                push dph
+                mov dph, #40  movx @dptr, a
+                pop dph  ret c;
+
+: WATCHDOG-     ( -- )  WATCHDOG+ ;             c( clear the watchdog bit)
+
+

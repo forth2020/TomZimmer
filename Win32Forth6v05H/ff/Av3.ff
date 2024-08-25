@@ -1,0 +1,232 @@
+\ ------------------------------------------------------------------------
+newscreen
+s" TESTING HERE , @ ! CELL+ CELLS C, C@ C!" report
+s"     CHARS 2@ 2! ALIGN ALIGNED +! ALLOT" report
+
+HERE 1 ALLOT
+HERE
+CONSTANT 2NDA
+CONSTANT 1STA
+{ 1STA 2NDA U< -> <TRUE> }              \ HERE MUST GROW WITH ALLOT
+{ 1STA 1+ -> 2NDA }                     \ ... BY ONE ADDRESS UNIT
+( MISSING TEST: NEGATIVE ALLOT )
+
+HERE 1 ,
+HERE 2 ,
+CONSTANT 2ND
+CONSTANT 1ST
+{ 1ST 2ND U< -> <TRUE> }                \ HERE MUST GROW WITH ALLOT
+{ 1ST CELL+ -> 2ND }                    \ ... BY ONE CELL
+{ 1ST 1 CELLS + -> 2ND }
+{ 1ST @ 2ND @ -> 1 2 }
+{ 5 1ST ! -> }
+{ 1ST @ 2ND @ -> 5 2 }
+{ 6 2ND ! -> }
+{ 1ST @ 2ND @ -> 5 6 }
+{ 1ST 2@ -> 6 5 }
+{ 2 1 1ST 2! -> }
+{ 1ST 2@ -> 2 1 }
+{ 1S 1ST !  1ST @ -> 1S }               \ CAN STORE CELL-WIDE VALUE
+
+HERE 1 C,
+HERE 2 C,
+CONSTANT 2NDC
+CONSTANT 1STC
+{ 1STC 2NDC U< -> <TRUE> }              \ HERE MUST GROW WITH ALLOT
+{ 1STC CHAR+ -> 2NDC }                  \ ... BY ONE CHAR
+{ 1STC 1 CHARS + -> 2NDC }
+{ 1STC C@ 2NDC C@ -> 1 2 }
+{ 3 1STC C! -> }
+{ 1STC C@ 2NDC C@ -> 3 2 }
+{ 4 2NDC C! -> }
+{ 1STC C@ 2NDC C@ -> 3 4 }
+
+ALIGN 1 ALLOT HERE ALIGN HERE 3 CELLS ALLOT
+CONSTANT A-ADDR  CONSTANT UA-ADDR
+{ UA-ADDR ALIGNED -> A-ADDR }
+{    1 A-ADDR C!  A-ADDR C@ ->    1 }
+{ 1234 A-ADDR  !  A-ADDR  @ -> 1234 }
+{ 123 456 A-ADDR 2!  A-ADDR 2@ -> 123 456 }
+{ 2 A-ADDR CHAR+ C!  A-ADDR CHAR+ C@ -> 2 }
+{ 3 A-ADDR CELL+ C!  A-ADDR CELL+ C@ -> 3 }
+{ 1234 A-ADDR CELL+ !  A-ADDR CELL+ @ -> 1234 }
+{ 123 456 A-ADDR CELL+ 2!  A-ADDR CELL+ 2@ -> 123 456 }
+
+: BITS ( X -- U )
+   0 SWAP BEGIN DUP WHILE DUP MSB AND IF >R 1+ R> THEN 2* REPEAT DROP ;
+( CHARACTERS >= 1 AU, <= SIZE OF CELL, >= 8 BITS )
+{ 1 CHARS 1 < -> <FALSE> }
+{ 1 CHARS 1 CELLS > -> <FALSE> }
+( TBD: HOW TO FIND NUMBER OF BITS? )
+
+( CELLS >= 1 AU, INTEGRAL MULTIPLE OF CHAR SIZE, >= 16 BITS )
+{ 1 CELLS 1 < -> <FALSE> }
+{ 1 CELLS 1 CHARS MOD -> 0 }
+{ 1S BITS 10 < -> <FALSE> }
+
+{ 0 1ST ! -> }
+{ 1 1ST +! -> }
+{ 1ST @ -> 1 }
+{ -1 1ST +! 1ST @ -> 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING CHAR [CHAR] [ ] BL S-quote" report
+
+{ BL -> 20 }
+{ CHAR X -> 58 }
+{ CHAR HELLO -> 48 }
+{ : GC1 [CHAR] X ; -> }
+{ : GC2 [CHAR] HELLO ; -> }
+{ GC1 -> 58 }
+{ GC2 -> 48 }
+{ : GC3 [ GC1 ] LITERAL ; -> }      
+{ GC3 -> 58 }
+
+{ : GC4 S" XY" ; -> }
+{ GC4 SWAP DROP -> 2 }
+{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }
+
+\ ------------------------------------------------------------------------
+s" TESTING ' ['] EXECUTE IMMEDIATE COUNT " report
+s"     LITERAL POSTPONE STATE" report
+
+{ : GT1 123 ; -> }
+{ ' GT1 EXECUTE -> 123 }
+{ : GT2 ['] GT1 ; IMMEDIATE -> }
+{ GT2 EXECUTE -> 123 }
+HERE 3 C, CHAR G C, CHAR T C, CHAR 1 C, CONSTANT GT1STRING
+{ : GT3 GT2 LITERAL ; -> }
+{ GT3 -> ' GT1 }
+{ GT1STRING COUNT -> GT1STRING CHAR+ 3 }
+
+{ : GT4 POSTPONE GT1 ; IMMEDIATE -> }
+{ : GT5 GT4 ; -> }
+{ GT5 -> 123 }
+{ : GT6 345 ; IMMEDIATE -> }
+{ : GT7 POSTPONE GT6 ; -> }
+{ GT7 -> 345 }
+
+{ : GT8 STATE @ ; IMMEDIATE -> }
+{ GT8 -> 0 }
+{ : GT9 GT8 LITERAL ; -> }
+{ GT9 0= -> <FALSE> }
+
+\ ------------------------------------------------------------------------
+s" TESTING IF ELSE THEN BEGIN WHILE REPEAT " report
+s"     UNTIL RECURSE" report
+
+{ : GI1 IF 123 THEN ; -> }
+{ : GI2 IF 123 ELSE 234 THEN ; -> }
+{ 0 GI1 -> }
+{ 1 GI1 -> 123 }
+{ -1 GI1 -> 123 }
+{ 0 GI2 -> 234 }
+{ 1 GI2 -> 123 }
+{ -1 GI1 -> 123 }
+
+{ : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ; -> }
+{ 0 GI3 -> 0 1 2 3 4 5 }
+{ 4 GI3 -> 4 5 }
+{ 5 GI3 -> 5 }
+{ 6 GI3 -> 6 }
+
+{ : GI4 BEGIN DUP 1+ DUP 5 > UNTIL ; -> }
+{ 3 GI4 -> 3 4 5 6 }
+{ 5 GI4 -> 5 6 }
+{ 6 GI4 -> 6 7 }
+
+\ Removed: The tokenizer now has more stringent error checking, so it chokes
+\ on this kind of control structure mixing. August 20th, 2001 - 20:47
+\ { : GI5 BEGIN DUP 2 > WHILE DUP 5 < WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ; -> }
+\ { 1 GI5 -> 1 345 }
+\ { 2 GI5 -> 2 345 }
+\ { 3 GI5 -> 3 4 5 123 }
+\ { 4 GI5 -> 4 5 123 }
+\ { 5 GI5 -> 5 123 }
+
+{ : GI6 ( N -- 0,1,..N ) DUP IF DUP >R 1- RECURSE R> THEN ; -> }
+{ 0 GI6 -> 0 }
+{ 1 GI6 -> 0 1 }
+{ 2 GI6 -> 0 1 2 }
+{ 3 GI6 -> 0 1 2 3 }
+{ 4 GI6 -> 0 1 2 3 4 }
+
+\ ------------------------------------------------------------------------
+s" TESTING DO LOOP +LOOP I J UNLOOP LEAVE" report
+s"     EXIT >NUMBER" report
+
+{ : GD1 DO I LOOP ; -> }
+{ 4 1 GD1 -> 1 2 3 }
+{ 2 -1 GD1 -> -1 0 1 }
+{ MID-UINT+1 MID-UINT GD1 -> MID-UINT }
+
+{ : GD2 DO I -1 +LOOP ; -> }
+{ 1 4 GD2 -> 4 3 2 1 }
+{ -1 2 GD2 -> 2 1 0 -1 }
+{ MID-UINT MID-UINT+1 GD2 -> MID-UINT+1 MID-UINT }
+ 
+{ : GD3 DO 1 0 DO J LOOP LOOP ; -> }
+{ 4 1 GD3 -> 1 2 3 }
+{ 2 -1 GD3 -> -1 0 1 }  
+{ MID-UINT+1 MID-UINT GD3 -> MID-UINT }
+
+{ : GD4 DO 1 0 DO J LOOP -1 +LOOP ; -> }
+{ 1 4 GD4 -> 4 3 2 1 }
+{ -1 2 GD4 -> 2 1 0 -1 }
+{ MID-UINT MID-UINT+1 GD4 -> MID-UINT+1 MID-UINT }
+
+{ : GD5 123 SWAP 0 DO I 4 > IF DROP 234 LEAVE THEN LOOP ; -> }
+{ 1 GD5 -> 123 }
+{ 5 GD5 -> 123 }
+{ 6 GD5 -> 234 }
+
+{ : GD6  ( PAT: {0 0},{0 0}{1 0}{1 1},{0 0}{1 0}{1 1}{2 0}{2 1}{2 2} )
+   0 SWAP 0 DO
+      I 1+ 0 DO I J + 3 = IF I UNLOOP I UNLOOP EXIT THEN 1+ LOOP
+    LOOP ; -> }
+{ 1 GD6 -> 1 }
+{ 2 GD6 -> 3 }
+{ 3 GD6 -> 4 1 2 }
+
+{ 24 CONSTANT MAX-BASE -> }
+
+CREATE GN-BUF 0 C,
+: GN-STRING     GN-BUF 1 ;
+: GN-CONSUMED   GN-BUF CHAR+ 0 ;
+: =GN           GN-BUF C!  GN-STRING ;
+
+{ 0 0 CHAR 0 =GN >NUMBER -> 0 0 GN-CONSUMED }  \ |||
+{ 0 0 CHAR 1 =GN >NUMBER -> 1 0 GN-CONSUMED }  \ |||
+{ 1 0 CHAR 1 =GN >NUMBER -> BASE @ 1+ 0 GN-CONSUMED }
+{ 0 0 CHAR - =GN >NUMBER -> 0 0 GN-STRING } \ SHOULD FAIL TO CONVERT THESE
+{ 0 0 CHAR + =GN >NUMBER -> 0 0 GN-STRING }
+{ 0 0 CHAR . =GN >NUMBER -> 0 0 GN-STRING }
+
+: >NUMBER-BASED
+   BASE @ >R BASE ! >NUMBER R> BASE ! ;
+
+{ 0 0 CHAR 2 =GN 10 >NUMBER-BASED -> 2 0 GN-CONSUMED }
+{ 0 0 CHAR 2 =GN  2 >NUMBER-BASED -> 0 0 GN-STRING }
+{ 0 0 CHAR F =GN 10 >NUMBER-BASED -> F 0 GN-CONSUMED }
+{ 0 0 CHAR G =GN 10 >NUMBER-BASED -> 0 0 GN-STRING }
+{ 0 0 CHAR G =GN MAX-BASE >NUMBER-BASED -> 10 0 GN-CONSUMED }
+{ 0 0 CHAR Z =GN MAX-BASE >NUMBER-BASED -> 23 0 GN-CONSUMED }
+
+: GN1   \ ( UD BASE -- UD' LEN ) UD SHOULD EQUAL UD' AND LEN SHOULD BE ZERO.
+   BASE @ >R BASE !
+   <# #S #>
+   0 0 2SWAP >NUMBER SWAP DROP          \ RETURN LENGTH ONLY
+   R> BASE ! ;
+{ 0 0 2 GN1 -> 0 0 0 }
+{ MAX-UINT 0 2 GN1 -> MAX-UINT 0 0 }        \ |||
+{ MAX-UINT DUP 2 GN1 -> MAX-UINT DUP 0 }
+{ 0 0 MAX-BASE GN1 -> 0 0 0 }
+{ MAX-UINT 0 MAX-BASE GN1 -> MAX-UINT 0 0 }
+{ MAX-UINT DUP MAX-BASE GN1 -> MAX-UINT DUP 0 }
+
+: GN2   \ ( -- 16 10 )
+   BASE @ >R  HEX BASE @  DECIMAL BASE @  R> BASE ! ;
+{ GN2 -> 10 A }
+
+s" AV3" endreport
+

@@ -1,0 +1,15 @@
+host decimal
+anew demo_program
+homeorder tokenizing                    \ TOKENIZED CODE
+also core also system also app definitions
+{{ 0 0x3FF rom-bounds }}
+{{ 0 org }}
+program autoexec2                        c( tokenized boot program)
+          ." SIP DEMO: " CurrentNode @ . ." NODES."
+cr cr     ." TERMINAL EMULATION"
+0 3 at-xy ."  www.tinyboot.com"
+
+end
+host
+~boot1
+

@@ -1,0 +1,1582 @@
+\ ========================================================================
+\ 68000 kernel: 32-bit cells, TOS = register
+\ Avoids 68K instructions not implemented by Coldfire.
+\ Family: 0=68K, 1=CPU32, 2=Coldfire
+
+\ WRT 68K, CPU32 has good multiply/divide, Coldfire has okay mpy and bad divide.
+
+standalone
+[IF]   {{ 0x400 RomBase + }} org        \ reserve 1K for vectors
+[ELSE] {{ RomBase }}         org        \ dummy for BRA to cold
+       0x60 c, 0 c, 0 c, 0 c,           \ for demo, start execution here...
+       {{ 0x404 RomBase + }} org        \ reserve 1K for vectors
+[THEN]
+
+warning off
+vocabulary HIDDEN        \ special purpose words used only by CORE
+vocabulary CORE          \ processor-specific part of kernel
+
+also    CORE             \ include both in the search order
+also    HIDDEN
+also                     \ order: HOME CORE HIDDEN HIDDEN BUILDING | ??
+
+hex rom static           \ ROM code, static binding
+
+low-tokens      0020 >token#    \ main token list starts at 32
+main-tokens     0180 >token#    \ normal token assignments
+temp-tokens     0100 >token#    \ hidden token list
+low-tokens
+
+\ ########################################################################
+\ This section contains time-critical or CPU-dependent words.
+\ These are mostly CODE definitions.
+
+\ optim actions:        in                      out
+\               1       MOVE TOS,-(S) (dup)     MOVE TOS,-(S) (dup)
+\               2       MOVE (S)+,TOS (drop)    MOVE (S)+,TOS (drop)
+\               3       TST TOS                 CCR describes TOS status
+\               4       MOVE TOS,A0             MOVE A0,TOS
+\               5       MOVE TOS,D0             MOVE D0,TOS
+
+assemble        move.l tos,-(s)                 macro: T>S
+assemble        move.l (s)+,tos                 macro: S>T
+assemble        move.l tos,-(sp)                macro: T>R
+assemble        move.l (sp)+,tos                macro: R>T
+assemble        movea.l tos,a0                  macro: T>A0
+assemble        move.l tos,d0                   macro: T>D0
+assemble        move.l (s)+,d0                  macro: S>D0
+assemble        rts                             macro: next
+assemble        tst.l tos                       macro: tstT
+assemble        clr.l tos                       macro: clrT
+{{ family }} [IF]
+assemble        extb.l tos                      macro: extT     \ CPU32 & CF
+[ELSE]
+assemble        ext.w tos  ext.l tos            macro: extT     \ 68000
+[THEN]
+assemble        movea.l (sp)+,a0                macro: RA{
+assemble        jmp (a0)                        macro: }RA
+
+CORE DEFINITIONS  \ ======================================================
+
+code DUP        ( x -- x x )                            c( duplicate top item)
+                T>S   next c;                           macro 11 optim
+code DROP       ( x1 x2 -- x1 )                         c( remove item from stack)
+                S>T   next c;                           macro 22 optim
+code SWAP       ( x1 x2 -- x2 x1 )                      c( swap top 2 cells )
+                T>D0  move.l (s),tos  move.l d0,(s)  next c;  macro 50 optim
+code OVER       ( x1 x2 -- x1 x2 x1 )                   c( copy 2nd item on the stack)
+                T>S  move.l 4(s),tos  next c;           macro 13 optim
+code AND        ( x1 x2 -- x3 )                         c( and top two stack items)
+                and.l (s)+,tos   next c;                macro 03 optim
+code OR         ( x1 x2 -- x3 )                         c( or top two stack items)
+                or.l (s)+,tos    next c;                macro 03 optim
+code XOR        ( x1 x2 -- x3 )                         c( or top two stack items)
+                S>D0  eor.l d0,tos  next c;             macro 03 optim
+code UM+        ( x1 x2 -- ud )                         c( add top two items, double result)
+                add.l tos,(s)  clrT
+                addx.l tos,tos   next c;                macro 03 optim
+code +          ( x1 x2 -- x3 )                         c( add TOS to NOS)
+                add.l (s)+,tos  next c;                 macro 03 optim
+code -          ( x1 x2 -- x3 )                         c( subtract TOS from NOS)
+                sub.l (s)+,tos  neg.l tos  next c;      macro 03 optim
+code 0=         ( x -- f )                              c( T if zero )
+                tstT  seq tos  extT  next c;            macro 30 optim
+code 0<         ( x -- f )                              c( T if negative )
+                tstT  smi tos  extT  next c;            macro 30 optim
+code >R         ( x -- )  ( R:  -- x )                  c( push cell to return stack)
+        never   T>R S>T      next
+        then    RA{ T>R S>T }RA c;                      macro 02 optim call-only
+code R>         ( -- x )  ( R:  x -- )                  c( pop cell from return stack)
+        never   T>S R>T      next
+        then    RA{ T>S R>T }RA c;                      macro 13 optim call-only
+code U2/        ( x1 -- x2 )                            c( logical right shift one bit)
+                lsr.l #1,tos  next c;                   macro 03 optim
+code 2/         ( x1 -- x2 )                            c( arithmetic right shift one bit)
+                asr.l #1,tos  next c;                   macro 03 optim
+code C@         ( addr -- c )                           c( char fetch )
+                T>A0  clrT  move.b (a0),tos  next c;    macro 40 optim
+code W@         ( addr -- w )                           c( 16-bit fetch )
+                T>A0  clrT  move.w (a0),tos  next c;    macro 40 optim
+code @          ( addr -- x )                           c( cell fetch, MSB first )
+                T>A0  move.l (a0),tos  next c;          macro 40 optim
+code C!         ( c addr -- )                           c( char store )
+                T>A0  S>T move.b tos,(a0) S>T next c;   macro 42 optim
+code W!         ( w addr -- )                           c( 16-bit store )
+                T>A0  S>T move.w tos,(a0) S>T next c;   macro 42 optim
+code !          ( x addr -- )                           c( cell store, MSB first )
+                T>A0  move.l (s)+,(a0) S>T  next c;     macro 42 optim
+code A!         ( addr -- )                             c( set A register )
+                movea.l tos,a  S>T  next c;             macro 02 optim
+code A@         ( -- addr )                             c( get A register )
+                T>S  move.l a,tos  next c;              macro 10 optim
+code @A         ( -- x )                                c( fetch cell from A stream)
+                T>S  move.l (a),tos  next c;            macro 10 optim
+code @A+        ( -- x )                                c( lift cell from A stream)
+                T>S  move.l (a)+,tos next c;            macro 10 optim
+code C@A        ( -- c )                                c( fetch char from A stream)
+                T>S  clrT  move.b (a),tos  next c;      macro 10 optim
+code C@A+       ( -- c )                                c( lift char from A stream)
+                T>S  clrT  move.b (a)+,tos next c;      macro 10 optim
+code !A         ( x -- )                                c( store cell to A stream)
+                move.l tos,(a)  S>T  next c;            macro 02 optim
+code !A+        ( x -- )                                c( append cell to A stream)
+                move.l tos,(a)+ S>T  next c;            macro 02 optim
+code C!A        ( x -- )                                c( store char to A stream)
+                move.b tos,(a)  S>T  next c;            macro 02 optim
+code C!A+       ( x -- )                                c( append char to A stream)
+                move.b tos,(a)+ S>T  next c;            macro 02 optim
+code @R         ( -- x ) ( R: a -- a )                  c( fetch cell from R stream)
+        never   T>S  movea.l (sp),a1
+                move.l (a1),tos  next
+        then    RA{  T>S  movea.l (sp),a1
+                move.l (a1),tos  }RA c;                 macro 13 optim call-only
+code @R+        ( -- x ) ( R: a -- a+4 )                c( lift cell from R stream)
+        never   T>S  movea.l (sp),a1
+                move.l (a1)+,tos move.l a1,(sp)  next
+        then    RA{  T>S  movea.l (sp),a1
+                move.l (a1)+,tos  move.l a1,(sp) }RA c; macro 10 optim call-only
+code !R         ( x -- ) ( R: a -- a )                  c( store cell to R stream)
+        never   movea.l (sp),a0  move.l tos,(a0)
+                S>T  next
+        then    RA{  movea.l (sp),a1  move.l tos,(a1)
+                S>T }RA c;                             macro 02 optim call-only
+code !R+        ( x -- ) ( R: a -- a+4 )                c( append cell to R stream)
+        never   movea.l (sp),a0  move.l tos,(a0)+
+                move.l  a0,(sp)  S>T  next
+        then    RA{  movea.l (sp),a1  move.l tos,(a1)+
+                S>T  move.l a1,(sp)  }RA c;             macro 02 optim call-only
+
+main-tokens
+{{ watchdogstyle 0 = }} [IF]
+: WATCHDOG+ ;                                           c( no watchdog hardware)
+: WATCHDOG- ;
+[THEN]
+{{ watchdogstyle 1 = }} [IF]
+include WATCHDG0.FCF    [THEN]                  \ Custom watchdog handlers
+{{ watchdogstyle 2 = }} [IF]
+include WATCHDG1.FCF    [THEN]
+{{ watchdogstyle 3 = }} [IF]
+include WATCHDG2.FCF    [THEN]
+{{ watchdogstyle 4 = }} [IF]
+include WATCHDG3.FCF    [THEN]
+hex
+
+code C>N        ( c -- x )                              c( sign extend byte --> cell)
+                extT  next c;                           macro 03 optim
+code W>N        ( c -- n )                              c( sign extend 16-bit --> cell)
+                ext.l tos  next c;                      macro 03 optim
+: C@P           ( addr -- c )      C@ ;                 c( char fetch from program memory)
+: @P            ( addr -- x )      @ ;                  c( fetch from program memory)
+: W@P           ( addr -- x )      W@ ;                 c( 16bit fetch from program memory)
+: C!P           ( c addr -- )      C! ;                 c( char store to program memory )
+: !P            ( x addr -- )      ! ;                  c( store to program memory )
+: W!P           ( x addr -- )      W! ;                 c( 16bit store to program memory )
+
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offsets:       -8    -4    0    4    8    0C       10     14...
+\ TP register points to -----^               ^-------- link points to status of next task
+\ TID of a task points to its status --------^
+
+code PAUSE      ( -- )                                  c( switch to the next active task)
+                move.l (sp)+,(tp)+      \ save PC
+                T>S  move.l s,(tp)+     \ save data stack
+                move.l sp,(tp)+         \ save return stack
+                addq.l #4,tp
+       begin    movea.l (tp),tp         \ point to next task's status
+                tst.l (tp)+             \ until active task is found
+       until_mi subq.l #4,tp
+                move.l -(tp),sp         \ load new return stack
+                move.l -(tp),s  S>T     \ load new data stack
+                move.l -(tp),a0         \ load new PC
+                jmp (a0)  c;            call-only
+
+code TID        ( -- addr )                             c( ID of current task )
+\ TCB structure: sp0 / rp0 / pc / sp / rp / status / link / userdata...
+\ offsets:       -20  -16   -12   -8   -4     0        4      8
+                T>S  move.l tp,tos  addi.l #0C,tos      \ point to status
+                next c;                                 macro
+
+code CLEAR      ( -- )                                  c( empty the data stack )
+                movea.l -08(tp),s  next c;              macro
+
+code DEPTH      ( -- addr )                             c( # of cells on the data stack )
+                T>S  move.l -08(tp),tos
+                sub.l s,tos  asr.l #2,tos  subq.l #1,tos  next c;
+code 'BIND      ( xt -- addr )                          c( point to jump in binding table)
+                add.l tos,tos   move.l tos,d0
+                add.l tos,tos   add.l d0,tos            \ tos = xt * 6
+                neg.l tos       add.l #bindorigin,tos
+                next c;
+code BIND@      ( xt -- cfa )                           c( get CFA from the binding table)
+                call 'BIND  T>A0  addq.l #2,a0
+                move.l (a0),tos  next c;                \ extract XXX from JMP XXX.L
+code BIND!      ( cfa xt -- )                           c( store CFA to the binding table)
+                call 'BIND  T>A0
+                move.w #4EF9,(a0)+  move.l (s)+,(a0)    \ lay down JMP XXX.L
+                S>T  next c;
+code EXECUTECFA ( addr -- )                             c( execute at absolute address)
+                T>A0  S>T  jsr (a0)  next c;            macro
+code REBOOT     ( -- )  movea.l 4,a0  jmp (a0) c;       c( reset the processor)
+
+\ Time functions use 32-bit time count, which is incremented by an ISR.
+\ Must increment at 1 kHz or greater.  Bits beyond b31 in result are zero.
+
+code COUNTER@   ( -- udtime )                   c( get 32-bit count, double cell)
+                T>S  move.l RawCounter,-(S)  clrT  next c;
+                DATATYPE DOUBLE
+
+code COUNTER!   ( udtime -- )                   c( set 32-bit timer count)
+                move.l (S)+,RawCounter S>T  next c;
+
+code |COUNTER|  ( d1 -- d2 )
+c( truncate difference to 32 bits)
+                clrT  next c;
+
+{{ family 0 = }} [IF]
+{{ 0 0xFA000 xtalfreq um/mod nip }} constant CTRSCALE
+\ Assumes tick rate = clk / 1024 (timebase is 74HC4040)
+                 [THEN]
+{{ family 1 = }} [IF]
+0x3E800000 constant CTRSCALE
+\ Assumes tick rate = 4096 Hz on 683XX
+                 [THEN]
+{{ family 2 = }} [IF]
+{{ 0 0x3E800 xtalfreq um/mod nip }} constant CTRSCALE
+\ Assumes IRQ every 4096 clocks
+                 [THEN]
+c( msec per tick * 2^cellsize)
+
+: UNINITIALIZED ( -- )  ;                       c( error handler for DEFERed words)
+
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+: SKIPADDR      ( a -- a' )             c( skip past branch instruction)
+                [ {{ branchbytes }} ] literal + ;
+{{ 1 cellbits 1- lshift }} constant MININT
+
+variable        chere                   c( code space dictionary pointer)
+variable        dhere                   c( data space dictionary pointer)
+variable        ''here                  c( pointer to dictionary pointer)
+
+CORE DEFINITIONS  low-tokens \ ============================================
+
+defer C,                c( append char to dictionary)
+defer W,                c( append 16-bit to dictionary)
+defer ,                 c( append cell to dictionary)
+
+{{ cellbits charbits / }}  constant  CELL               c( address units per cell)
+
+  -1 constant  true     c( all '1' bits)
+   0 constant  false    c( all '0' bits)
+  -1 constant -1        c( -1)
+   0 constant  0        c( 0)
+   1 constant  1        c( 1)
+   2 constant  2        c( 2)
+0x20 constant  BL       c( ASCII blank)
+
+\ ########################################################################
+\ This section contains basic core words that may be optimized for speed
+\ or left expressed in high level Forth.
+
+{{ optimization  }} [if]
+\ ==============================================================================
+
+code NIP        ( x1 x2 -- x1 )                         c( discard 2nd item on stack)
+                addq.l #4,s     next c;                 macro
+code 1+         ( x -- x+1 )                            c( add 1 to TOS )
+                addq.l #1,tos   next c;                 macro   03 optim
+code 1-         ( x -- x-1 )                            c( subtract 1 from TOS )
+                subq.l #1,tos   next c;                 macro   03 optim
+code 2*         ( x -- x*2 )                            c( multiply TOS by 2)
+                lsl.l #1,tos    next c;                 macro   03 optim
+code INVERT     ( x -- ~x )                             c( bitwise invert TOS )
+                not.l tos       next c;                 macro   03 optim
+code NEGATE     ( x -- -x )                             c( bitwise invert TOS )
+                neg.l tos       next c;                 macro   03 optim
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+code ?NEGATE    ( n1 n2 -- n3 )
+                tstT  if_mi S>T neg.l tos next then S>T next c; 
+CORE DEFINITIONS  low-tokens \ ===========================================
+
+code R@         ( -- x )   ( R: x -- x )                c( copy cell from return stack)
+        never       T>S move.l (sp),tos     next
+        then    RA{ T>S move.l (sp),tos }RA  c;         call-only macro 10 optim
+code DUP>R      ( x -- x ) ( R: -- x )                  c( copy cell to return stack)
+        never       T>R         next
+        then    RA{ T>R }RA  c;                         call-only macro
+code R>DROP     ( x -- x ) ( R: x -- )                  c( drop cell from return stack)
+        never       addq.l #4,sp  next
+        then    RA{ addq.l #4,sp }RA  c;                call-only macro
+code 0<>        ( x -- f )                              c( T if nonzero )
+                tstT  sne tos  extT  next c;            macro 33 optim
+code 0>=        ( x -- f )                              c( T if non-negative )
+                tstT  sge tos  extT  next c;            macro 33 optim
+code 0<=        ( x -- f )                              c( T if not positive )
+                tstT  sle tos  extT  next c;            macro 33 optim
+code 0>         ( x -- f )                              c( T if non-negative )
+                tstT  sgt tos  extT  next c;            macro 33 optim
+code =          ( x1 x2 -- f )                          c( true if NOS = TOS)
+                cmp.l (s)+,tos  seq tos  extT  next c;  macro 03 optim
+code <>         ( x1 x2 -- f )                          c( true if NOS = TOS)
+                cmp.l (s)+,tos  sne tos  extT  next c;  macro 03 optim
+code ?DUP       ( x -- x x | 0 )                        c( duplicate top item if nonzero)
+                tstT  if_ne T>S then  next c;           macro 33 optim
+code LSHIFT     ( x1 u -- x1<<u )                       c( left shift u places )
+                S>D0  lsl.l tos,d0
+                move.l d0,tos   next c;                 macro 03 optim
+code RSHIFT     ( x1 u -- x1>>u )                       c( logical right shift u places )
+                S>D0  lsr.l tos,d0
+                move.l d0,tos   next c;                 macro 03 optim
+code >>A        ( x1 u -- x1<<u )                       c( arithmetic right shift u places )
+                S>D0  asr.l tos,d0
+                move.l d0,tos   next c;                 macro 03 optim
+code 2DROP      ( x1 x2 -- )                            c( drop cell pair )
+                addq.l #4,s  S>T  next c;               macro 02 optim
+code 2DUP       ( x1 x2 -- x1 x2 x1 x2 )                c( duplicate cell pair )
+                move.l (s),d0  T>S  move.l d0,-(s)  next c;  macro
+code 2OVER      ( abcd -- abcdab )                      c( copy 2nd cell pair)
+                move.l 8(s),d0   T>S
+                move.l 8(s),tos  move.l d0,-(s)  next c;
+code 2SWAP      ( x1 x2 x3 x4 -- x3 x4 x1 x2 )          c( exchange top two cell pairs)
+                S>D0   move.l (s)+,d1
+                move.l (s),d2    move.l d0,(s)
+                T>S    move.l d2,-(s)
+                move.l d1,tos    next c;
+code D+         ( d1 d2 -- d3 )                         c( double-cell add)
+                S>D0   move.l (s)+,d1                   \ d0=d2l d7=d2h  d1=d1h s=d1l
+                add.l d0,(s)     addx.l d1,tos
+                next c;                                 macro
+code DNEGATE    ( xd1 -- -xd1 )                         c( double-cell negate)
+                move.l (s),d0    neg.l d0
+                negx.l tos       move.l d0,(s)  next c;
+code D-         ( d1 d2 -- d3 )                         c( double-cell subtract)
+                S>D0    move.l (s)+,d1                  \ T=d2h d0=d2l d1=d1h s=d1l
+                sub.l d0,(s)     subx.l tos,d1
+                move.l d1,tos    next c;
+code UD2/       ( d1 -- d2 )                            c( logical right shift double)
+                move.l (s),d0    lsr.l #1,d0  lsr.l #1,tos
+        if_cs   ori.l #80000000,d0
+        then    move.l d0,(s)    next c;
+code D2/        ( d1 -- d2 )                            c( arithmetic right shift double)
+                move.l (s),d0    lsr.l #1,d0  asr.l #1,tos
+        if_cs   ori.l #80000000,d0
+        then    move.l d0,(s)    next c;
+code D2*        ( d1 -- d2 )                            c( left shift double)
+                move.l (s),d0    add.l d0,d0  addx.l tos,tos
+                move.l d0,(s)    next c;
+code CELL+      ( x -- x+4 )                            c( add cellsize to TOS )
+                addq.l #4,tos    next c;                macro
+code CELLS      ( x1 -- x2 )                            c( multiply by cell size)
+                lsl.l #2,tos     next c;                macro
+code CHAR+      ( x -- x+1 )                            c( add chararacter size to TOS )
+                addq.l #1,tos    next c;                macro
+code CHARS      ( x1 -- x2 )                            c( multiply by character size)
+                next c;                                 macro
+code COUNT      ( a -- a' c )                           c( get length of a counted string)
+                T>S T>A0 clrT    move.b (a0)+,tos
+                move.l a0,(s)    next c;
+code ROT        ( abc -- bca)                           c( rotate third stack item to top)
+                move.l tos,d0    move.l (s)+,d1
+                move.l (s),tos   move.l d1,(s)
+                move.l d0,-(s)   next c;
+code -ROT       ( abc -- cab)                           c( rotate top to third stack item)
+                T>D0    S>T
+                move.l (s),d1    move.l d0,(s)
+                move.l d1,-(s)   next c;
+code UNDER+     ( a b c -- a+c b )                      c( add TOS to item under NOS)
+                add.l tos,4(s)  S>T  next c;            macro
+code PICK       ( ... n -- ... x[n] )                   c( get nth stack element)
+\ 0 pick = dup, 1 dup = over, etc.
+                lsl.l #2,tos  move.l 00(s,tos),tos  next c; macro
+code PLUCK      ( x1 x2 x3 -- x1 x2 x3 x1 )             c( 2 pick )
+                T>S  move.l 08(s),tos  next c;          macro  03 optim
+code -PICK      ( ... x n -- ... )                      c( store NOS to the TOSth element)
+                move.l (s)+,d1  lsl.l #2,tos
+                move.l d1,00(s,tos)
+                S>T  next c;
+code ON         ( addr -- )                             c( store true to addr)
+                T>A0   move.l #-1,(a0)  S>T  next c;
+code OFF        ( addr -- )                             c( store false to addr)
+                T>A0   clr.l (a0)       S>T  next c;    macro
+code +!         ( n addr -- )                           c( add n to the cell at addr)
+                T>A0   S>D0  add.l d0,(a0)
+                S>T   next c;
+code TUCK       ( x1 x2 -- x2 x1 x2 )                   c( tuck TOS under NOS)
+                S>D0   T>S
+                move.l d0,-(s)   next c;                macro
+code LAY        ( addr c -- addr' )                     c( lay a char to memory)
+                movea.l (s)+,a0  move.b tos,(a0)+
+                move.l a0,tos    next c;                macro
+code INCR       ( addr -- )                             c( increment cell by 1)
+                T>A0  addq.l #1,(a0)  S>T  next c;      macro
+code DECR       ( addr -- )                             c( decrement cell by 1)
+                T>A0  subq.l #1,(a0)  S>T  next c;      macro
+code 2>R        ( d -- )  ( R:  -- d )                  c( push double to return stack)
+                RA{ move.l (s)+,-(sp) T>R S>T }RA c;    call-only
+code 2R>        ( -- d )  ( R:  d -- )                  c( pop double from return stack)
+                RA{ T>S R>T move.l (sp)+,-(s) }RA c;    call-only
+code 2R@        ( -- d )  ( R:  d -- d )                c( copy double from return stack)
+                RA{  T>S  move.l (sp),tos
+                move.l 4(sp),-(s) }RA c;                call-only
+code UNLOOP     ( -- )  ( R: loop-sys -- )              c( discard loop parameters)
+\ loop-sys: ... leave-addr limit I RA --> ...
+        never        addq.l #8,sp  addq.l #4,sp  next
+        then    RA{  addq.l #8,sp  addq.l #4,sp  }RA c; call-only macro
+
+code LEAVE      ( -- )  ( R: loop-sys -- )              c( discard loop parameters, leave)
+\ loop-sys: ... leave-addr limit I RA --> ...
+                addq.l #8,sp  addq.l #4,sp  next c;     call-only
+
+code ?EXIT      ( f -- )                                c( exit definition if true)
+                tstT   if_eq  goto DROP  then           \ 0 = okay
+                addq.l #4,sp  goto DROP c;              call-only
+
+code I          ( -- n|u )                              c( innermost loop index)
+        never        T>S  move.l (sp),tos   next
+        then    RA{  T>S  move.l (sp),tos  }RA c;       call-only macro
+
+code J          ( -- n|u )                              c( next innermost loop index)
+        never        T>S  move.l 0C(sp),tos   next
+        then    RA{  T>S  move.l 0C(sp),tos  }RA c;     call-only macro
+
+temp-tokens \ the following used by builder only
+code (%FOR)     ( n -- )                                c( runtime for FOR)
+                RA{  T>R S>T  }RA c;                    call-only
+code (%NEXT)    ( -- )                                  c( runtime for NEXT)
+                RA{   subq.l #1,(sp)
+                if_lt   addq.l #4,sp
+                        jmp 4(a0)
+                then    }RA c;                          call-only
+code (%?DO)     ( n1|u1 n2|u2 -- ) ( R: -- loop-sys )   c( runtime for ?DO)
+                cmp.l (s),tos
+                if_ne   movea.l (sp),a0
+                        move.l (s)+,-(sp)  T>R
+                        S>T    jmp 4(a0)
+                then    addq.l #4,s  S>T
+                next c;                                 call-only
+code (%DO)      ( n1|u1 n2|u2 -- ) ( R: -- loop-sys )   c( runtime for DO)
+\ push params to return stack: old-I, retaddr, limit
+                movea.l (sp),a0
+                move.l (s)+,-(sp)  T>R
+                S>T    jmp 4(a0) c;                     call-only
+
+code (%+LOOP)  ( n -- ) ( R: loop-sys1 -- | loop-sys2 ) c( runtime for +LOOP)
+\ Add n to top element of return stack,
+\ bump return address if it passed the endpoint.
+                RA{
+                move.l 4(sp),d0  sub.l (sp),d0  add.l tos,d0 \ end - i + n
+                if_cc   S>T
+                        addq.l #8,sp addq.l #4,sp       \ discard loop params
+                        jmp 4(a0)                       \ skip back-branch
+                then    add.l tos,(sp)  S>T
+                }RA c;                                  call-only
+
+code (%LOOP)    ( -- ) ( R: loop-sys1 -- | loop-sys2 )  c( runtime for LOOP)
+\ Add n to top element of return stack,
+\ bump return address if equal to the endpoint.
+\ loop-sys: leave-addr limit i RA --> ...
+                RA{  move.l (sp)+,d0
+                addq.l #1,d0  cmp.l (sp),d0
+                if_eq   addq.l #8,sp                    \ discard loop params
+                        jmp 4(a0)                       \ skip back-branch
+                then    move.l d0,-(sp)
+                }RA c;                                  call-only
+
+code (%OF)      ( n1 n2 -- n1 | )                       c( runtime for OF)
+\ Compare n1 & n2.  If equal drop both and bump ret address,
+\ else drop n2.
+                cmp.l (s),tos
+                if_ne   S>T  next
+                then    RA{
+                addq.l #4,s  S>T
+                jmp 4(a0)  c;                           call-only
+
+main-tokens
+
+code 3DROP      ( x1 x2 x3 -- )                         c( drop triple from stack)
+                addq.l #8,s  S>T  next c;               macro   02 optim
+
+code CELL-      ( x -- x-4 )                            c( subtract cellsize from TOS )
+                subq.l #4,tos  next c;                  macro
+
+low-tokens
+
+code <          ( x1 x2 -- f )                          c( true if NOS < TOS signed)
+                cmp.l (s)+,tos  sgt tos  extT  next c;  macro 03 optim
+code >=         ( x1 x2 -- f )                          c( true if NOS >= TOS)
+                cmp.l (s)+,tos  sle tos  extT  next c;  macro 03 optim
+code >          ( x1 x2 -- f )                          c( true if NOS > TOS)
+                cmp.l (s)+,tos  slt tos  extT  next c;  macro 03 optim
+code <=         ( x1 x2 -- f )                          c( true if NOS > TOS)
+                cmp.l (s)+,tos  sge tos  extT  next c;  macro 03 optim
+code U<         ( u1 u2 -- flag )                       c( true if NOS < TOS unsigned)
+                cmp.l (s)+,tos  shi tos  extT  next c;  macro 03 optim
+code D0=        ( d -- f )                              c( true if double-cell = 0)
+                or.l (s)+,tos  seq tos  extT  next c;   macro 03 optim
+code D0<        ( d -- f )                              c( true if double-cell < 0)
+                addq.l #4,s  tstT  smi tos  extT  next c;
+code D0<>       ( d -- f )                              c( true if double-cell <> 0)
+                or.l (s)+,tos  sne tos  extT  next c;
+code 2!         ( x1 x2 a -- )                          c( double-cell store)
+                T>A0   move.l (s)+,(a0)+
+                move.l (s)+,(a0)  S>T  next c;          macro
+code 2@         ( a -- x1 x2 )                          c( double-cell fetch)
+                T>A0    move.l (a0)+,tos
+                move.l (a0),-(s)  next c;               macro
+code ON?        ( addr -- f )                           c( flag at addr <> 0?)
+                T>A0  tst.l (a0)  sne tos  extT  next c;
+code OFF?       ( addr -- f )                           c( flag at addr = 0?)
+                T>A0  tst.l (a0)  seq tos  extT  next c;
+code BIT-ON     ( bit# addr -- )                        c( set bit# of char at addr)
+                T>A0  S>D0
+                bset.b d0,(a0)  S>T  next c;
+code BIT-OFF    ( bit# addr -- )                        c( clear bit# of char at addr)
+                T>A0  S>D0
+                bclr.b d0,(a0)  S>T  next c;
+code BIT?       ( bit# addr -- f )                      c( test bit# of char at addr)
+                T>A0  S>D0  btst.b d0,(a0)  sne tos
+                extT  next c;
+code S>D        ( n -- d )                              c( signed single --> signed double)
+                T>S  smi tos  extT  next c;
+code ABS        ( x -- |x| )                            c( absolute value of TOS)
+                tstT
+                if_mi  neg.l tos  then  next c;
+code DABS       ( d -- |d| )                            c( double-cell absolute value )
+                tstT
+                if_mi  goto DNEGATE  then  next c;
+code UMAX       ( n1 n2 -- n3 )                         c( choose maximum of n1, n2)
+                cmp.l (s),tos
+        if_cc   addq.l #4,s
+        else    S>T
+        then    next c;
+code UMIN       ( n1 n2 -- n3 )                         c( choose minimum of n1, n2)
+                cmp.l (s),tos
+        if_cs   addq.l #4,s
+        else    S>T
+        then    next c;
+code MAX        ( n1 n2 -- n3 )                         c( choose maximum of n1, n2)
+                cmp.l (s),tos
+        if_gt   addq.l #4,s
+        else    S>T
+        then    next c;
+code MIN        ( n1 n2 -- n3 )                         c( choose minimum of n1, n2)
+                cmp.l (s),tos
+        if_lt   addq.l #4,s
+        else    S>T
+        then    next c;
+code 0MAX       ( x -- u )                              c( limit TOS to 0)
+                tstT  sge d0
+                ext.w d0   ext.l d0
+                and.l d0,tos  next c;
+code WITHIN     ( u ul uh -- f )                        c( lo <= n < hi unsigned)
+                S>D0  move.l (s)+,d1     \ d1=u d0=ul tos=uh
+                cmp.l d0,d1              \ u-ul
+        if_mi   clrT  next
+        then    cmp.l tos,d1             \ u-uh
+        if_cc   clrT  next
+        then    moveq #-1,tos  next c;
+code BETWEEN    ( n lo hi --- f1 )                      c( lo <= n <= hi signed)
+                S>D0  move.l (s)+,d1
+                cmp.l d0,d1
+        if_lt   clrT  next
+        then    cmp.l tos,d1
+        if_gt   clrT  next
+        then    moveq #-1,tos  next c;
+code BOUNDS     ( a n -- aend abeg )                    c( set up for DO..LOOP)
+                move.l (s),d0   add.l tos,(s)
+                move.l d0,tos  next c;                  macro   03 optim
+
+code MOVE       ( asrc adest n -- )                     c( move string of n chars)
+                movea.l (s)+,a1  movea.l (s)+,a0  tstT
+        if_ne   cmpa.l a0,a1
+                if_cc   adda.l tos,a0  adda.l tos,a1
+                        begin    move.b -(a0),d0
+                                 move.b d0,-(a1)
+                                 subq.l #1,tos
+                        until_eq
+                else    begin    move.b (a0)+,(a1)+
+                                 subq.l #1,tos
+                        until_eq
+                then
+        then    S>T  next c;
+
+code FILL       ( a n c -- )                            c( fill array a with n chars of c)
+                S>D0
+        if_ne   movea.l (s)+,a0
+                move.l a0,d1  move.l d0,d2  cmpi.l #14,d2
+                if_ge   neg.l d1  andi.l #3,d1      \ array is "long"
+                        begin    tst.l d0           \ align to 32-bit
+                        while_ne move.b tos,(a0)+
+                                 subq.l #1,d0
+                        repeat
+                        andi.l #0FF,tos
+                        move.l tos,d2  lsl.l #8,d2  \ d2 = 4byte pattern
+                        or.l   tos,d2  lsl.l #8,d2
+                        or.l   tos,d2  lsl.l #8,d2
+                        or.l   tos,d2
+                        begin    cmpi.l #10,d0      \ write 16-byte blocks
+                        while_ge move.l d2,(a0)+    \ on 4-byte boundary
+                                 move.l d2,(a0)+
+                                 move.l d2,(a0)+
+                                 move.l d2,(a0)+
+                                 subi.l #10,d0
+                        repeat
+                then
+                begin    tst.l d0                   \ fill last bytes
+                while_ne move.b tos,(a0)+
+                         subq.l #1,d0
+                repeat
+        else    addq.l #4,s
+        then    S>T  next c;
+
+code /STRING    ( addr len n -- addr' len' )    c( index into the string by n)
+\ Returns addr+n and len-n, n>=0
+                cmp.l (s),tos
+        if_gt   S>T                   \ n >= len  a'=a+len len'=0
+                add.l tos,(s)   clrT
+        else    S>D0                  \ n < len
+                add.l tos,(s)   sub.l d0,tos
+                neg.l tos
+        then    next c;
+
+{{ family 1 = slowmath 0= and }} [IF]                   \ CPU32
+code UM*        ( u1 u2 -- ud )                         c( unsigned 32*32 --> 64 multiply)
+                mulu.l (s),d0:tos  move.l tos,(s)
+                move.l d0,tos      next c;              macro 03 optim
+[THEN]
+{{ family 1 <> slowmath 0= and }} [IF]                  \ 68K or Coldfire
+code UM*        ( u1 u2 -- ud )                         c( unsigned 32*32 --> 64 multiply)
+                move.l (s),d0  move.l d0,d1
+                or.l tos,d1     andi.l #FFFF0000,d1
+                if_eq   mulu.w d0,tos  move.l tos,(s)
+                        clrT      next              \ small numbers
+                then    move.l d0,d1  move.l tos,d2
+                move.l tos,d3  mulu.w d0,d3    \ d3 = l*l
+                swap.w d0      mulu.w d0,d2    \ d2 = l*h
+                swap.w tos     mulu.w tos,d1   \ d1 = h*l
+                               mulu.w d0,tos   \ tos = h*h
+                add.l d2,d1                    \ d1 = ul+lu
+                if_cs   move.l #10000,d0  else  clr.l d0  then
+                swap.w d1  move.l d1,d2  clr.w d2  \ d2 = mid.l
+                andi.l #FFFF,d1  add.l d0,d1       \ d1 = mid.h
+                add.l d2,d3      addx.l d1,tos     \ tos:d3 = result
+                move.l d3,(s)    next c;
+[THEN]
+{{ slowmath }} [IF]     \ multiply without hardware
+code UM*        ( u1 u2 -- ud )                         c( unsigned 32*32 --> 64 multiply)
+                move.l (s),d0  clr.l d1         \ d0d1 = result d7=multiplier
+                moveq #10,d2  clr.l d3
+        for     add.l d1,d1  addx.l d0,d0
+                if_cs   add.l d7,d1
+                        addx.l d3,d0
+                then
+                add.l d1,d1  addx.l d0,d0
+                if_cs   add.l d7,d1
+                        addx.l d3,d0
+                then
+        next d2 move.l d0,d7  move.l d1,(s)
+                next c;
+[THEN]
+
+{{ family 0 = slowmath 0= and }} [IF]                   \ 68000
+code UM/MOD     ( ud u -- r q )                         c( unsigned 64/32 --> r32 q32)
+                S>D0  move.l (s),d1
+                tstT
+    if_ne       move.l tos,d2
+                andi.l  #FFFF0000,d2
+        if_eq   swap.w d1       swap.w d0               \ 16-bit divisor uses
+                move.w d1,d0    divu.w tos,d0           \ hardware divide unit
+                move.w d0,d1    swap.w d1
+                move.w d1,d0    divu.w tos,d0
+                move.w d0,d1    swap.w d0
+                ext.l  d0       move.l d0,(s)
+                move.l d1,tos   next
+        then    moveq  #20,d2                           \ 32-bit divisor uses
+        begin   add.l  d1,d1                            \ slow division
+                addx.l d0,d0
+                bcs local0
+                cmp.l  tos,d0
+                bcs local1
+local0:         sub.l  tos,d0
+                addq.l #1,d1
+local1:         subq.l #1,d2
+        until_eq move.l d0,(s)  move.l d1,tos
+                next
+    then        moveq #-1,tos   move.l tos,(s)  \ divide-by-zero
+                next c;
+[THEN]
+{{ family 1 = slowmath 0= and }} [IF]                   \ CPU32
+code UM/MOD     ( ud u -- r q )                         c( unsigned 64/32 --> r32 q32)
+                tstT
+        if_ne   move.l (s)+,d1  move.l (s),d0           \ numerator = d1:d0
+                divu.l tos,d1:d0
+                move.l d0,tos  move.l d1,(s)  next
+        then    moveq #-1,tos  move.l tos,(s)           \ zero denominator
+                next c;
+[THEN]
+{{ family 2 =  slowmath or }} [IF]                      \ ColdFire (no DIV instr)
+code UM/MOD     ( ud u -- r q )                         c( unsigned 64/32 --> r32 q32)
+                S>D0  move.l (s),d1     \ d0d1 = dividend, tos=divisor
+                tstT
+    if_ne       moveq  #20,d2           \ no hardware divide available
+        begin   add.l  d1,d1
+                addx.l d0,d0
+                bcs local0
+                cmp.l  tos,d0
+                bcs local1
+local0:         sub.l  tos,d0
+                addq.l #1,d1
+local1:         subq.l #1,d2
+        until_eq move.l d0,(s)  move.l d1,tos
+                next
+    then        moveq #-1,tos   move.l tos,(s)  \ divide-by-zero
+                next c;
+[THEN]
+
+
+: M/MOD         ( d n -- r q )          ( floored )     c( signed   d/n --> r q )
+                dup 0<  dup>r
+                if      negate >r dnegate r>
+                then    >r dup 0<
+                        if      r@ +
+                        then    r> um/mod r>
+                if      swap negate swap
+                then    ;
+
+: MU/MOD        ( ud# un1 -- rem d#quot )               c( unsigned ud/u --> ur udq)
+                >r  0  r@  um/mod  r>  swap
+                >r  um/mod  r> ;
+
+: M*            ( n1 n2 -- d )                          c( signed mult, double-cell result)
+                2dup xor 0<
+                >r  abs swap abs um*  r>
+                if      dnegate
+                then    ;
+
+: U/MOD         ( u1 u2 -- r q )  drop um/mod ;         c( unsigned u/u --> r q )
+: /MOD          ( n1 n2 -- r q )  over 0< swap m/mod ;  c( dividend divisor -- rem quot)
+: MOD           ( n1 n2 -- r )    /mod drop ;           c( dividend divisor -- rem )
+: */MOD         ( n1 n2 n3 -- r q )  >r m* r> m/mod ;   c( n1*n2/n3 --> rem quot)
+: /             ( n1 n2 -- q )       /mod nip ;         c( dividend divisor -- quot)
+{{ family }} [IF]
+code *          ( n1 n2 -- n3 )                         c( signed mult, single-cell result)
+                mulu.l (s)+,tos  next c;                macro
+[ELSE]
+: *             ( n1 n2 -- n3 )      um* drop ;         c( signed mult, single-cell result)
+[THEN]
+: */            ( n1 n2 n3 -- q )    */mod nip ;        c( n1*n2/n3 --> quot)
+: FM/MOD        ( d1 n1 -- n2 n3 )   m/mod ;            c( floored m/mod)
+
+: SM/REM        ( d1 n2 -- n2 n3 )                      c( symetric m/mod)
+                over >r  2dup xor 0< >r
+                abs >r  dabs r>   um/mod ( rem quot )
+                r> ?negate swap  r> ?negate swap ;
+main-tokens
+code UNDER1+    ( x1 x2 -- x1' x2 )                     c( add 1 to NOS)
+                addq.l #1,(s)  next c;                  macro
+
+code UNDER1-    ( x1 x2 -- x1' x2 )                     c( subtract 1 from NOS)
+                subq.l #1,(s)  next c;                  macro
+
+code >DIGIT     ( n -- c )                              c( convert digit to ASCII)
+                cmpi.l #9,tos   sgt d0
+                andi.l #7,d0    add.l d0,tos
+                addi.l #30,tos  next c;
+
+code BYTE-SPLIT ( w -- cl ch )                          c( split into lo and hi bytes)
+                T>D0    andi.l #0FF,d0
+                move.l d0,-(s)   lsr.l #8,tos
+                andi.l #0FF,tos  next c;
+code WORD-SPLIT ( n -- nl nh )                          c( split 32 --> lo-16 hi-16)
+                T>D0    andi.l #0FFFF,d0
+                move.l d0,-(s)   swap.w tos
+                andi.l #0FFFF,tos  next c;
+code BYTE-JOIN  ( cl ch -- n )                          c( join lo and hi bytes)
+                lsl.l #8,tos  or.l (s)+,tos  next c;    macro
+code WORD-JOIN  ( nl nh -- n )                          c( join  lo-16 hi-16 --> 32)
+                swap.w tos    or.l (s)+,tos  next c;    macro
+code BYTE-SWAP  ( n -- n' )                             c( swap lower 2 bytes of n)
+                T>D0          andi.l #0FF,d0  lsl.l #8,d0
+                lsr.l #8,tos  andi.l #0FF,tos  or.l d0,tos
+                next c;
+
+low-tokens
+''HERE asmlabel _''here
+
+code ALLOT      ( n -- )                                c( allot n chars in dictionary)
+                movea.l _''here,a0  add.l tos,(a0)  move.l (s)+,tos  next c;
+code HERE       ( -- addr )                             c( address of next free char)
+                move.l  tos,-(s)  movea.l _''here,a0
+                move.l (a0),tos  next c;
+                DATATYPE CELL
+code ALIGNED    ( addr -- addr )                        c( align tos with word boundary)
+                addq.l #3,tos  andi.l #-4,tos  next c;
+code ALIGN      ( -- )                                  c( align dp with word boundary)
+                movea.l _''here,a0  move.l (a0),d0
+                addq.l #3,d0  andi.l #-4,d0
+                move.l d0,(a0)  next c;
+main-tokens
+code PALIGNED   ( addr -- addr )                        c( align tos with word boundary)
+                addq.l #1,tos  andi.l #-2,tos  next c;
+code PALIGN     ( -- )                                  c( align dp with word boundary)
+                movea.l _''here,a0  move.l (a0),d0
+                addq.l #1,d0  andi.l #-2,d0
+                move.l d0,(a0)  next c;
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+code CHARALLOT  ( -- )                                  c( bump HERE 1 char )
+                movea.l _''here,a0  addq.l #1,(a0)  next c;
+code WORDALLOT  ( -- )                                  c( bump HERE 2 bytes )
+                movea.l _''here,a0  addq.l #2,(a0)  next c;
+code CELLALLOT  ( -- )                                  c( bump HERE 1 cell )
+                movea.l _''here,a0  addq.l #4,(a0)  next c;
+
+code (%TO@)     ( a-addr -- x )                         c( runtime part of value read)
+\ save a-addr as temporary address
+                T>A0  move.l tos,tempvalue
+                move.l (a0),tos       next c;           \ get value, save address
+
+code (%TO!)     ( x1 x2 -- )                            c( runtime part of value write)
+\ discard x2, write x1 to the temporary address left by (%TO@)
+                movea.l tempvalue,a0
+                move.l (s)+,(a0)
+                move.l (s)+,d7
+                next c;
+
+CORE DEFINITIONS  main-tokens \ ===========================================
+
+code DIGIT      ( char base -- n f )                    c( convert ASCII to digit)
+                move.l (s),d0  subi.l #30,d0
+        if_mi   clrT  next                              \ invalidate if below '0'
+        then    cmpi.l #9,d0
+        if_gt   subq.l #7,d0  cmpi.l #0A,d0
+                if_mi   clrT  next                      \ invalid if between '9' and 'A'
+                then
+        then    cmp.l tos,d0
+        if_ge   clrT  next                              \ invalidate if >= base
+        then    moveq #-1,tos
+                move.l d0,(s)  next c;
+
+: COUNTER<      ( d1 d2 -- f )                          c( compare time values, T if t2>t1)
+                drop nip - 0< ;                         \ 32-bit cells
+
+low-tokens
+
+code -SCAN      ( a n1 c -- a n2 )
+c( remove trailing characters)  \ : -trailing bl -scan ;
+                T>D0  S>T  move.l (S),d1        \ d0=c TOS=n1
+                add.l tos,d1  movea.l d1,a0     \ a0='end
+                clr.l d1
+       begin    tstT
+       while_ne move.b -(a0),d1  eor.l d0,d1
+                if_ne   next                    \ mismatch: done
+                then    subq.l #1,tos
+       repeat   next c;
+
+code COMP       ( a1 a2 n1 -- f1 )                      c( string compare a1 a2 len)
+                movea.l (s)+,a1  clr.l d1
+                movea.l (s)+,a0  clr.l d0
+       begin    tstT
+       while_ne subq.l #1,tos
+                move.b (a0)+,d0  move.b (a1)+,d1
+                cmp.l d0,d1
+                if_ne   smi tos  extT   \ mismatch: exit
+                        lsl.l #1,tos  addq.l #1,tos
+                        next
+                then
+       repeat   clrT  next c;           \ all matched
+
+code SCAN       ( a1 n1 c1 -- a2 n2 )                   c( scan string for character)
+                T>D0 S>T  movea.l (S),a0    \ d0=c tos=n1 a0=addr
+                clr.l d1
+       begin    tstT
+       while_ne move.b (a0)+,d1  eor.l d0,d1
+                if_eq   subq.l #1,a0  move.l a0,(S)
+                        next
+                then    subq.l #1,tos
+       repeat   next c;
+
+code SKIP       ( a1 n1 c -- a2 n2 )                    c( skip leading characters c)
+                T>D0 S>T  movea.l (S),a0    \ d0=c tos=n1 a0=addr
+       begin    tstT
+       while_ne move.b (a0)+,d1  eor.l d0,d1
+                if_ne   subq.l #1,a0  move.l a0,(S)
+                        next
+                then    subq.l #1,tos
+       repeat   next c;
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+code (swap2andor) ( header f -- f' )    c( used by EVAL, SWAP 2 AND OR)
+                S>D0  andi.l #2,d0  or.l d0,tos
+                next c;                 macro   53 optim
+
+CORE DEFINITIONS  main-tokens
+
+code B@@+       ( a -- c )              c( lift byte from an input stream)
+\ Assume the pointer will always be in RAM data space,
+\ data is in data space.
+                T>A0  movea.l (a0),a1
+                clrT  move.b (a1)+,tos
+                move.l a1,(a0)  next c;
+
+code B@@+P      ( a -- c )              c( lift byte from an input stream)
+\ Assume the pointer will always be in RAM data space,
+\ data is in code space.
+                goto B@@+  c;
+
+
+[else]  \ non-optimized ========================================================
+\ Assume that subroutine threading is used and that addresses on the
+\ return stack are one cell wide.
+: NIP           ( x1 x2 -- x1 )  SWAP DROP ;            c( discard 2nd item on stack)
+: 1+            ( x -- x+1 )     01 + ;                 c( add 1 to TOS )
+: 1-            ( x -- x-1 )     01 - ;                 c( subtract 1 from TOS )
+: 2*            ( x -- x*2 )     DUP + ;                c( multiply TOS by 2)
+: INVERT        ( x -- ~x )      -01 XOR ;              c( bitwise invert TOS )
+: NEGATE        ( x -- -x )      INVERT 1+ ;            c( bitwise invert TOS )
+: R@            ( -- x )   ( R: x -- x )                c( copy cell from return stack)
+                R> R> DUP >R SWAP >R ;                  call-only
+: DUP>R         ( x -- x ) ( R: -- x )                  c( copy cell to return stack)
+                R> SWAP DUP >R SWAP >R ;                call-only
+: R>DROP        ( x -- x ) ( R: x -- )                  c( drop cell from return stack)
+                R> R> DROP >R ;                         call-only
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+: ?NEGATE       ( n1 n2 -- n3 )  0< IF NEGATE THEN ;
+CORE DEFINITIONS  low-tokens \ ===========================================
+
+: 0<>           ( x -- f )       0= 0= ;                c( T if nonzero )
+: 0>=           ( x -- f )       0< 0= ;                c( T if non-negative )
+: 0<=           ( x -- f )       DUP >R 0< R> 0= OR ;   c( T if not positive )
+: 0>            ( x -- f )       0<= 0= ;               c( T if non-negative )
+: =             ( x1 x2 -- f )   XOR 0= ;               c( true if NOS = TOS)
+: <>            ( x1 x2 -- f )   XOR 0<> ;              c( true if NOS = TOS)
+: ?DUP          ( x -- x x | 0 )  DUP IF DUP THEN ;     c( duplicate top item if nonzero)
+: LSHIFT        ( x1 u -- x1<<u )                       c( left shift u places )
+                BEGIN ?DUP WHILE 1- >R 2* R> REPEAT ;
+: RSHIFT        ( x1 u -- x1>>u )                       c( logical right shift u places )
+                BEGIN ?DUP WHILE 1- >R U2/ R> REPEAT ;
+: >>A           ( x1 u -- x1<<u )                       c( arithmetic right shift u places )
+                BEGIN ?DUP WHILE 1- >R 2/ R> REPEAT ;
+: 2DROP         ( x1 x2 -- )    NIP DROP ;              c( drop cell pair )
+: 2DUP          ( x1 x2 -- x1 x2 x1 x2 ) OVER OVER ;    c( duplicate cell pair )
+: 2OVER         ( abcd -- abcdab )   3 PICK 3 PICK ;    c( copy 2nd cell pair)
+: 2SWAP         ( x1 x2 x3 x4 -- x3 x4 x1 x2 )          c( exchange top two cell pairs)
+                >R SWAP >R SWAP R> R> SWAP >R SWAP R> ;
+: D+            ( d1 d2 -- d3 )                         c( double-cell add)
+                >R SWAP >R UM+ R> + R> + ;
+: DNEGATE       ( xd1 -- -xd1 )                         c( double-cell negate)
+                >R DUP NEGATE SWAP 0= IF R> NEGATE ELSE R> INVERT THEN ;
+: D-            ( d1 d2 -- d3 )    DNEGATE d+ ;         c( double-cell subtract)
+: UD2/          ( d1 -- d2 )                            c( logical right shift double)
+                DUP U2/ >R 1 AND 0<> MININT AND >R U2/ R> OR R> ;
+: D2/           ( d1 -- d2 )                            c( arithmetic right shift double)
+                DUP 2/ >R 1 AND 0<> MININT AND >R U2/ R> OR R> ;
+: D2*           ( d1 -- d2 )       2DUP D+ ;            c( left shift double)
+: CELL+         ( x -- x+4 )       04 + ;               c( add cellsize to TOS )
+: CELLS         ( x1 -- x2 )       2* 2* ;              c( multiply by cell size)
+: CHAR+         ( x -- x+1 )       01 + ;               c( add chararacter size to TOS )
+: CHARS         ( x1 -- x2 )    ;  macro                c( multiply by character size)
+: COUNT         ( a -- a' c )      DUP CHAR+ SWAP C@ ;  c( get length of a counted string)
+: ROT           ( abc -- bca)      >R SWAP R> SWAP ;    c( rotate third stack item to top)
+: -ROT          ( abc -- cab)      SWAP >R SWAP R> ;    c( rotate top to third stack item)
+: UNDER+        ( a b c -- a+c b ) SWAP >R + R> ;       c( add TOS to item under NOS)
+: PICK          ( ... n -- ... x[n] )                   c( get nth stack element)
+\ 0 pick = dup, 1 dup = over, etc.
+\ This is gonna hurt. Assumes SP@ and SP! don't exist.
+                DUP >R >R                       ( ... | cnt cnt )
+        BEGIN   R@                      \ move to return stack
+        WHILE   R> R> SWAP 1- ROT >R    ( ... cnt cnt' | ? )
+                SWAP >R >R              ( ... | ... cnt cnt' )
+        REPEAT  R> DROP DUP             ( u[x] | ... cnt )
+        BEGIN   R@
+        WHILE   R> 1- R>                ( u cnt' y | ... )
+                -ROT >R                 ( y u[x] | ... cnt' )
+        REPEAT  R> DROP ;
+: PLUCK         ( x1 x2 -- x1 x2 x1 )                   c( 2 pick )
+                >R >R DUP R> SWAP R> SWAP ;
+: -PICK         ( ... x n -- ... )                      c( store NOS to the TOSth element)
+\ this is to support locals in the future
+                DUP
+      IF        1- DUP >R               ( ... x cnt | cnt )
+        BEGIN   R@                      \ move to return stack
+        WHILE   ROT R> 1- SWAP >R >R
+        REPEAT  R> DROP >R -ROT NIP     ( ... x | ... cnt )
+        BEGIN   R@
+        WHILE   R> 1- R> SWAP >R
+        REPEAT  R> DROP
+      ELSE      DROP NIP
+      THEN      ;
+: ON            ( addr -- )     -01 SWAP ! ;            c( store true to addr)
+: OFF           ( addr -- )      00 SWAP ! ;            c( store true to addr)
+: +!            ( n addr -- )    DUP>R @ + R> ! ;       c( add n to the cell at addr)
+: TUCK          ( x1 x2 -- x2 x1 x2 ) DUP >R SWAP R> ;  c( tuck TOS under NOS)
+: LAY           ( addr c -- addr' )  OVER C! CHAR+ ;    c( lay a char to memory)
+: INCR          ( addr -- )      01 SWAP +! ;           c( increment cell by 1)
+: DECR          ( addr -- )     -01 SWAP +! ;           c( decrement cell by 1)
+: 2>R           ( d -- )  ( R:  -- d )                  c( push double to return stack)
+                SWAP R> SWAP >R SWAP >R >R ;            call-only
+: 2R>           ( -- d )  ( R:  d -- )                  c( pop double from return stack)
+                R> R> SWAP R> SWAP >R SWAP ;            call-only
+: 2R@           ( -- d )  ( R:  d -- d )                c( copy double from return stack)
+                R> R> R> DUP >R SWAP DUP >R >R SWAP R> SWAP >R ; call-only
+: UNLOOP        ( -- )  ( R: loop-sys -- )              c( discard loop parameters)
+\ loop-sys: ... leave-addr limit I RA --> ...
+                R> R> DROP R> DROP R> DROP >R ;         call-only
+: LEAVE         ( -- )  ( R: loop-sys -- )              c( discard loop parameters, leave)
+\ loop-sys: ... leave-addr limit I RA --> ...
+                R> DROP R> DROP R> DROP ;               call-only
+: ?EXIT         ( f -- )                                c( exit definition if true)
+                IF R> DROP THEN ;                       call-only
+main-tokens
+: (%?DO)        ( n1|u1 n2|u2 -- ) ( R: -- loop-sys )   c( runtime for ?DO)
+        2DUP <> IF      R@ ROT >R SWAP >R SKIPADDR >R
+                ELSE    2DROP
+                THEN    ;                               call-only
+: (%DO)         ( n1|u1 n2|u2 -- ) ( R: -- loop-sys )   c( runtime for DO)
+                R@ ROT >R SWAP >R SKIPADDR >R ;         call-only
+: (%+LOOP) ( n -- ) ( R: loop-sys1 -- | loop-sys2 )     c( runtime for +LOOP)
+\ add n to top element of return stack, bump return address if it passed the endpoint.
+                R> A! R> DUP R@                 ( n i i lim | pr lim )
+                SWAP - >R OVER R> UM+           ( n i n+l-i . | pr lim )
+                IF      DROP + >R A@ >R
+                ELSE    2DROP DROP R> DROP R> DROP
+                        A@ SKIPADDR >R
+                THEN    ;                               call-only
+: (%LOOP)       ( -- ) ( R: loop-sys1 -- | loop-sys2 )  c( runtime for LOOP)
+\ bump top element of return stack, bump return address if equal to endpoint
+\ leave-addr limit i RA --> ...
+                R> A! R> R@ SWAP 1+ DUP >R =            ( f | pr lim i' )
+                IF      R> DROP R> DROP R> DROP
+                        A@ SKIPADDR >R
+                ELSE    A@ >R
+                THEN    ;                               call-only
+: (%OF)         ( n1 n2 -- n1 | )                       c( runtime for OF)
+\ compare n1 & n2.  if equal drop both and bump ret address, else drop n2
+         OVER = IF      DROP R> SKIPADDR >R
+                THEN    ;                               call-only
+defer (%IF)                                             c( not used)
+
+: 3DROP         ( x1 x2 x3 -- )    NIP NIP DROP ;       c( drop triple from stack)
+: CELL-         ( x -- x-4 )       04 - ;               c( subtract cellsize from TOS )
+
+low-tokens
+: I             ( -- n|u )                              c( innermost loop index)
+                R> R@ SWAP >R ;                         call-only
+: J             ( -- n|u )                              c( next innermost loop index)
+                R> R> R> R> R@ SWAP >R SWAP >R SWAP >R SWAP >R ; call-only
+: <             ( x1 x2 -- f )                          c( true if NOS < TOS signed)
+                2DUP XOR 0< IF DROP 0< EXIT THEN - 0< ;
+: >=            ( x1 x2 -- f )  < 0= ;                  c( true if NOS >= TOS)
+: >             ( x1 x2 -- f )  SWAP < ;                c( true if NOS > TOS)
+: <=            ( x1 x2 -- f )  > 0= ;                  c( true if NOS > TOS)
+: U<            ( u1 u2 -- flag )                       c( true if NOS < TOS unsigned)
+                2DUP XOR 0< IF NIP 0< EXIT THEN - 0< ;
+: D0=           ( d -- f )      OR 0= ;                 c( true if double-cell = 0)
+: D0<           ( d -- f )      NIP 0< ;                c( true if double-cell < 0)
+: D0<>          ( d -- f )      D0= 0= ;                c( true if double-cell <> 0)
+
+: 2!            ( x1 x2 a -- )  SWAP OVER ! CELL+ ! ;   c( double-cell store)
+: 2@            ( a -- x1 x2 )  DUP CELL+ @ SWAP @ ;    c( double-cell fetch)
+: ON?           ( addr -- f )   @ 0<> ;                 c( flag at addr <> 0?)
+: OFF?          ( addr -- f )   @ 0= ;                  c( flag at addr = 0?)
+
+: BIT-ON        ( bit# addr -- )                        c( set bit# of char at addr)
+                A! 1 SWAP LSHIFT C@A OR C!A ;
+: BIT-OFF       ( bit# addr -- )                        c( clear bit# of char at addr)
+                A! 1 SWAP LSHIFT INVERT C@A AND C!A ;
+: BIT?          ( bit# addr -- f )                      c( test bit# of char at addr)
+                A! 1 SWAP LSHIFT C@A AND 0<> ;
+: S>D           ( n -- d )     DUP 0< ;                 c( signed single --> signed double)
+: ABS           ( x -- |x| )   DUP ?NEGATE ;            c( absolute value of TOS)
+: DABS          ( d -- |d| )   DUP 0< IF DNEGATE THEN ; c( double-cell absolute value )
+: UMAX          ( n1 n2 -- n3 )                         c( choose maximum of n1, n2)
+                2DUP U< IF NIP EXIT THEN DROP ;
+: UMIN          ( n1 n2 -- n3 )                         c( choose minimum of n1, n2)
+                2DUP SWAP U< IF NIP EXIT THEN DROP ;
+: MAX           ( n1 n2 -- n3 )                         c( choose maximum of n1, n2)
+                2DUP < IF NIP EXIT THEN DROP ;
+: MIN           ( n1 n2 -- n3 )                         c( choose minimum of n1, n2)
+                2DUP > IF NIP EXIT THEN DROP ;
+: 0MAX          ( x -- u )        DUP 0>= AND ;         c( limit TOS to 0)
+: WITHIN        ( u ul uh -- f )  OVER - >R - R> U< ;   c( lo <= n < hi unsigned)
+: BETWEEN       ( n lo hi --- f1 ) PLUCK >= -ROT >= AND ; c( lo <= n <= hi signed)
+: BOUNDS        ( a n -- aend abeg )   OVER + SWAP ;    c( set up for DO..LOOP)
+
+: MOVE          ( asrc adest n -- )                     c( move string of n chars, n >= 0)
+                >R 2DUP U<
+                IF      ( CMOVE> )
+                        R@ + SWAP R@ + SWAP
+                        MULTI   >R 1- R> 1-
+                                OVER C@ OVER C!
+                        REPEAT
+                ELSE    ( CMOVE )
+                        MULTI   OVER C@ OVER C!
+                                >R CHAR+ R> CHAR+
+                        REPEAT
+                THEN    R>DROP DROP DROP ;
+
+: FILL          ( a n c -- )                            c( fill array a with n chars of c)
+                >R SWAP A!
+                BEGIN   DUP             ( n ! c )
+                WHILE   R@ C!A+ 1-
+                REPEAT  R> DROP DROP ;
+
+: /STRING       ( addr len n -- addr' len' )            c( index into the string by n)
+\ Returns addr+n and len-n, n>=0
+                OVER MIN >R  SWAP R@ +  SWAP R> - ;
+
+: UM*           ( u1 u2 -- ud )                         c( unsigned u*u -> ud multiply)
+                0 swap [ {{ cellbits }} ] literal >R    ( u1 0 u2 | cnt )
+        multi   dup>r
+                2dup D+ r> 0<                           ( u1 y u2' . | cnt )
+                if      pluck 0 D+
+                then
+        repeat  R>drop rot drop ;
+
+: UM/MOD        ( ud1 u1 -- rem quot )                  c( divide unsigned double -> R Q )
+                ?dup
+        if      [ {{ cellbits }} ] literal >R           ( ud1 u1 | cnt )
+                begin   R@
+                while   R> 1- >R
+                        >r dup>r d2* r> 0<              ( ud1' . | cnt u1 )
+                        if      r@ - >r 1+ r>           \ shift: cy -> need sub
+                        else    dup r@ u< 0=            \ need to subt?
+                                if      r@ - >r 1+ r>
+                                then
+                        then    r>
+                repeat  r>drop drop swap
+        else    2drop -1 -1
+        then    ;
+
+: M/MOD         ( d n -- r q )          ( floored )     c( signed   d/n --> r q )
+                dup 0<  dup>r
+                if      negate >r dnegate r>
+                then    >r dup 0<
+                        if      r@ +
+                        then    r> um/mod r>
+                if      swap negate swap
+                then    ;
+
+: MU/MOD        ( ud# un1 -- rem d#quot )               c( unsigned ud/u --> ur udq)
+                >r  0  r@  um/mod  r>  swap
+                >r  um/mod  r> ;
+
+: M*            ( n1 n2 -- d )                          c( signed mult, double-cell result)
+                2dup xor 0<
+                >r  abs swap abs um*  r>
+                if      dnegate
+                then    ;
+
+: U/MOD         ( u1 u2 -- r q )  drop um/mod ;         c( unsigned u/u --> r q )
+: /MOD          ( n1 n2 -- r q )  over 0< swap m/mod ;  c( dividend divisor -- rem quot)
+: MOD           ( n1 n2 -- r )    /mod drop ;           c( dividend divisor -- rem )
+: */MOD         ( n1 n2 n3 -- r q )  >r m* r> m/mod ;   c( n1*n2/n3 --> rem quot)
+: /             ( n1 n2 -- q )       /mod nip ;         c( dividend divisor -- quot)
+: *             ( n1 n2 -- n3 )      um* drop ;         c( signed mult, single-cell result)
+: */            ( n1 n2 n3 -- q )    */mod nip ;        c( n1*n2/n3 --> quot)
+: FM/MOD        ( d1 n1 -- n2 n3 )   m/mod ;            c( floored m/mod)
+
+: SM/REM        ( d1 n2 -- n2 n3 )                      c( symetric m/mod)
+                over >r  2dup xor 0< >r
+                abs >r  dabs r>   um/mod ( rem quot )
+                r> ?negate swap  r> ?negate swap ;
+
+main-tokens
+: UNDER1+       ( x1 x2 -- x1' x2 )  >R 1+ R> ;         c( add 1 to NOS)
+: UNDER1-       ( x1 x2 -- x1' x2 )  >R 1- R> ;         c( subtract 1 from NOS)
+: >DIGIT        ( n -- c ) DUP 9 > 7 AND + [CHAR] 0 + ; c( convert digit to ASCII)
+
+: BYTE-SPLIT    ( n -- cl ch )                          c( split into lo and hi bytes)
+                DUP 0xFF AND SWAP 8 RSHIFT 0xFF AND ;
+
+: WORD-SPLIT    ( n -- nl nh )                          c( split 32 --> lo-16 hi-16)
+                DUP 0xFFFF AND SWAP 0x10 RSHIFT 0xFFFF AND ;
+
+: BYTE-JOIN     ( cl ch -- n )  8 LSHIFT OR ;           c( join lo and hi bytes)
+: WORD-JOIN     ( nl nh -- n )  0x10 LSHIFT OR ;        c( join  lo-16 hi-16 --> 32)
+: BYTE-SWAP     ( n -- n' ) BYTE-SPLIT SWAP BYTE-JOIN ; c( swap lower 2 bytes of n)
+
+low-tokens
+: ALLOT         ( n -- )          ''HERE @ +! ;         c( allot n chars in dictionary)
+: ALIGNED       ( addr -- addr )                        c( align tos with word boundary)
+                [ {{ alignment dup negate swap 1- }} ]
+                LITERAL + LITERAL AND ;
+: ALIGN         ( -- )      ''HERE @ @ ALIGNED ''HERE @ ! ; c( align dp with word boundary)
+: HERE          ( -- addr ) ''HERE @ @ ;                c( address of next free char)
+                DATATYPE CELL
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+: CHARALLOT     ( -- ) [ {{ 1 CHARS }} ] LITERAL ALLOT ; c( bump HERE 1 char )
+: WORDALLOT     ( -- ) [ {{ 16BIT }} ]   LITERAL ALLOT ; c( bump HERE 2 bytes )
+: CELLALLOT     ( -- ) [ {{ 1 CELLS }} ] LITERAL ALLOT ; c( bump HERE 1 cell )
+
+variable temp'value     c( temporary pointer to value)
+
+CORE DEFINITIONS  main-tokens \ ===========================================
+
+: DIGIT         ( char base -- n f )                    c( convert ASCII to digit)
+\ return T if it converted OK, n = char if not ok
+                >r dup '0' -  dup 0<            ( char n . | base )
+        if      r>drop drop 0 exit              \ below '0'
+        then    dup 9 >
+        if      7 - dup 0x0A <                  ( char n . | base )
+                if      r>drop drop 0 exit      \ between '9' and 'A'
+                then
+        then    dup r> <                        ( char n . )
+        if      nip true
+        else    drop false
+        then    ;
+
+: (%TO@)        ( a-addr -- x ) dup temp'value ! @ ;    c( runtime part of value read)
+: (%TO!)        ( x1 x2 -- )    drop temp'value @ ! ;   c( runtime part of value write)
+
+low-tokens
+
+: -SCAN         ( a n1 c -- a n2 )
+c( remove trailing characters)  \ : -trailing bl -scan ;
+                >r over +                  ( a 'end )
+        begin   2dup <>
+        while   1- dup c@ r@ <>            \ last char not match?
+                if      r>drop over - 1+
+                        exit
+                then
+        repeat  r>drop over - ;
+
+: COMP          ( a1 a2 n1 -- f1 )                      c( string compare a1 a2 len)
+                >r
+        multi   over c@ over c@ <>
+                if      r>drop
+                        c@ swap c@ < 2* 1+ exit
+                then
+                >r 1+ r> 1+
+        repeat  r>drop 2drop 0 ;
+: SCAN          ( a1 n1 c1 -- a2 n2 )                   c( scan string for character)
+                >r
+        begin   over c@ r@ <>  over and
+        while   1 /string
+        repeat  r>drop ;
+: SKIP          ( a1 n1 c -- a2 n2 )                    c( skip leading characters c)
+                >r
+        begin   over c@ r@ =   over and
+        while   1 /string
+        repeat  r>drop ;
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+: (swap2andor)  ( header f -- f' )    c( used by EVAL, SWAP 2 AND OR)
+                SWAP 2 AND OR ;
+
+CORE DEFINITIONS  main-tokens
+
+: B@@+          ( a -- c )              c( lift byte from an input stream)
+\ assume the pointer will always be in RAM data space, data is in data space
+                dup @ count >r swap ! r> ;
+
+: B@@+P         ( a -- c )              c( lift byte from an input stream)
+\ assume the pointer will always be in RAM data space, data is in code space
+                dup @ dup c@p >r char+ swap ! r> ;
+
+\ ##############################################################################
+[then]
+
+\ \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+\ the following are okay for hi-level implementation
+
+low-tokens
+: EXECUTE       ( xt -- )       'BIND EXECUTECFA ;      c( execute bound code)
+: ERASE         ( a n -- )      0 FILL ;                c( fill array with zeros)
+: BLANK         ( a n -- )      BL FILL ;               c( fill array with blanks)
+main-tokens
+: REBIND        ( xtsrc xtdest -- )                     c( bind a new action to a word)
+                >R BIND@ R> BIND! ;                     \ used by IS
+: BIND[         ( xtsrc xtdest -- | R: -- xt cfa )      c( bind a new action to a word)
+                R> over >R over bind@ >R
+                >R rebind ; call-only                   \ put under return address
+: ]BIND         ( -- | R: xt cfa -- )                   c( restore old action )
+                R> R> R> bind! >R ; call-only
+
+3 constant CPUTYPE                                      c( cpu code type: 3 = MCF/68K)
+: ORG           ( addr -- ) ''here @ ! ;                c( change dictionary pointer)
+
+HIDDEN DEFINITIONS  temp-tokens \ ========================================
+
+: P@+           ( a -- a' n )   dup cell+ swap @P ;     c( next sequential program cell)
+
+: CODEC,        ( c -- )        HERE C!P CHARALLOT ;
+: CODEW,        ( w -- )        HERE W!P WORDALLOT ;
+: CODE,         ( x -- )        ALIGN HERE !P  CELLALLOT ;
+: CODE,NA       ( x -- )        HERE !P  CELLALLOT ;
+: DATAC,        ( c -- )        HERE C!  CHARALLOT ;
+: DATAW,        ( w -- )        HERE W!  WORDALLOT ;
+: DATA,         ( x -- )        ALIGN HERE !   CELLALLOT ;
+: CODEHERE      ( -- a )        CHERE @ ;
+
+HIDDEN DEFINITIONS  temp-tokens \ =========================================
+
+{{ EEPROMpart 9 > }} [IF]
+
+\ EEPROM or non-volatile storage access ----------------------------------
+
+\ The generic kernel section uses this section to talk to an I2C (2-wire)
+\ serial EEPROM using general purpose I/O pins. Not included if EEPROMpart < 10.
+
+static
+code _e-clock   ( -- f )                  c( issue a clock pulse)
+\ While the clock is high we read the value on the sda line (0 or 1). When a
+\ read is taking place f will indicate the value from the dut.
+                scl=1
+                nop nop nop nop T>S
+                sda? if_ne moveq #1,d7 else moveq #0,d7 then
+                scl=0 next c;
+
+code _e-stop    ( -- )                  c( main EE stop command)
+                sda=0 nop nop nop
+                scl=1 nop nop nop
+                sda=1 next c;
+
+code _e-start   ( -- )                  c( main EE start command)
+                sda=1
+                scl=1 nop nop nop
+                sda=0 nop nop nop
+                scl=0 next c;
+
+code _e-nack?   ( -- f )                c( issue a non-ack, return status)
+                sda=1  xbra _e-clock c;
+
+code _e-ack     ( -- )                  c( issue an acknowledge)
+                sda=0  xbsr _e-clock  S>T next c;
+
+: _e-inbyte     ( -- c )                c( read 8 bits from the EEPROM)
+                c[ sda=1 ]c
+                8 >r 0
+        multi   2* _e-clock +
+        repeat  r>drop ;
+
+: _e-outbyte    ( c -- )                c( write 8 bits to the EEPROM)
+                8 >r
+        multi   c[ btst.l #7,tos if_ne sda=1 else sda=0 then ]c
+                _e-clock drop 2*
+        repeat  r>drop drop ;
+
+[THEN]
+CORE DEFINITIONS    main-tokens \ ========================================
+
+: RAM           ( -- )                                  c( set to compile to data space)
+                DHERE ''HERE !    ['] DATAC, IS C,
+                ['] DATAW, IS W,  ['] DATA,  IS ,  ;
+: ROM           ( -- )                                  c( set to compile to code space)
+                CHERE ''HERE !    ['] CODEC, IS C,
+                ['] CODEW, IS W,  ['] CODE,  IS ,  ;
+
+\ From this point on, definitions use dynamic binding.
+
+dynamic \ ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
+
+\ ------------------------------------------------------------------------
+\ Compiling words for 68K/Coldfire
+
+CORE DEFINITIONS    main-tokens
+
+defer EGETCH    ( -- c )  c( get next byte from input stream)
+
+HIDDEN DEFINITIONS  temp-tokens
+
+variable callhere                               c( dest of last call compiled)
+variable last                                   c( -> last created header)
+variable maxtoken                               c( highest seen token value)
+: maxtoken@     ( -- xt ) maxtoken @ 1+ ;       c( highest seen token value + 1)
+
+: nocall        ( -- )   callhere off ;         c( inhibit call>jmp conversion)
+: ,ret          ( -- )   0x4E75 w, ;            c( compile RET instruction)
+
+: ,call         ( addr -- )
+c( compile JSR to addr)
+                rom here callhere !
+                4EB9 w, code,na ;
+
+: ,macro        ( a -- )
+c( compile inline code to a) \ copy from code space
+\ This can be improved later for peephole optimization
+                dup w@p 6000 =                  \ skip "never" jump
+                if      4 +
+                then
+                begin   dup w@p >r 2 +
+                        r> dup 0x4E75 <>        \ RET is delimiter:
+                while   w,                      \ compile inline code
+                repeat  2drop  nocall ;         \ instead of a call
+
+variable calledXT               c( last called XT)
+
+: ,bcall        ( xt -- )
+c( compile lcall/acall to xt)
+                dup 'bind ,call                 \ compile call
+                calledXT ! ;                    \ save the xt called
+
+: ,ccall        ( xt -- )
+c( compile lcall/acall to CFA of xt)
+                dup bind@ ,call                 \ compile call
+                calledXT ! ;                    \ save the xt called
+
+: xt>header     ( xt -- c )  bind@ 2 - c@p ;
+c( get header char of an xt) \ from program space
+
+: ,exit         ( -- )
+c( compile an exit or tail recurse) \ convert last call to a jump
+                rom here callhere @ - 6 =       \ last was a JSR
+        if      calledXT @ xt>header 1 and 0=   \ call-only flag is not set
+                if      0F9 callhere @ 1+ c!p   \ place JMP opcode
+                else    ,ret                    \ else compile RET
+                then
+        else    ,ret                            \ wasn't a JSR, lay down RET
+        then    nocall ;
+
+variable tokenbase                      c( base value for relative tokens)
+
+CORE DEFINITIONS    main-tokens
+
+: UNUSED        ( -- n )                                c( number of unused data bytes)
+                dhere ''here @ =
+                if      {{ data-bounds? nip }} literal  \ between here and the end
+                else    maxtoken@ 'bind                 \ between here and binding table
+                then    HERE - ;
+
+: (COMPILE)     ( xt -- )
+c( compile call to xt's address)        \ used by [COMPILE]
+                ,bcall nocall ;         \ to be safe, not convertible to jmp
+
+: ,lit          ( n -- )
+c( compile code for a literal)
+                ROM
+                [ {{ #DSP 8 * 4 + 40 * #TOS + 2000 + }} ] literal
+                w,                         \ move.l tos,-(s)
+                dup abs 80 u<
+                if      0FF and
+                        [ {{ #TOS 9 lshift 7000 + }} ] literal
+                        or w,                   \ MOVEQ
+                else    [ {{ #TOS 9 lshift 203C + }} ] literal
+                        w, code,na              \ MOVE.L #n,TOS
+                then    ;
+
+{{ optimization 2 < }} [IF]
+: egetch16      ( -- n )                c( get the next 16-bit value)
+                egetch egetch swap byte-join ;
+[ELSE]
+code egetch16   ( -- n )                c( get the next 16-bit value)
+                call egetch  call egetch        \ s=hi dpl=lo
+                S>D0  lsl.l #8,d0  or.l d0,tos
+                next c;
+[THEN]
+
+{{ optimization 2 < }} [IF]
+: lifttoken     ( -- xt )               c( get next token# from input stream)
+                egetch ?dup
+                if      dup 0xFFE0 and 0=       ( 100..1FFF )
+                        if      egetch swap byte-join
+                        then
+                else    egetch16                ( 0..1F, 2000..FFFF )
+                then
+                dup 0F000 and 1000 =            ( 1000..1FFF )
+                if      1000 - tokenbase @ +    \ absolute --> relative
+                then
+                dup maxtoken @ max maxtoken !   \ update highest seen token value
+                ;
+[else]
+code lifttoken  ( -- xt )               c( get next token# from input stream)
+                call egetch  T>D0
+        if_ne   andi.l #0E0,d0
+                if_eq   call egetch             \ s=hi tos=lo
+                        S>D0  lsl.l #8,d0  or.l d0,tos
+                then
+        else    call drop  call egetch16
+        then    T>D0  andi.l #0F000,d0  subi.l #1000,d0
+        if_eq   subi.l #1000,tos                \ re-map relative token
+                call tokenbase  call @  call +
+        then    call maxtoken                   \ tos -> maxtoken, s = token#
+                T>A0  move.l (a0),d0            \ d0 = maxtoken
+                cmp.l (s),d0
+                if_lt   S>T  move.l tos,(a0)    \ new maxtoken
+                else    S>T
+                then    next c;
+[then]
+
+HIDDEN DEFINITIONS  temp-tokens
+
+: ,header       ( -- xt )       rom align here last ! 0 w,  lifttoken ;
+c( compile a header, get token#)
+
+: ,header!      ( -- )          ,header here swap bind! ;
+c( compile a header, patch now) \ used by variable, constant, etc.
+
+
+variable 'doespatch             c( patching info left by CREATE)
+
+: ,testflag     ( -- )
+                [ {{ #TOS 2000 + }} ] literal W,        \ MOVE.L TOS,D0
+                [ {{ #TOS 200 * 18 + #DSP + 2000 + }} ] literal
+                W,                                      \ MOVE.L (S)+,TOS
+                4A80 W, ;                               \ TST.L D0
+
+: >MARK         ( -- addr )     c( mark forward branch)
+                6000 W, HERE  0 W, ;    \ BRA
+: >0MARK        ( -- addr )     c( mark conditional forward branch)
+                ,testflag  6700 W, HERE 0 W, ;
+: >RESOLVE      ( addr -- )     c( resolve forward branch)
+                HERE >R ORG R@ HERE - W, R> ORG NOCALL ;
+: <MARK         ( -- addr )     c( mark backward branch)
+                HERE ;
+: <RESOLVE      ( addr -- )     c( resolve backward branch)
+                HERE - 2 - 6000 W, W, NOCALL ;
+: <0RESOLVE     ( addr -- )     c( resolve cond backward branch)
+                ,testflag  HERE - 2 - 6700 W, W, NOCALL ;
+
+: (%TO)         ( n xt -- )    execute (%to!) ; c( runtime code for TO)
+
+CORE DEFINITIONS    low-tokens
+
+: MULTI         ( -- addr1 addr2 )              c( compile code for MULTI)
+\ MULTI ... REPEAT is equivalent to
+\ BEGIN R@ 0< 0= WHILE R> 1- >R ... REPEAT
+                HERE
+                4A97 W,                         \ tst.l (a7)
+                6F00 W, HERE 0 W,               \ ble
+                5397 W,                         \ subq.l #1,(a7)
+                SWAP ;                          IMMEDIATE
+
+: CREATE        ( <xt> -- )                     c( compile code for data structure)
+\ Sets up to place (comma) data into data space
+                ,header!
+                ram align here ,lit
+                rom here 'doespatch !  ,exit    \ patch point for does>
+                0 w, 0 w, ram ;                 \ room for the patch
+
+\ CREATed code: LITERAL-CODE RTS 0000 0000
+\                            ^^^^^^^^^^^^^ patched by DOES>
+
+code DOES>      ( -- )                          c( patch last create, point to code)
+\ Also stop defining the definition
+                call 'doespatch  call @  T>A0   \ a0 -> patch location
+                move.w #4EF9,(a0)+              \ lay LJMP opcode
+                move.l (sp)+,d0  move.l d0,(a0) \ lay addess
+                S>T  next c;                    call-only
+
+code >BODY      ( xt -- pfa )           c( address of data field of an xt)
+\ Assumes that xt is a CREATEd item that starts with code for a
+\ literal, extracts the literal from the machine code. See ,LIT
+( MOVE.L TOS,-[S]  MOVEQ #XX,TOS or MOVE.L #XXXXXXXX,TOS )
+                call bind@  addq.l #2,tos       \ -> move instruction
+                T>A0  clr.l d0  move.w (a0)+,d0 \ d0 = opcode
+                move.l d0,d1  andi.l #F000,d1
+                cmpi.l #2000,d1
+        if_eq   move.l (a0),tos  next           \ get from MOVE.L #DATA
+        then    cmpi.l #7000,d1
+        if_eq   move.l d0,d7  extT  next        \ get from MOVEQ
+        then    clrT  next c;                   \ invalid PFA
+
+decimal
+
+CORE DEFINITIONS  main-tokens
+
+2000 string CON$                        c( raw buffer for virtual console)
+
+

@@ -1,0 +1,39 @@
+\ 16-bit CRC-CCITT calculation for 8051
+\ adopted from W. David Schwaderer's C implementation
+
+hex
+code crctable   0000 , 1081 , 2102 , 3183 , 4204 , 5285 , 6306 , 7387 ,
+                8408 , 9489 , A50A , B58B , C60C , D68D , E70E , F78F ,
+                c; nobind
+
+code (CRC-CCITT) ( -- )
+\ compute half of CRC-CCITT  acc=char, r6r7=crctemp.  see CRC-CCITT.
+                xrl a, r7  anl a, #0F
+                add a, acc  mov r5, a   \ r5=idx  r6r7 = wxyz
+                mov a, r6  swap a  anl a, #0F   \ a=0w
+                xch a, r6  anl a, #0F  mov r4, a
+                mov a, r7  anl a, #0F0
+                orl a, r4  swap a     mov r7, a \ r6r7 = 0wxy
+                dptr= crctable  mov a, r5
+                movc a, @a+dptr
+                xrl a, r6  mov r6, a    \ crctemp = crctemp>>4 xor table[idx]
+                mov a, r5  inc a
+                movc a, @a+dptr
+                xrl a, r7  mov r7, a
+                ret  c; nobind
+
+also hidden
+code CRC-CCITT  ( crc c -- crc' )
+c( add byte to 16-bit CRC-CCITT) \ using a small table (time approx. 70T)
+                mov r3, dpl             \ r3 = char
+                call >NOS               \ r6r7 = crctemp
+                mov a, r3  call (CRC-CCITT)
+                mov a, r3  swap a  anl a, #0F  call (CRC-CCITT)
+                mov dph, r6  mov dpl, r7
+\32             clr a  mov r2, a  mov r3, a
+                ret  c;
+previous
+
+decimal
+
+

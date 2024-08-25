@@ -1,0 +1,28 @@
+\ The status LED is a hardware object, so it gets its own file.
+
+\ __LEDB is a bit flag to be checked whenever P5 (0x2000) is written
+\ __LEDA is a port pin that gets inverted on its way to the LED.
+
+/bit/   asmbyte __LEDB          \ assign a bit flag
+/bit/
+
+decimal
+static
+loco LEDrefresh ( -- )          \ update LED status lines
+                clr a  mov c, __LEDB  rrc a
+                push dph  mov dph, #32  movx @dptr, a
+                pop dph  ret c;
+
+code LED-off    ( -- )          c( turn off the status LED )
+                setb __LEDA  clr  __LEDB  goto LEDrefresh c;
+
+code LED-green  ( -- )          c( make the status LED green )
+                setb __LEDA  setb __LEDB  goto LEDrefresh c;
+
+code LED-red    ( -- )          c( make the status LED red )
+                clr  __LEDA  clr  __LEDB  goto LEDrefresh c;
+
+before: sysinit  LED-off ;      \ startup: turn LED off
+
+dynamic
+

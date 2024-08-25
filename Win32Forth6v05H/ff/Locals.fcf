@@ -1,0 +1,38 @@
+\ Tokenizer support for locals.                 2/27/01 BNE
+
+: (local@)      ( -- )
+                0x2B07 w,  egetch cells \ move.l D7,-(A5)
+   ?dup if      0x2E2F w, w,            \ move.l depth(A7),D7
+        else    0x2E17 w,               \ move.l (A7),D7
+        then    ; immediate
+
+: (local!)      ( -- )
+                egetch cells
+   ?dup if      0x2F47 w, w,            \ move.l D7,depth(A7)
+        else    0x2E87 w,               \ move.l D7,(A7)
+        then    0x2E1D w,               \ move.l (A5)+,D7
+                ; immediate
+
+\ Assumes we're not allocating a whole lot of uninitialized storage.
+
+: (local[)      ( -- )
+                egetch dup 4 rshift
+   ?dup if      begin   ?dup            \ allot non-initialized storage
+                while   dup 2 - 0max tuck - ( n' len )
+                        cells 7 and 9 lshift 0x518F or w,  \ subq #n,sp
+                repeat
+        then    0x0F and
+   ?dup if      0x2F07 w, 1- >r         \ move.l D7,-(A7)
+                multi   0x2F1D w,       \ move.l (A5)+,-(A7) ( multiple times )
+                repeat  0x2E1D w,       \ move.l (A5)+,D7
+                r>drop
+        then    ; immediate
+
+: (]local)      ( -- )
+                egetch
+        begin   ?dup                    \ un-allot local storage
+        while   dup 2 - 0max tuck - ( n' len )
+                cells 7 and 9 lshift 0x508F or w,  \ addq #n,sp
+        repeat  ; immediate
+
+

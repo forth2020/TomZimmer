@@ -1,0 +1,105 @@
+\ Labels for 68331 registers
+
+\ assumes MM bit in SIM MCR = 1
+\ allows access via absolute short addressing
+
+hex
+FFFFFA00 asmlabel MCR     \ Module Configuration
+FFFFFA02 asmlabel SIMTR   \ Module Test
+FFFFFA04 asmlabel SYNCR   \ Clock Synthesizer Control
+FFFFFA06 asmlabel RSR     \ Reset Status Register
+FFFFFA08 asmlabel SIMTRE  \ Module Test E
+FFFFFA10 asmlabel PORTE   \ Port E data
+FFFFFA14 asmlabel DDRE    \ Port E direction
+FFFFFA16 asmlabel PEPAR   \ Port E assignment
+FFFFFA18 asmlabel PORTF   \ Port F data
+FFFFFA1C asmlabel DDRF    \ Port F direction
+FFFFFA1E asmlabel PFPAR   \ Port F assignment
+FFFFFA20 asmlabel SYPCR   \ System Protection Control
+FFFFFA22 asmlabel PICR    \ Periodic Interrupt Control
+FFFFFA24 asmlabel PITR    \ Periodic Interrupt Timing
+FFFFFA26 asmlabel SWSR    \ Software Service
+FFFFFA40 asmlabel CSPDR   \ Port C data
+FFFFFA44 asmlabel CSPAR0  \ chip select pin assignment
+FFFFFA46 asmlabel CSPAR1
+FFFFFA48 asmlabel CSBARBT \ chip-select base boot
+FFFFFA4A asmlabel CSORBT  \ chip-select option boot
+FFFFFA4C asmlabel CSBAR0  \ chip-select base 0
+FFFFFA4E asmlabel CSOR0   \ chip-select option 0
+FFFFFA50 asmlabel CSBAR1  \ chip-select base 1
+FFFFFA52 asmlabel CSOR1   \ chip-select option 1
+FFFFFA54 asmlabel CSBAR2  \ chip-select base 2
+FFFFFA56 asmlabel CSOR2   \ chip-select option 2
+FFFFFA58 asmlabel CSBAR3  \ chip-select base 3
+FFFFFA5A asmlabel CSOR3   \ chip-select option 3
+FFFFFA5C asmlabel CSBAR4  \ chip-select base 4
+FFFFFA5E asmlabel CSOR4   \ chip-select option 4
+FFFFFA60 asmlabel CSBAR5  \ chip-select base 5
+FFFFFA62 asmlabel CSOR5   \ chip-select option 5
+FFFFFA64 asmlabel CSBAR6  \ chip-select base 6
+FFFFFA66 asmlabel CSOR6   \ chip-select option 6
+FFFFFA68 asmlabel CSBAR7  \ chip-select base 7
+FFFFFA6A asmlabel CSOR7   \ chip-select option 7
+FFFFFA6C asmlabel CSBAR8  \ chip-select base 8
+FFFFFA6E asmlabel CSOR8   \ chip-select option 8
+FFFFFA70 asmlabel CSBAR9  \ chip-select base 9
+FFFFFA72 asmlabel CSOR9   \ chip-select option 9
+FFFFFA74 asmlabel CSBAR10 \ chip-select base 10
+FFFFFA76 asmlabel CSOR10  \ chip-select option 10
+
+\ QSM registers -- register names are from the 68332 user's manual and may
+\ differ from names in the 68331 manual.
+
+FFFFFC00 asmlabel QMCR
+FFFFFC02 asmlabel QTEST
+FFFFFC04 asmlabel QILR
+FFFFFC05 asmlabel QIVR
+FFFFFC08 asmlabel SCCR0
+FFFFFC0A asmlabel SCCR1
+FFFFFC0C asmlabel SCSR
+FFFFFC0E asmlabel SCDR
+FFFFFC15 asmlabel QPDR
+FFFFFC16 asmlabel QPAR
+FFFFFC17 asmlabel QDDR
+FFFFFC18 asmlabel SPCR0
+FFFFFC1A asmlabel SPCR1
+FFFFFC1C asmlabel SPCR2
+FFFFFC1E asmlabel SPCR3
+FFFFFC1F asmlabel SPSR
+
+\ GPT registers -- The 68331's GP timer system is similar to that of the HC11.
+
+FFFFF900 asmlabel GPTMCR        \ GPT Module Configuration Register
+FFFFF904 asmlabel ICR           \ Interrupt Configuration
+FFFFF906 asmlabel DDRGP         \ 8-bit PGP data direction
+FFFFF907 asmlabel PORTGP        \ 8-bit PGP data
+FFFFF908 asmlabel OC1M          \ 8-bit OC1 action mask
+FFFFF909 asmlabel OC1D          \ 8-bit OC1 action data
+FFFFF90A asmlabel TCNT          \ timer counter
+FFFFF90C asmlabel PACTL         \ 8-bit PA control
+FFFFF90D asmlabel PACNT         \ 8-bit PA counter
+FFFFF90E asmlabel TIC1          \ input capture 1
+FFFFF910 asmlabel TIC2          \ input capture 2
+FFFFF912 asmlabel TIC3          \ input capture 3
+FFFFF914 asmlabel TOC1          \ output capture 1
+FFFFF916 asmlabel TOC2          \ output capture 2
+FFFFF918 asmlabel TOC3          \ output capture 3
+FFFFF91A asmlabel TOC4          \ output capture 4
+FFFFF91C asmlabel TOC5          \ output capture 5
+FFFFF91E asmlabel TCTL1         \ timer control 1
+FFFFF91F asmlabel TCTL2         \ timer control 2
+FFFFF920 asmlabel TMSK1         \ timer mask 1
+FFFFF921 asmlabel TMSK2         \ timer mask 2
+FFFFF922 asmlabel TFLG1         \ timer flag 1
+FFFFF923 asmlabel TFLG2         \ timer flag 2
+FFFFF924 asmlabel CFORC         \ force compare
+FFFFF925 asmlabel PWMC          \ PWM control C
+FFFFF926 asmlabel PWMA          \ PWM control A
+FFFFF927 asmlabel PWMB          \ PWM control B
+FFFFF928 asmlabel PWMCNT        \ PWM count
+FFFFF92A asmlabel PWMBUFA       \ PWMA buffer
+FFFFF92B asmlabel PWMBUFB       \ PWMB buffer
+FFFFF92C asmlabel PRESCL        \ GPT prescaler
+
+decimal
+

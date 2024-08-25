@@ -1,0 +1,72 @@
+((
+        Setup for John Hayes' ANS test suite, ANSVER1.G
+        2/6/98 BNE
+))
+only also core also app  definitions    \ target wordlists
+\ anew testsuite
+
+HEX {{ HEX }}
+
+variable  ERRORPOSITION
+variable  ERRORTALLY
+
+: ERROR         ( c-addr u -- )
+                BASE @ >R DECIMAL
+                CR
+                TYPE
+                dup
+                ." POS "
+                drop
+                ERRORPOSITION @
+                .
+                CR
+                ERRORTALLY @ 1+ ERRORTALLY !
+                R> BASE ! ;
+
+VARIABLE ACTUAL-DEPTH                           \ STACK RECORD
+CREATE ACTUAL-RESULTS 20 CELLS ALLOT
+
+: {             ( -- ) ;
+
+: ->            ( ... ? )
+\ record depth and content of stack.
+                DEPTH DUP >R ACTUAL-DEPTH !
+        MULTI   ACTUAL-RESULTS R@ CELLS + !     \ RECORD STACK AND DEPTH
+        REPEAT  R> DROP ;
+
+: }             ( ... ?? )
+\ compare stack (expected) contents with saved (actual) contents.
+                DEPTH ACTUAL-DEPTH @ <>
+        IF      S" *** WRONG NUMBER OF RESULTS: " ERROR
+        ELSE    DEPTH >R 
+                MULTI   ACTUAL-RESULTS R@ CELLS + @ <>
+                        IF      S" *** INCORRECT RESULT: "  ERROR
+                                R>DROP EXIT     \ VERIFY STACK AND DEPTH
+                        THEN
+                REPEAT  R>DROP
+        THEN    ERRORPOSITION incr
+                ;
+
+: report        ( a n -- )
+                cr type 
+                ERRORPOSITION off ;
+
+\ create a larger virtual console
+
+0x800 string newconsole
+' newconsole ' con$ rebind
+cls
+
+: newscreen     ( -- )  cls ;
+
+also hidden
+
+: endreport     ( a n -- )
+                cr type space ERRORTALLY @ . ." errors"
+                cr 0x28 '-' emits cr
+                ;
+
+previous
+
+\
+

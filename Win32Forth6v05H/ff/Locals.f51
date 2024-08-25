@@ -1,0 +1,57 @@
+\ Support for local variables                   BNE
+
+decimal
+core definitions temp-tokens
+
+\ Runtime support: parameters passed via ACC
+
+\ In temp-token area because these are only used by the builder, not the
+\ tokenizer
+
+code (%local@)  ( -- x )
+                goto (R@)  c;           call-only
+
+code (%local!)  ( x -- )
+                add a, sp   mov r1, a
+\32             mov a, r2   mov @r1, a  dec r1
+\32             mov a, r3   mov @r1, a  dec r1
+                mov a, dph  mov @r1, a  dec r1
+                mov a, dpl  mov @r1, a
+                goto DROP c;            call-only
+
+code (%local[)  ( ? -- ) \ acc = extras | #locs
+                pop reg7 pop reg6       \ r7r6 = return address
+                mov r5, a  swap a
+        begin   anl a, #15              \ uninitialized data
+        while_nz push acc push acc
+\32              push acc push acc
+                dec a
+        repeat  mov a, r5  anl a, #15  mov r5, a
+        begin   mov a, r5
+        while_nz call >R  dec r5
+        repeat  push reg6 push reg7     \ restore return address
+                ret c;                  call-only
+
+\ XX XX XX HI LO
+\             ^-- SP
+
+\ Locals support for tokenizer
+
+: loc_offset    ( -- )
+                -2 egetch 2* + 0x74 c, c, ;
+
+main-tokens
+
+: (local@)      ( <offset> -- )         c( compile local@)
+                loc_offset [COMPILE] (%local@) ; immediate
+: (local!)      ( <offset> -- )         c( compile local!)
+                loc_offset [COMPILE] (%local!) ; immediate
+: (local[)      ( <offset> -- )         c( compile local setup)
+                egetch 0x74 c, c, [COMPILE] (%local[) ; immediate
+: (]local)      ( <offset> -- )         c( compile local teardown)
+                egetch 2* 
+                0xE5 c, 0x81 c,         \ mov a, sp
+                0x24 c, c,              \ add a, #-offset
+                0xF5 c, 0x81 c,         \ mov sp, a
+                ; immediate
+

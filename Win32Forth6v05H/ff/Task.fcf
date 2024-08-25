@@ -1,0 +1,5 @@
+\ This is included for the benefit of legacy code that might use the old filename.
+\ The new file is independent of cell width and has a couple of added words, but 
+\ otherwise identical to the old file.
+{{ cr }} .( TASK.FCF has been changed to TASKER.FF.  Please include that file instead.)
+_Change_Include_Filename_   \ This will cause an error.

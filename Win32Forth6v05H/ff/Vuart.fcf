@@ -1,0 +1,188 @@
+((      brad's stuff, ignore this
+
+        D68 (68000 demo) board VUART code and hardware labels
+
+        000000 ROM
+        400000 SRAM     64K or 256K bytes
+        800000 I/O      IN = 8:1 MUX to D8  OUT: 1:8 latch from D8
+
+        Address lines:  A9  A10 A17
+        IN addr pins:    C   B   A
+        OUT addr pins:   C   B   A
+
+        VUART operation uses 14400 Hz periodic interrupt.  A state machine
+        polls for incoming 4800 baud RS232 and handles RS232 output.
+        Registers A3 and D6 are trashed by this state machine and must not
+        be used by any application.
+
+))
+
+\ Bit outputs:
+
+800000 asmlabel DBGSO   \ Debugger EZbit output
+820000 asmlabel SPIX6   \ pin 6 of SPIX connector
+800400 asmlabel SPIX8   \ pin 8 of SPIX connector
+820400 asmlabel SPIX7   \ pin 7 of SPIX connector
+800200 asmlabel SPIX3   \ pin 3 of SPIX connector
+820200 asmlabel WDOG    \ watchdog bit
+800600 asmlabel EESDAO  \ EEPROM SDA
+820600 asmlabel SPIX4   \ pin 4 of SPIX connector
+
+\ Bit inputs:
+
+800000 asmlabel SPIX5   \ pin 5 of SPIX connector
+820000 asmlabel JP11    \ option jumper 1
+800400 asmlabel DBGSI   \ Debugger RS232 inverted input
+820400 asmlabel EESDAI  \ EEPROM SDA
+800200 asmlabel EEWP    \ EEPROM write protect status
+820200 asmlabel JP12    \ option jumper 2
+800600 asmlabel DBGI    \ Debugger EZbit input
+820600 asmlabel JP13    \ option jumper 3
+
+asmlong vuartRXwait                     \ address of vuart receive state
+asmword KeyholeTXD                      \ EZbit send/reveive data
+asmword KeyholeRXD
+asmword vuartRXD
+
+\ states for serial I/O
+\ periodic interrupt once every 1024 clock cycles = 14400 Hz
+\ with 14.7456M xtal.  3 ticks per bit period = 4800 bps.
+
+code -trecbit   c( receive next VUART input bit )
+                lsr.l #1,d6  btst.l #0,d6
+        if_eq   addi.l #80,d6
+        then    rte c;
+code -tass94    movea.l vuartRXwait,a3  rte c;
+code -tass93    lea.l -tass94,a3  rte c;
+code -tass92    lea.l -tass93,a3  move.w r6,vuartRXD    ( stop )
+                rte c;
+code -tass91    lea.l -tass92,a3  rte c;
+code -tass90    lea.l -tass91,a3  rte c;
+code -tass82    lea.l -tass90,a3  bra -trecbit c;       ( b7 )
+code -tass81    lea.l -tass82,a3  rte c;
+code -tass80    lea.l -tass81,a3  rte c;
+code -tass72    lea.l -tass80,a3  bra -trecbit c;       ( b6 )
+code -tass71    lea.l -tass72,a3  rte c;
+code -tass70    lea.l -tass71,a3  rte c;
+code -tass62    lea.l -tass70,a3  bra -trecbit c;       ( b6 )
+code -tass61    lea.l -tass62,a3  rte c;
+code -tass60    lea.l -tass61,a3  rte c;
+code -tass52    lea.l -tass60,a3  bra -trecbit c;       ( b5 )
+code -tass51    lea.l -tass52,a3  rte c;
+code -tass50    lea.l -tass51,a3  rte c;
+code -tass42    lea.l -tass50,a3  bra -trecbit c;       ( b4 )
+code -tass41    lea.l -tass42,a3  rte c;
+code -tass40    lea.l -tass41,a3  rte c;
+code -tass32    lea.l -tass40,a3  bra -trecbit c;       ( b3 )
+code -tass31    lea.l -tass32,a3  rte c;
+code -tass30    lea.l -tass31,a3  rte c;
+code -tass22    lea.l -tass30,a3  bra -trecbit c;       ( b2 )
+code -tass21    lea.l -tass22,a3  rte c;
+code -tass20    lea.l -tass21,a3  rte c;
+code -tass12    lea.l -tass20,a3  bra -trecbit c;       ( b1 )
+code -tass11    lea.l -tass12,a3  rte c;
+code -tass10    lea.l -tass11,a3  rte c;
+code -tass04    lea.l -tass10,a3  bra -trecbit c;       ( b0 )
+code -tass03    lea.l -tass04,a3  clr.w vuartRXD  rte c;
+code -tass02    lea.l -tass03,a3  rte c;
+code -tass01    lea.l -tass02,a3  rte c;
+code -tassem    lea.l -tass01,a3  rte c;
+\ 111111110001110001111111111111
+\         ^^-------- start detected here
+\             ^^--- assemble data here
+
+code -twait     c( wait for start bit)
+                tst.b dbgsi
+        if_mi   lea.l -tassem,a3
+        then    rte c;
+
+code -tsendbit  c( send next VUART output bit )
+                lsr.l #1,d6
+        if_cs   move.b #0,dbgso    rte
+        then    move.b #-1,dbgso   rte c;
+code -tsend82   lea.l -twait,a3    bra -tsendbit c;     ( stop )
+code -tsend81   lea.l -tsend82,a3  rte c;
+code -tsend80   lea.l -tsend81,a3  rte c;
+code -tsend72   lea.l -tsend80,a3  bra -tsendbit c;     ( b7 )
+code -tsend71   lea.l -tsend72,a3  rte c;
+code -tsend70   lea.l -tsend71,a3  rte c;
+code -tsend62   lea.l -tsend70,a3  bra -tsendbit c;     ( b6 )
+code -tsend61   lea.l -tsend62,a3  rte c;
+code -tsend60   lea.l -tsend61,a3  rte c;
+code -tsend52   lea.l -tsend60,a3  bra -tsendbit c;     ( b5 )
+code -tsend51   lea.l -tsend52,a3  rte c;
+code -tsend50   lea.l -tsend51,a3  rte c;
+code -tsend42   lea.l -tsend50,a3  bra -tsendbit c;     ( b4 )
+code -tsend41   lea.l -tsend42,a3  rte c;
+code -tsend40   lea.l -tsend41,a3  rte c;
+code -tsend32   lea.l -tsend40,a3  bra -tsendbit c;     ( b3 )
+code -tsend31   lea.l -tsend32,a3  rte c;
+code -tsend30   lea.l -tsend31,a3  rte c;
+code -tsend22   lea.l -tsend30,a3  bra -tsendbit c;     ( b2 )
+code -tsend21   lea.l -tsend22,a3  rte c;
+code -tsend20   lea.l -tsend21,a3  rte c;
+code -tsend12   lea.l -tsend20,a3  bra -tsendbit c;     ( b1 )
+code -tsend11   lea.l -tsend12,a3  rte c;
+code -tsend10   lea.l -tsend11,a3  rte c;
+code -tsend02   lea.l -tsend10,a3  bra -tsendbit c;     ( b0 )
+code -tsend01   lea.l -tsend02,a3  rte c;
+code -tsend00   lea.l -tsend01,a3  rte c;
+code -tsend     lea.l -tsend00,a3  bra -tsendbit c;     ( start )
+
+code VUEMIT     ( c -- )        c( send character to VUART)
+       begin    lea -twait,a0  cmp.l a0,a3
+       while_ne call pause
+       repeat   andi.l #0FF,tos
+                move.l tos,d6  lsl.l #1,d6  addq.l #1,d6
+                lea -tsend,a3
+                S>T  next c;
+
+code VUKEY?     ( -- f )        c( T if VUART has a character)
+                T>S  tst.w vuartRXD
+                sge tos  extT  next c;
+
+code VUKEY      ( -- c )        c( get VUART character)
+                T>S  clrT  move.w vuartRXD,tos
+                next c;
+
+code VUARTEX    ( -- )          \ 14400 Hz interrupt exception
+                jmp (a3)
+
+code VUART-INIT ( -- )
+                lea -twait,a3
+                moveq #-1,d0  move.w d0,vuartRXD
+                next c;
+\s
+
+        0 c, 0 c,             \ header byte is needed when EVAL compiles PAUSE
+code b_PollKeyhole
+\ Poll the keyhole port
+                moveq #-1,d2  move.b d2,op_watchdog
+                clr.l d3                        \ d2 = T  d3 = F
+                lea.l   op_debug,a0
+                move.w  KeyholeTXD,d0   asr.l #1,d0
+        if_cs   move.w #2700,sr                 \ disable interrupts
+                move.b d3,(a0)  nop             \ short pulse
+                move.b d2,(a0)  nop nop
+                move.b  ip_debug,d1
+                move.w #2000,sr
+        else    move.w #2700,sr                 \ disable interrupts
+                move.b d3,(a0)  nop nop nop nop nop    \ long pulse
+                move.b d2,(a0)  nop nop
+                move.b  ip_debug,d1
+                move.w #2000,sr
+        then    btst.l #7,d1  sne d1
+                ext.w d1  andi.l #100,d1
+                move.w  d0,KeyholeTXD
+                move.w  KeyholeRXD,d0
+                or.l d1,d0  lsr.l #1,d0         \ shift in input data
+        if_cc   move.w  d2,KeyholeRXD
+                call b_exec                     \ d0 -> d0
+                lsl.l #1,d0  andi.l #1FE,d0     \ insert start bit
+                ori.l #FFFFFE00,d0              \ and stop bit(s)
+                move.w  d0,KeyholeTXD
+        then    clr.b  op_watchdog
+                rts c;
+
+
+

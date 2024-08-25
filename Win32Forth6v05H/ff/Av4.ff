@@ -1,0 +1,346 @@
+\ ------------------------------------------------------------------------
+newscreen
+s" TESTING DEFINING WORDS: : ; CONSTANT " report
+s"     VARIABLE CREATE DOES> >BODY " report
+
+{ 123 CONSTANT X123 -> }
+{ X123 -> 123 }
+{ : EQU CONSTANT ; -> }
+{ X123 EQU Y123 -> }
+{ Y123 -> 123 }
+
+{ VARIABLE V1 -> }
+{ 123 V1 ! -> }
+{ V1 @ -> 123 }
+
+{ : NOP : POSTPONE ; ; -> }
+{ NOP NOP1 NOP NOP2 -> }
+{ NOP1 -> }
+{ NOP2 -> }
+
+{ : DOES1 DOES> @ 1 + ; -> }
+{ : DOES2 DOES> @ 2 + ; -> }
+{ CREATE CR1 -> }
+{ CR1 -> HERE }
+{ ' CR1 >BODY -> HERE }
+{ 1 , -> }
+{ CR1 @ -> 1 }
+{ DOES1 -> }
+{ CR1 -> 2 }
+{ DOES2 -> }
+{ CR1 -> 3 }
+
+{ : WEIRD: CREATE DOES> 1 + DOES> 2 + ; -> }
+{ WEIRD: W1 -> }
+{ ' W1 >BODY -> HERE }
+{ W1 -> HERE 1 + }
+{ W1 -> HERE 2 + }
+{ ROM -> }
+
+\ ------------------------------------------------------------------------
+s" TESTING <# # #S #> HOLD SIGN BASE >NUMBER" report
+s"     HEX DECIMAL" report
+
+: S=  \ ( ADDR1 C1 ADDR2 C2 -- T/F ) COMPARE TWO STRINGS.
+   >R SWAP R@ = IF                      \ MAKE SURE STRINGS HAVE SAME LENGTH
+      R> ?DUP IF                        \ IF NON-EMPTY STRINGS
+         0 DO
+            OVER C@ OVER C@ - IF 2DROP <FALSE> UNLOOP EXIT THEN
+            SWAP CHAR+ SWAP CHAR+
+         LOOP
+      THEN
+      2DROP <TRUE>                      \ IF WE GET HERE, STRINGS MATCH
+   ELSE
+      R> DROP 2DROP <FALSE>             \ LENGTHS MISMATCH
+   THEN ;
+
+: GP1  <# 41 HOLD 42 HOLD 0 0 #> S" BA" S= ;
+{ GP1 -> <TRUE> }
+
+: GP2  <# -1 SIGN 0 SIGN -1 SIGN 0 0 #> S" --" S= ;
+{ GP2 -> <TRUE> }
+
+: GP3  <# 1 0 # # #> S" 01" S= ;
+{ GP3 -> <TRUE> }
+
+: GP4  <# 1 0 #S #> S" 1" S= ;
+{ GP4 -> <TRUE> }
+
+: COUNT-BITS
+   0 0 INVERT BEGIN DUP WHILE >R 1+ R> 2* REPEAT DROP ;
+COUNT-BITS 2* CONSTANT #BITS-UD         \ NUMBER OF BITS IN UD
+
+: GP5
+   BASE @ <TRUE>
+   MAX-BASE 1+ 2 DO                     \ FOR EACH POSSIBLE BASE
+      I BASE !                          \ TBD: ASSUMES BASE WORKS
+      I 0 <# #S #> S" 10" S= AND
+   LOOP
+   SWAP BASE ! ;
+{ GP5 -> <TRUE> }
+
+: GP6
+   BASE @ >R  2 BASE !
+   MAX-UINT MAX-UINT <# #S #>           \ MAXIMUM UD TO BINARY
+   R> BASE !                            \ S: C-ADDR U
+   DUP #BITS-UD = SWAP
+   0 DO                                 \ S: C-ADDR FLAG
+      OVER C@ [CHAR] 1 = AND            \ ALL ONES
+      >R CHAR+ R>
+   LOOP SWAP DROP ;
+{ GP6 -> <TRUE> }
+
+: GP7
+   BASE @ >R    MAX-BASE BASE !
+   <TRUE>
+   A 0 DO
+      I 0 <# #S #>
+      1 = SWAP C@ I 30 + = AND AND
+   LOOP
+   MAX-BASE A DO
+      I 0 <# #S #>
+      1 = SWAP C@ 41 I A - + = AND AND
+   LOOP
+   R> BASE ! ;
+
+{ GP7 -> <TRUE> }
+
+
+\ ------------------------------------------------------------------------
+s" TESTING FILL MOVE INCR DECR" report
+
+CREATE FBUF 00 C, 00 C, 00 C,
+CREATE SBUF 12 C, 34 C, 56 C,
+: SEEBUF FBUF C@  FBUF CHAR+ C@  FBUF CHAR+ CHAR+ C@ ;
+
+{ FBUF 0 20 FILL -> }
+{ SEEBUF -> 00 00 00 }
+
+{ FBUF 1 20 FILL -> }
+{ SEEBUF -> 20 00 00 }
+
+{ FBUF 3 20 FILL -> }
+{ SEEBUF -> 20 20 20 }
+
+{ FBUF FBUF 3 CHARS MOVE -> }           \ BIZARRE SPECIAL CASE
+{ SEEBUF -> 20 20 20 }
+
+{ SBUF FBUF 0 CHARS MOVE -> }
+{ SEEBUF -> 20 20 20 }
+
+{ SBUF FBUF 1 CHARS MOVE -> }
+{ SEEBUF -> 12 20 20 }
+
+{ SBUF FBUF 3 CHARS MOVE -> }
+{ SEEBUF -> 12 34 56 }
+
+{ FBUF FBUF CHAR+ 2 CHARS MOVE -> }
+{ SEEBUF -> 12 12 34 }                  \ |||
+
+{ FBUF CHAR+ FBUF 2 CHARS MOVE -> }     \ |||
+{ SEEBUF -> 12 34 34 }
+
+{ 0 V1 !  V1 INCR  V1 @ -> 1 }
+{ -1 V1 ! V1 INCR  V1 @ -> 0 }
+
+{ 0 V1 !  V1 DECR  V1 @ -> -1 }
+{ 1 V1 !  V1 DECR  V1 @ -> 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING OUTPUT: . dotquote CR EMIT SPACE" report
+s"     SPACES TYPE U." report
+
+: OUTPUT-TEST
+   CR ." YOU SHOULD SEE THE STANDARD GRAPHIC CHARS:" CR
+   41 BL DO I EMIT LOOP CR
+   61 41 DO I EMIT LOOP CR
+   7F 61 DO I EMIT LOOP CR
+   ." YOU SHOULD SEE 0-9 SEPARATED BY A SPACE:" CR
+   9 1+ 0 DO I . LOOP CR
+   ." YOU SHOULD SEE 0-9 (WITH NO SPACES):" CR
+   [CHAR] 9 1+ [CHAR] 0 DO I 0 SPACES EMIT LOOP CR
+   ." YOU SHOULD SEE A-G SEPARATED BY A SPACE:" CR
+   [CHAR] G 1+ [CHAR] A DO I EMIT SPACE LOOP CR
+   ." YOU SHOULD SEE 0-5 SEPARATED BY TWO SPACES:" CR
+   5 1+ 0 DO I [CHAR] 0 + EMIT 2 SPACES LOOP CR
+   ." YOU SHOULD SEE TWO SEPARATE LINES:" CR
+   S" LINE 1" TYPE CR S" LINE 2" TYPE CR
+   ." YOU SHOULD SEE THE NUMBER RANGES OF " CR
+   ." SIGNED AND UNSIGNED NUMBERS:" CR
+   ."   SIGNED: " MIN-INT . MAX-INT . CR
+   ." UNSIGNED: " 0 U. MAX-UINT U. CR
+;
+
+{ OUTPUT-TEST -> }
+
+\ ========================================================================
+\ Testing beyond Hayes' test suite, TOF specific.
+
+\  -------=======-------=======-------=======
+s" TESTING  NIP TUCK -ROT PLUCK PICK -PICK "  report
+s"     C>N W>N BYTE-SPLIT BYTE-SWAP " report
+s"     BYTE-JOIN WORD-SPLIT WORD-JOIN UMAX " report
+s"     UMIN 0MAX "   report
+
+{ 3 5 NIP -> 5 }
+{ 4 6 TUCK -> 6 4 6 }
+{ 1 2 3 -ROT -> 3 1 2 }
+{ 7 8 9 PLUCK -> 7 8 9 7 }
+{ 1 2 3 0 PICK -> 1 2 3 3 }
+{ 1 2 3 1 PICK -> 1 2 3 2 }
+{ 1 2 3 2 PICK -> 1 2 3 1 }
+{ 1 2 3 99 0 -PICK -> 1 2 99 }
+{ 1 2 3 99 1 -PICK -> 1 99 3 }
+{ 1 2 3 99 2 -PICK -> 99 2 3 }
+{ 7F C>N -> 7F }
+{ 80 C>N -> -80 }
+{ 7FFF W>N -> 7FFF }
+{ 8000 W>N -> -8000 }
+{ 1234 BYTE-SPLIT -> 34 12 }
+{ 1234 BYTE-SWAP  -> 3412 }
+{ 34 56 BYTE-JOIN -> 5634 }
+{ 1234 WORD-SPLIT -> 1234 0 }
+{ 4321 0 WORD-JOIN -> 4321 }
+{ -2 -1 UMAX -> -1 }
+{ 2 1 UMAX -> 2 }
+{ -2 -1 UMIN -> -2 }
+{ 2 1 UMIN -> 1 }
+{ MAX-INT 0MAX -> MAX-INT }
+{ MIN-INT 0MAX -> 0 }
+
+\ ------------------------------------------------------------------------
+s" TESTING  0<> 0>= 0<= 0> <> >= <= D0= D0< " report
+s"     D0<> D+ D- " report
+
+{ 1 0<> -> TRUE }
+{ 0 0<> -> FALSE }
+{ 5 5 <> -> FALSE }
+{ 1 2 <> -> TRUE }
+
+{ 0       0>= -> TRUE }
+{ 1       0>= -> TRUE }
+{ -1      0>= -> FALSE }
+{ MIN-INT 0>= -> FALSE }
+{ MAX-INT 0>= -> TRUE }
+
+{ 0       0<= -> TRUE }
+{ 1       0<= -> FALSE }
+{ -1      0<= -> TRUE }
+{ MIN-INT 0<= -> TRUE }    \ |||
+{ MAX-INT 0<= -> FALSE }
+
+{ 0       0>  -> FALSE }
+{ 1       0>  -> TRUE }
+{ -1      0>  -> FALSE }   \ |||
+{ MIN-INT 0>  -> FALSE }
+{ MAX-INT 0>  -> TRUE }
+
+{ 0 1 <= -> <TRUE> }
+{ 1 2 <= -> <TRUE> }
+{ -1 0 <= -> <TRUE> }
+{ -1 1 <= -> <TRUE> }
+{ MIN-INT 0 <= -> <TRUE> }
+{ MIN-INT MAX-INT <= -> <TRUE> }
+{ 0 MAX-INT <= -> <TRUE> }
+{ 0 0 <= -> <TRUE> }
+{ 1 1 <= -> <TRUE> }
+{ 1 0 <= -> <FALSE> }
+{ 2 1 <= -> <FALSE> }
+{ 0 -1 <= -> <FALSE> }
+{ 1 -1 <= -> <FALSE> }
+{ 0 MIN-INT <= -> <FALSE> }
+{ MAX-INT MIN-INT <= -> <FALSE> }
+{ MAX-INT 0 <= -> <FALSE> }
+
+{ 0 1 >= -> <FALSE> }
+{ 1 2 >= -> <FALSE> }
+{ -1 0 >= -> <FALSE> }
+{ -1 1 >= -> <FALSE> }
+{ MIN-INT 0 >= -> <FALSE> }
+{ MIN-INT MAX-INT >= -> <FALSE> }
+{ 0 MAX-INT >= -> <FALSE> }
+{ 0 0 >= -> <TRUE> }
+{ 1 1 >= -> <TRUE> }
+{ 1 0 >= -> <TRUE> }
+{ 2 1 >= -> <TRUE> }
+{ 0 -1 >= -> <TRUE> }
+{ 1 -1 >= -> <TRUE> }
+{ 0 MIN-INT >= -> <TRUE> }
+{ MAX-INT MIN-INT >= -> <TRUE> }
+{ MAX-INT 0 >= -> <TRUE> }
+
+{ 0.  D0=  -> TRUE }
+{ 1 0 D0=  -> FALSE }
+{ 0 1 D0=  -> FALSE }
+{ 0.  D0<> -> FALSE }
+{ 1 0 D0<> -> TRUE }
+{ 0 1 D0<> -> TRUE }
+{ 0.              D0< -> FALSE }
+{ MIN-INT MAX-INT D0< -> FALSE }      \ |||
+{ MAX-INT MIN-INT D0< -> TRUE }
+
+{ -1. -> -1 -1 }
+{ -1. 2DUP D+ -> -2. }
+{ -1. -1. D- -> 0 0 }
+{ 77777777. 22222222. D- -> 55555555. }
+
+\ ------------------------------------------------------------------------
+s" TESTING  TRUE FALSE CELL UNDER+ UNDER1+" report
+s"     UNDER1- BIT-ON BIT-OFF BIT? ON OFF" report
+s"     VALUE TO c-quote" report
+
+{ VARIABLE TEMPBITS -> }
+{ TRUE -> <TRUE> }
+{ FALSE -> <FALSE> }
+{ 0 CELL+ -> CELL }
+{ 2 7 3 UNDER+ -> 5 7 }
+{ 2 7  UNDER1+ -> 3 7 }
+{ 2 7  UNDER1- -> 1 7 }
+{ 0 TEMPBITS !  1 TEMPBITS BIT-ON  3 TEMPBITS BIT-ON -> }
+{ TEMPBITS C@ -> 0A }
+{ 0 TEMPBITS BIT? -> FALSE }
+{ 1 TEMPBITS BIT? -> TRUE }
+{ 2 TEMPBITS BIT? -> FALSE }
+{ 3 TEMPBITS BIT? -> TRUE }
+{ 3 TEMPBITS BIT-OFF -> }
+{ 3 TEMPBITS BIT? -> FALSE }
+{ TEMPBITS C@  TEMPBITS OFF  -> 2 }
+{ TEMPBITS DECR -> }
+{ TEMPBITS @ -> -1 }
+{ TEMPBITS INCR -> }
+{ TEMPBITS @ -> 0 }
+{ TEMPBITS ON -> }
+
+{ 6789 VALUE MYVAL1 -> }
+{ : MYVAL1!  TO MYVAL1 ; -> }
+{ MYVAL1 -> 6789 }
+{ 9876 TO MYVAL1 -> }
+{ MYVAL1 -> 9876 }
+{ 1235 MYVAL1! -> }
+{ MYVAL1 -> 1235 }
+
+{ : CQUOTE? C" XY" ; -> }
+{ CQUOTE? COUNT SWAP C@ -> 2 CHAR X }
+
+\ ------------------------------------------------------------------------
+s" TESTING  2>R 2R> 2R@ DUP>R R>DROP " report
+s"     2CONSTANT 2VARIABLE" report
+
+{ : G2R1 2>R R@ 2R> ; -> }
+{ : G2R2 DUP>R R@ R>DROP ; -> }
+{ : G2R3 >R >R 2R@ 2R> ; -> }
+{ 123 456 G2R1 -> 456 123 456 }
+{ 123 G2R2 -> 123 DUP }
+{ 1S 1S G2R1 -> 1S 1S 1S }
+{ -1 -2 G2R3 -> -2 -1 -2 -1 }
+{ 12345678. 2CONSTANT MYCON1 -> }
+{ MYCON1 -> 12345678. }
+{ 12345678. DEPTH NIP NIP -> 2 }
+{ RAM ALIGN HERE CELL+ CELL+ 2VARIABLE MYVAR1 -> RAM HERE ROM }
+{ MYCON1 MYVAR1 2! -> }
+{ MYVAR1 2@ -> 12345678. }
+{ MYVAR1 INCR  MYVAR1 CELL+ DECR -> }
+{ MYVAR1 2@  1- UNDER1+ -> MYCON1 }
+
+s" AV4" endreport
+

@@ -1,0 +1,76 @@
+
+\       Cold start initialization for 68331 or 68332 BCC board
+
+\       This code is invoked from the monitor program.
+
+\       Sets up the following:
+\       Stack pointers
+\       Main TCB (Task Control Block), TCB queue contains only main
+\       Periodic interrupt for timebase, not enabled yet
+\       UART = polled 115K,n,8,1
+\       Trace exception
+
+\ Initially, the ROM resides at 0.
+\ For byte-wide boot ROMs, we start with relocatable code:
+\   1. Set up the hardware and stack pointers.
+\   2. Put RAM at 0x800000 and copy the boot ROM there.
+\   3. Call a word that swaps RAM and ROM address spaces.
+\ For 16-bit boot ROMs, we
+\   1. Set up the hardware and stack pointers.
+\   2. Put RAM at 0x800000 and copy a word RAM/ROM there.
+\   3. Call the word RAM/ROM which swaps RAM and ROM address spaces.
+
+hex
+
+code coldparams c;
+                60CF w,                 \ SIMCR
+                7700 w,                 \ sysclk = 14680 kHz
+                06 w,                   \ watchdog off
+                81 w, 0 w, 0 w, 1B9E w, \ QSPI setup params
+                04 w,                   \ baud = sysclk / 32 / 4
+                0C w, 180 w,            \ n,8,1
+                02 w, 340 w,            \ 32kHz -> 4096 Hz timebase
+\ Set up the RAM chip selects to use the same RAM setup as the EVB which is:
+\ !CS0 -> !WR (upper)
+\ !CS1 -> !WR (lower)
+\ !CS2 -> !RD (both chips)
+\ '0'  -> !CS (both chips)
+                5 w,                    \ CS0 = 256K, upper byte
+                503E w,                 \ write-only, 0 wait
+                5 w,                    \ CS1 = 256K, lower byte
+                303E w,                 \ write-only, 0 wait
+                5 w,                    \ CS2 = 256K, both bytes
+                683E w,                 \ read-only, 0 wait
+
+code cold       ( -- )
+\ Processor reset starts here. Some exceptions may get us here, so save the regs.
+                move.w (sp)+,_doorSR+2                  \ save register snapshot
+                move.l (sp)+,_doorPC                    \ grab SR and PC
+                move.l a7,_dooraddr
+                lea.l DoorRegisters,a7
+                movem.l d0/d1/d2/d3/d4/d5/d6/d7/a0/a1/a2/a3/a4/a5/a6,(a7)
+                lea.l 3C(a7),a0  move.l _dooraddr,(a0)
+                move.w #2700,sr                         \ use supervisor mode, no interrupts yet
+                lea.l MainRstack,sp                     \ main return stack
+                lea.l MainDstack,s                      \ main data stack
+\ Set up the processor clock and system registers
+                lea.l coldparams,a0
+                move.w (a0)+,d0  move.w d0,mcr
+                move.w (a0)+,d0  move.w d0,syncr        \ PLL
+                move.w (a0)+,d0  move.b d0,sypcr        \ watchdog
+                move.w (a0)+,d0  move.w d0,qmcr         \ QSPI
+                move.w (a0)+,d0  move.w d0,qilr         \   no interrupts
+                move.w (a0)+,d0  move.b d0,qpdr         \   initial port data
+                move.w (a0)+,d0  move.w d0,qpar         \   qpar+qddr
+                move.w (a0)+,d0  move.w d0,sccr0        \   baud rate
+                move.w (a0)+,d0  move.w d0,sccr1        \   length, enable
+                move.w (a0)+,d0  move.w d0,scsr         \   clear rx status
+                move.w (a0)+,d0  move.w d0,pitr         \ SIM
+                move.w (a0)+,d0  move.w d0,picr         \   timebase int = 0x40
+                movea.l #CSBAR0,a1  moveq #6,d0
+        begin   move.w (a0)+,(a1)+                      \ set up chip selects
+                subq.l #1,d0
+        until_eq
+                goto main  c;                           \ start the main program
+
+

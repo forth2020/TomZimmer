@@ -1,0 +1,279 @@
+\ AVR demonstration program            4/00 by Brad Eckert
+
+\ Use as a template for your hardware.
+
+host decimal
+anew demo_AVR_program
+homeorder
+1       constant multitasking?  \ T if we want to include multitasking
+1       constant hardware       \ hardware configuration
+\ devices:  0=AT90S2313  4=AT90S4414  6=AT90S8515  8=ATmega103
+{{ cr }}
+{{ hardware 1 = }} [IF]         \ STK200 demo board
+        4000000 constant xtalfreq       \ crystal frequency in Hz
+              6 constant device         \ device is AT90S8515
+.( AT90S8515 @ 4 MHz, )
+[THEN]
+{{ hardware 2 = }} [IF]         \ ATmega demo board
+        7372800 constant xtalfreq       \ crystal frequency in Hz
+              8 constant device         \ device is ATmega103
+.( ATMEGA103 @ 5 MHz, )
+[THEN]
+{{ hardware 3 = }} [IF]         \ your target board
+        *** Your Configuration Here ***
+[THEN]
+INCLUDE BEGIN.FAR       \ compiler setup
+(( debugger baud rates with common ceramic resonators, kHz -> BPS
+     455 -> 2.4  3579 -> 4.8K   5000 -> 38K    8000 -> 38K
+     540 -> 4.8  4000 -> 19.2K  6000 -> 14K   10000 -> 38K
+   good xtal selections:
+    3686 -> 115K   9830 -> 38K
+    7372 -> 115K  11059 -> 115K
+))
+6 register: keystate    \ used by SPI comm link
+7 register: keydata
+
+.( Simple debugger interface)
+
+INCLUDE KERNEL.FAR
+INCLUDE LOCALS.FAR      \ support for local variables
+
+<builder>               \ make a defining word
+: myword        ( n1 n2 <name> -- )
+                ( -- n1 n2 )
+                ipcreate i, i,
+                idoes> dup @p swap cell+ @p swap
+                ;
+</builder>
+
+: one 1 ;
+: two 2 ;
+create three 3 c,
+
+: won ['] one execute ;
+
+100 200 myword foo1
+300 200 myword foo2
+500 200 myword foo3
+
+
+code d1-        ( d -- d-1 )
+                popz  mov R16,zl  or R16,zh
+        if_eq   sbiw tos,1
+        then    sbiw z,1
+                mov R16,tosl
+                cpi R16,5
+                pushz ret c;
+
+: sqrt          ( d -- n )              \ binary search for SQRT(d)
+                -1 1 rshift invert  0 >r   ( d guess | result )
+        begin   dup
+        while   dup r@ + dup um*        ( d guess [r+g]^2 | res )
+                rot >r 2over d- d1- nip 0<  ( d f | res guess )
+                if      r> r> over + >r ( d guess | result )
+                else    r>
+                then    u2/
+        repeat  drop 2drop r> ;
+
+: dist          { x0 y0 x1 y1 -- distance }
+                x0 x1 - abs dup um*
+                y0 y1 - abs dup um* d+ sqrt ;
+
+: test          ( c -- )
+         qcase: [ 1 ] ?[ sqrt ]?
+                [ 3 ] ?[ dist ]?
+                [ 5 ] ?[ dup over rot ]?
+                ;
+
+code foo        1 cycle_delay    ret
+                10 cycle_delay   ret
+                100 cycle_delay  ret c;
+
+\ State Machine Example ------------------------------------------------------
+\ Holding the state in the Z register makes for the fastest state machine.
+{{ asmlabel? PortA 1+ >@@0 }}
+code state3     ldi R16,@@0
+                vector{            reti c;
+loco state2     vector  z,state3   reti c;
+loco state1     vector  z,state2   reti c;
+                }vector z,state1  \ resolves code laid down by vector{
+code sfoo       ijmp c;           \ assumes Z never gets clobbered
+\ You can use any register pair R16..R30 for the pointer.
+\ ----------------------------------------------------------------------------
+
+code MyJump     ( -- )
+\ Create an execution table which you just have to SEE
+                jump[ R18 dup drop swap over ]jump c;
+
+code MyCase     ( -- )
+\ Lay down a switch-like structure using CPI and BRNE instructions
+        case R16  01 of  ldi R20,1  endof
+                  02 of  ldi R20,2  endof
+                  ldi R20,3
+        endcase   ret c;
+
+
+ram asmbyte _time0              \ upper part of 32-bit raw time counter
+    asmbyte _time1              \ the low byte is the hardware timer T0
+    asmbyte _time2
+rom
+
+\ Time functions use 32-bit time count, which is incremented by an ISR.
+\ Must increment at 1 kHz or greater.
+\ Timer0 isn't good for much, so we use it as a timebase.
+
+code T0ISR \ Handle T0 interrupts
+\ Put SEI instruction here to quicken other interrupts response time
+                push r16  in R16,sreg  push r16
+                lds r16,_time0  inc r16  sts _time0,r16
+        if_z    lds r16,_time1  inc r16  sts _time1,r16
+          if_z  lds r16,_time2  inc r16  sts _time2,r16
+          then
+        then    pop r16  out sreg,R16  pop r16
+                reti c;
+
+code COUNTER@   ( -- d )
+\ read raw time count, repeat if it wrapped during reading
+                pusht
+        begin   ldiw z,_time0  ld wh,z+    in wl,tcnt0
+                lds R0,_time0  ld tosl,z+  ld tosh,z+
+                cp wh,R0
+        until_z pushw ret c;
+
+code COUNTER!   ( d -- )
+\ store raw time count
+                ldiw z,_time0  clr R16  out tcnt0,R16   ; ensure no wrap
+                popw  st z+,wh st z+,tosl st z+,tosh
+                out tcnt0,wl  popt ret c;
+
+
+\ ----------------------------------------------------------------------------
+
+multitasking? [IF]  .(  With Multitasker)
+
+variable mtally
+hex
+ram 0A allot                    \ part of TCB = 10 bytes
+    create MyTask ram 48 allot  \ rest of TCB = 4 bytes + stack&user space
+rom create RomTbl 1 c, 2 c, 3 c, 4 c,
+
+: bumpme        ( -- )  begin mtally incr pause again ;
+
+: StartDemoTask ( -- )  \ start up a demo task
+                4 20 20 MyTask TASKALLOC        \ set up stack pointers for task
+                ['] bumpme mytask reassign      \ assign a starting point
+                mytask alsotask                 \ add to the task queue
+                mytask wake                     \ wake it up
+                ;
+
+ram {{ 0x10 cells }} asmarray MainTCB
+rom
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offset from U   -4    -2    0    2    4    6        8      10...
+\ set up main TCB, start out in main task
+
+code MainActivate ( 0 -- ? )
+                ldiw x,MainTCB          \ clear the task queue:
+                pop zh  pop zl          \ Z = return address
+                st x+,yl  st x+,yh      \ SP0, RP0
+                in R16,SPL  st x+,R16
+                in R17,SPH  st x+,R17
+                movw u,x                \ U points here
+                st x+,zl  st x+,zh      \ PC
+                st x+,yl  st x+,yh      \ SP, RP
+                st x+,R16 st x+,R17
+                movw R18,x  ldi R16,-1
+                st x+,R16 st x+,R16     \ status
+                st x+,R18 st x+,R19     \ link
+                ijmp c;
+[THEN]
+
+INCLUDE END.FAR
+hex
+code b_cold
+                ldiw y,b_sp0            ; clear stacks
+                ldiw R16,b_rp0
+                out  SPL,R16
+{{ device 1 > }} [IF] out SPH,R17 [THEN]
+                ldi R16,UBRRinit     out UBRR,R16       \ debugger baud rate
+                ldi_R16[ RXEN TXEN ]
+                                     out UCR,R16        \ enable RX and TX
+                ldi R16,005          out TCCR0,R16      \ T0 clocks at xtal/1024
+                ldi_R16[ TOIE0 ]     out TIMSK,R16      \ enable T0 interrupts
+                ldi R16,040  out DDRB,r16               \ set up portB[7:5]
+                ldi R16,0C0  out PortB,r16
+                clr keystate
+                clr keydata
+                jsr decimal
+                sei
+{{ multitasking? }} [IF] jsr MainActivate  jsr StartDemoTask  [THEN]
+        begin   begin
+{{ multitasking? }} [IF] jsr Pause [THEN]
+
+\ communication through programming cable ==================================
+\ keystate bit 6:
+\  0 = waiting for MOSI=1
+\  1 = waiting for MOSI=0
+\ Other:
+\  000000 = waiting for start bit
+\ DDRB bits [6:5] must be 10
+                sbrc keystate,6
+        never   sbis PinB,5                     \ state=0?
+                never   set bld keystate,6      \ rising MOSI detected
+                        in R16,PinB  rol R16    \ read bit coming from PC
+                        rol keydata
+                        if_c  sbi  PortB,7      \ send next bit to PC
+                        else  cbi  PortB,7
+                        then
+                        sbi DDRB,7              \ tell PC we read the bit
+                        mov R16,keystate andi R16,1F
+                        if_nz   dec keystate
+                                sbrc keystate,4 \ was this the last bit?
+                                never   ldi R16,40
+                                        mov keystate,R16        \ yes
+                                        mov R16,keydata
+                                        rcall b_exec
+                                        mov keydata,R16
+                                then
+                        else    ldi R16,57
+                                sbrs keydata,0 mov keystate,R16 \ got start bit
+                        then
+                        sbi PortB,6             \ tell PC data is ready
+                then
+        else    sbic PinB,5
+                never   clt bld keystate,6      \ falling MOSI detected
+                        cbi DDRB,7              \ float SCK line
+                        cbi PortB,6             \ tell PC SCK is ready
+                then
+        then
+\ communication through UART ===============================================
+                        sbis usr,rxc    \ wait for a serial byte
+                again
+                in   R16,udr            \ echo it
+                jsr  b_exec
+                out  udr,r16
+        again
+                c;
+
+decimal
+
+here
+\ resolve interrupt vectors -----------------------------------------
+000       org assemble rjmp b_cold c;
+INT_T0OV  org assemble rjmp T0isr  c;
+org
+
+{{ cr .( Baud rate = ) }}
+asmlabel? UBRRinit {{ 1+ xtalfreq xtaldivisor / 16 / swap / . .( bps ) }}
+
+
+hsave da.hex
+ndxsave winview.ndx     \ build a hyperlink index for this project
+\ This is _so_ cool.  Keeps Winview's hyperlinks in sync with your project.
+
+previous
+core definitions
+previous
+
+ commo=avr loadflash 
+

@@ -1,0 +1,61 @@
+((
+        Warm start initialization for 5307 evaluation board
+
+        This code is invoked from the EVB's monitor program.
+
+        Sets up the following:
+        Stack pointers
+        Main TCB (Task Control Block), TCB queue contains only main
+        Periodic interrupt for timebase, not enabled yet
+        UART2 = polled 115K,n,8,1
+        Trace exception
+))
+hex
+
+{{ qrambase 1+ >@@0 }}                                  \ internal SRAM
+{{ asmlabel? RSR 1+ >@@1 }}                             \ hardware base address
+
+code comparams c;
+                22 c, 38 c, 10 c,                       \ reset UART
+                60 c, 00 c, 0C c, DD c,                 \ 45000 / 32 / 0x000C = 117.2K
+                13 c, 07 c,                             \ n,8,1
+                01 c, 04 c,
+
+code cold       ( -- )
+\ processor reset starts here
+                move.l (sp)+,_doorSR                     \ save register snapshot
+                move.l (sp)+,_doorPC                     \ grab SR and PC
+                move.l a7,_dooraddr
+                lea.l DoorRegisters,a7
+                movem.l d0/d1/d2/d3/d4/d5/d6/d7/a0/a1/a2/a3/a4/a5/a6,(a7)
+                lea.l 3C(a7),a0  move.l _dooraddr,(a0)
+                move.w #2700,sr                          \ use supervisor mode, no interrupts yet
+                lea.l MainRstack,sp                      \ main return stack
+                lea.l MainDstack,s                       \ main data stack
+                move.l #@@1,d0      movec d0,MBAR        \ hardware base address register
+                move.l #@@0,d0      movec d0,RAMBAR      \ SRAM base address
+
+                moveq #-7C,d0  move.b d0,ICR1            \ T1 = avec,level1
+                moveq #-1,d0   move.b d0,AVCR            \ all interupts are autovector
+
+\ Timer1 = free run, clk = sysclk/1/1
+                move.w #003B,d0  move.w d0,TMR1          \ enable T1 interrupt
+                move.w #1000,d0  move.w d0,TRR1          \ period = 45M/4096 = ~10K
+                move.l IMR,d0  andi.l #-200,d0
+                move.l d0,IMR                            \ unmask T1 interrupt
+
+\ UART2 = 115K,n,8,1 (see comparams above)
+                lea.l comparams,a0
+                lea.l UCR2,a1
+                move.b (a0)+,(a1)  move.b (a0)+,(a1)  move.b (a0)+,(a1)
+                addq.l #8,a1       move.b (a0)+,(a1)   \ src = sysclk
+                addq.l #8,a1       move.b (a0)+,(a1)   \ set baud rate
+                addq.l #4,a1       move.b (a0)+,(a1)
+                lea.l UCSR2,a1     move.b (a0)+,(a1)   \ src = sysclk
+                subq.l #4,a1       move.b (a0)+,(a1)  move.b (a0)+,(a1)
+                addq.l #8,a1       move.b (a0)+,(a1)  move.b (a0)+,(a1)
+
+                move.w #2000,d0  move.w d0,sr            \ supervisor mode, enable ISRs
+                goto main  c;                            \ start the main program
+
+

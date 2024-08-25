@@ -1,0 +1,81 @@
+\ MCORE demonstration program
+
+\ WORK IN PROGRESS...
+
+host decimal
+anew demo_Mcore
+homeorder
+2 constant hardware             \ hardware configuration (see below)
+
+2 constant optimization         \ 0 = few code words  1 = string ops & math
+                                \ 2 = token lifting   3 = peephole optimizer
+8 >addrnibbles                  \ debugger addresses span 0..FFFFFFFF
+7 constant #TOS                 \ TOS cache Data register
+5 constant #DSP                 \ data stack pointer address register
+
+\ Registers used by Forth:
+\ r0 = RP       return stack pointer
+\ r9 = TOS      top of data stack
+\ r8 = SP       data stack pointer
+\ r10 = TID     user pointer
+\ r11..r14      scratchpad
+\ r15           top of return stack
+
+((
+        Setup for M-core processor model:
+))
+
+homeorder
+new-image decimal               \ clear the ROM image
+
+needs BLDMC.G                   \ use M-core target compiler
+hex
+
+building static                 \ start defining the ROM
+
+vocabulary user
+
+warning off
+vocabulary HIDDEN        \ special purpose words used only by CORE
+vocabulary CORE          \ processor-specific part of kernel
+
+also    CORE             \ include both in the search order
+also    HIDDEN
+also                     \ order: HOME CORE HIDDEN HIDDEN BUILDING | ??
+
+hex rom static           \ ROM code, static binding
+
+low-tokens      0020 >token#    \ main token list starts at 32
+main-tokens     0150 >token#    \ normal token assignments
+temp-tokens     0100 >token#    \ hidden token list
+low-tokens
+
+core definitions
+
+assemble jmp r15 macro: next
+
+code abs        abs tos
+                next c;
+
+code drop       ld.w tos,(s,#0)
+                addi s,#4
+                next c;
+
+code dup        subi s,#4
+                st.w tos,(s,#0)
+                next c;
+
+code invert     not tos
+                next c;
+
+: f1 abs drop ;
+: f2 f1 dup drop ;
+: f3 123 ;
+
+1000 constant f4
+variable base
+
+: fend ;
+
+previous
+

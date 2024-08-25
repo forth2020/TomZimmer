@@ -1,0 +1,67 @@
+\ AVR shortened kernel starts here
+( order: ROOT HOME building | ? )
+
+(( ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        Register Usage:
+        R0  = W       scratchpad
+        R2  = U       Forth user pointer for multitasker
+        R4..R15 are FREE FOR USER
+        R16..R19      scratchpad
+        R20..R23 are FREE FOR USER
+        R24 = A       'A' pointer
+        R26 = X       Top of data stack
+        R28 = Y       Data Stack Pointer
+        R30 = Z       scratchpad
+
+        Device assignments:
+        #   part        Data RAM    Code ROM      EEPROM
+        0 = AT90S2313   060..0DF    0016..07FF    0..07F
+        4 = AT90S4414   060..15F    001A..0FFF    0..0FF
+        6 = AT90S8515   060..25F    001A..1FFF    0..1FF
+        8 = ATmega103   060..0DF    0060..1FFFF   0..FFF
+   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+))
+
+warning off
+
+vocabulary HIDDEN        \ special purpose words used only by CORE
+vocabulary CORE          \ processor-specific part of kernel
+
+also    CORE             \ include both in the search order
+also    HIDDEN
+also                     \ order: HOME CORE HIDDEN HIDDEN BUILDING | ??
+
+hex rom static           \ ROM code, static binding
+
+CORE DEFINITIONS  \ ====================================================
+
+low-tokens      0x0010 >token#  \ 1-byte tokens
+main-tokens     0x0150 >token#  \ normal token assignments
+temp-tokens     0x0100 >token#  \ hidden token list, some are rebindable
+low-tokens
+
+assemble pushd xl pushd xh  macro: pusht
+assemble popd xh  popd xl   macro: popt
+assemble pushd wl pushd wh  macro: pushw
+assemble popd wh  popd wl   macro: popw
+assemble popd zh  popd zl   macro: popz
+
+code DUP        ( x -- x x )                    c( duplicate top item)
+                pusht  ret c; 
+code DROP       ( x1 x2 -- x1 )                 c( remove item from stack)
+                popt   ret c;
+code false      ( -- n )                        c( all '0' bits)
+\ this is the first constant, and is needed by CONSTANT if optimizing for size
+                pusht clr tosh clr tosl ret c;
+
+   1 constant  1        c( 1)
+   2 constant  2        c( 2)
+
+code 2DROP      ( x1 x2 -- )                    c( drop cell pair )
+                adiw yl,2  rjmp DROP c;
+
+code EXECUTE    ( addr -- )                     c( execute at absolute address)
+                mov zl,tosl   mov zh,tosh
+                lsr zh  ror zl                  \ convert to AVR code address
+                popt          ijmp  c;          \ jump to address
+

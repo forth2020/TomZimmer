@@ -1,0 +1,20 @@
+\ 32x32 multiplication
+
+code UM*        \ not tested yet
+\ Avoids MULT instruction to reduce interrupt latency.
+                move.l (s),d0  clr.l d1         \ d0d1 = result d7=multiplier
+                moveq #10,d2  clr.l d3          \ 68000 0wait times:
+       begin    tst.l d2                        \  4
+       while_ne subq.l #1,d2                    \ 14
+                add.l d1,d1  addx.l d0,d0       \ 12
+                if_cs   add.l d7,d1             \ 16
+                        addx.l d3,d0            \  6
+                then                            \
+                add.l d1,d1  addx.l d0,d0       \ 12
+                if_cs   add.l d7,d1             \ 16
+                        addx.l d3,d0            \  6
+                then                            \
+        repeat  move.l d0,d7  move.l d1,(s)     \ 10
+                next c;
+
+

@@ -1,0 +1,123 @@
+1 DLGINCLUDE "WINVIEW.H"
+
+IDD_SEARCHINFILES DIALOG 410, 188, 144, 218
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Find Text in Files"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "Searching file", ID_CURRENTFILE, 8, 84, 129, 21
+    EDITTEXT        ID_SEARCHTEXT, 9, 118, 128, 12, ES_AUTOHSCROLL
+    EDITTEXT        ID_MASK, 9, 141, 128, 12, ES_AUTOHSCROLL
+    EDITTEXT        ID_DIRECTORY, 9, 165, 129, 12, ES_AUTOHSCROLL
+    PUSHBUTTON      "Search", IDOK, 98, 182, 40, 14
+    PUSHBUTTON      "Close", IDCANCEL, 98, 199, 40, 14
+    LTEXT           "Directories to Search: spec;spec;...", 109, 9, 155, 129, 
+                    8
+    LTEXT           "Files to Search: mask;mask;...", 110, 9, 131, 123, 8
+    LTEXT           "Text to Search for:", 111, 8, 108, 80, 8
+    LISTBOX         ID_FILELIST, 8, 15, 129, 72, LBS_USETABSTOPS | 
+                    WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+    LTEXT           "Line#", 101, 10, 4, 20, 8
+    LTEXT           "File", 103, 40, 4, 15, 8
+    RTEXT           "", ID_FILECOUNT, 67, 4, 67, 8
+    LTEXT           "", ID_LINETEXT, 15, 94, 118, 8
+    AUTOCHECKBOX    "Case Sensitive Search", ID_CASE, 9, 182, 86, 10
+    AUTOCHECKBOX    "Search Sub Directories", ID_SUBDIR, 9, 193, 87, 10
+    AUTOCHECKBOX    "Find All instances in file", ID_ALLOCCUR, 9, 204, 87, 
+                    10
+END
+
+IDD_SIZE DIALOG 135, 60, 170, 120
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Select Font and Type Size"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Done", IDOK, 123, 7, 40, 14
+    LISTBOX         ID_TEXTSIZE, 7, 6, 74, 53, WS_VSCROLL | WS_TABSTOP
+    LISTBOX         ID_TEXTFONT, 7, 63, 156, 54, WS_VSCROLL | WS_TABSTOP
+END
+
+IDD_OPTIONS DIALOG 101, 54, 255, 191
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "WinView Preferences"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDE_WRAP, 68, 6, 26, 13, ES_AUTOHSCROLL
+    AUTOCHECKBOX    "Save margin across sessions", IDB_SAVEMARGIN, 99, 8, 
+                    104, 10
+    EDITTEXT        IDE_TAB, 68, 31, 26, 13, ES_AUTOHSCROLL
+    EDITTEXT        IDE_LPI, 171, 31, 26, 13, ES_AUTOHSCROLL
+    EDITTEXT        IDE_MIN, 68, 51, 26, 13, ES_AUTOHSCROLL
+    EDITTEXT        IDE_COLS, 171, 51, 26, 13, ES_AUTOHSCROLL
+    AUTOCHECKBOX    "Display Toolbar", IDB_TOOLBAR, 8, 77, 71, 10
+    AUTOCHECKBOX    "Open same file next edit session", IDB_OPENPROMPT, 115, 
+                    77, 120, 10
+    AUTOCHECKBOX    "Print a border on each page", IDB_BORDER, 8, 102, 106, 
+                    10
+    AUTOCHECKBOX    "Preserve Find String across sessions", IDB_SAVEFIND, 
+                    115, 89, 135, 10
+    EDITTEXT        IDE_PATH, 6, 171, 242, 12, ES_AUTOHSCROLL
+    EDITTEXT        IDE_EXT, 222, 153, 26, 12, ES_AUTOHSCROLL
+    PUSHBUTTON      "OK", IDOK, 209, 6, 40, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 209, 23, 40, 14
+    RTEXT           "Default file extention:", 307, 145, 155, 73, 8
+    RTEXT           "Right Margin:", 311, 18, 9, 47, 8
+    LTEXT           "Directory search paths (path;path;...):", 314, 5, 155, 
+                    135, 8
+    LTEXT           "(1024 = disable word wrap)", 316, 21, 19, 98, 8
+    RTEXT           "Tab Size:", 318, 16, 33, 47, 8
+    RTEXT           "Auto save minutes:", 319, 2, 54, 63, 8
+    RTEXT           "Printer Lines/Inch:", 322, 105, 33, 63, 8
+    CTEXT           "(0 = disable auto save)", 324, 2, 64, 79, 8
+    CONTROL         "", 315, "Static", SS_BLACKFRAME, 6, 147, 240, 1
+    RTEXT           "Printer Columns:", 326, 107, 52, 61, 8
+    AUTOCHECKBOX    "Display page markers", IDB_PAGELINES, 8, 89, 99, 10
+    AUTOCHECKBOX    "View Web Pages in WinView (text)", IDB_WEB, 115, 102, 
+                    128, 10
+    GROUPBOX        "Forth", 329, 6, 115, 95, 27
+    AUTOCHECKBOX    "Show Console Window", IDB_CONSOLE, 12, 126, 87, 10
+    EDITTEXT        IDE_CONLINES, 109, 125, 26, 12, ES_AUTOHSCROLL
+    LTEXT           "Lines to save across sessions", 332, 138, 126, 102, 11
+    GROUPBOX        "Save Console Contents on Disk", 333, 103, 115, 144, 27
+END
+
+IDD_FILES DIALOG 353, 148, 104, 159
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+STYLE WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+CAPTION "Current Files List"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LISTBOX         IDL_FILES, 5, 15, 93, 142, LBS_USETABSTOPS | WS_VSCROLL | 
+                    WS_TABSTOP
+    LTEXT           "Line", 402, 8, 5, 20, 8
+    LTEXT           "Filename", 403, 40, 5, 34, 8
+END
+
+IDD_DEBUG DIALOG 416, -11, 120, 225
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Debug"
+FONT 8, "MS Sans Serif"
+BEGIN
+    PUSHBUTTON      "Step", IDB_STEP, 4, 5, 34, 14
+    PUSHBUTTON      "Into", IDB_NEST, 43, 5, 34, 14
+    PUSHBUTTON      "Out of", IDB_UNEST, 81, 5, 34, 14
+    PUSHBUTTON      "Steps", IDB_CONT, 4, 23, 34, 14
+    PUSHBUTTON      "Break After Branch", IDB_JUMP, 43, 23, 72, 14
+    PUSHBUTTON      "Run", IDB_DONE, 4, 41, 34, 14
+    PUSHBUTTON      "to BP", IDB_PROC, 43, 41, 34, 14
+    PUSHBUTTON      "to Here", IDB_HERE, 81, 41, 34, 14
+    LISTBOX         IDL_STACK, 4, 120, 57, 54, NOT LBS_NOTIFY
+    LTEXT           "Data Stack", 602, 70, 119, 42, 8
+    AUTORADIOBUTTON "Decimal", IDR_DECIMAL, 70, 130, 39, 10
+    AUTORADIOBUTTON "Hex", IDR_HEX, 70, 141, 39, 10
+    LISTBOX         IDL_RETURN, 4, 180, 112, 45, NOT LBS_NOTIFY
+    LTEXT           "Return Stack", 608, 4, 170, 48, 8
+    LISTBOX         IDL_WORDS, 4, 66, 112, 53, NOT LBS_NOTIFY
+    LTEXT           "", IDT_NAME, 4, 56, 112, 9
+    PUSHBUTTON      "Data Inquire", IDB_INQUIRE, 67, 154, 48, 14
+    CTEXT           "", IDT_RESULT, 56, 171, 60, 8
+END

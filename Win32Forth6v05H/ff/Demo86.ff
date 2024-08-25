@@ -1,0 +1,58 @@
+\ 8086 demonstration program           by Brad Eckert
+
+\ Use as a template for your hardware.
+
+host decimal
+anew demo_8086_program
+homeorder
+1       constant hardware       \ hardware configuration
+
+new-image decimal               \ clear the ROM image
+
+needs bld486.g                  \ use 8086 target compiler
+
+building static                 \ start defining the ROM
+\ ---------------------------------------kernel section--------------
+
+{{ code-bounds? nip 1+ byte-split }}    \ -> 0th binding table entry
+   asmlabel bindoriginh  \ binding table origin, grows downward
+   asmlabel bindoriginl
+
+vocabulary hidden        \ special purpose words used only by CORE
+vocabulary CORE          \ processor-specific part of kernel
+
+also    CORE             \ include both in the search order
+also    HIDDEN
+also                     \ order: HOME CORE HIDDEN HIDDEN BUILDING | ??
+
+hex rom static           \ ROM code, static binding
+
+HIDDEN DEFINITIONS  \ ====================================================
+
+low-tokens      0x0001 >token#    \ interrupt vectors and 1-byte tokens
+main-tokens     0x0150 >token#    \ normal token assignments
+temp-tokens     0x0100 >token#    \ hidden token list, some are rebindable
+low-tokens
+
+0x30 org                          \ start code at 0030
+
+: nil ;
+
+CODE C!         ( c1 a1 -- )    \ store character c1 into address a1
+                pop     eax
+                mov     0 [ebx] [edi], al
+                pop     ebx
+                ret far
+                c;
+
+: nul ;
+
+assemble  ret near               macro: next
+
+code 2*         add eax, eax  next c;
+
+: max ;
+: wax max ;
+: vax wax max 2* ;
+: yo ;
+

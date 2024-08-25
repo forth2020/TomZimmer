@@ -1,0 +1,657 @@
+\ AVR kernel starts here
+( order: ROOT HOME building | ? )
+
+\  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\        Register Usage:
+\        R0  = W       scratchpad
+\        R2  = U       Forth user pointer for multitasker
+\        R4  = IP      High level instruction pointer
+\        R6..R15 are FREE FOR USER
+\        R16..R19      scratchpad
+\        R20..R23 are FREE FOR USER
+\        R24 = A       'A' pointer
+\        R26 = X       Top of data stack
+\        R28 = Y       Data Stack Pointer
+\        R30 = Z       scratchpad
+\
+\        Device assignments:
+\        #   part        Data RAM    Code ROM      EEPROM
+\        0 = AT90S2313   060..0DF    0016..07FF    0..07F
+\        4 = AT90S4414   060..15F    001A..0FFF    0..0FF
+\        6 = AT90S8515   060..25F    001A..1FFF    0..1FF
+\        8 = ATmega103   060..0DF    0060..1FFFF   0..FFF
+\  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\
+\ This code is probably not bug-free, since it hasn't been shaken down much.
+\ But, you have the tools to verify correctness. Test early and test often
+\ like you're supposed to and any little bugs won't cause much grief.
+
+
+
+warning off
+
+vocabulary HIDDEN        \ special purpose words used only by CORE
+vocabulary APP           \ user words
+vocabulary CORE          \ processor-specific part of kernel
+
+also    CORE             \ include both in the search order
+also    HIDDEN
+also                     \ order: HOME CORE HIDDEN HIDDEN BUILDING | ??
+
+hex rom static           \ ROM code, static binding
+
+CORE DEFINITIONS  \ ====================================================
+
+low-tokens      0x0010 >token#  \ 1-byte tokens
+main-tokens     0x0150 >token#  \ normal token assignments
+temp-tokens     0x0100 >token#  \ hidden token list, some are rebindable
+low-tokens
+
+assemble pushd xl pushd xh  macro: pusht
+assemble popd xh  popd xl   macro: popt
+assemble pushd wl pushd wh  macro: pushw
+assemble popd wh  popd wl   macro: popw
+assemble pushd zl pushd zh  macro: pushz
+assemble popd zh  popd zl   macro: popz
+
+code DUP        ( x -- x x )                    c( duplicate top item)
+                pusht  ret c; macro
+code DROP       ( x1 x2 -- x1 )                 c( remove item from stack)
+                popt   ret c; macro
+code SWAP       ( x1 x2 -- x2 x1 )              c( swap top 2 cells )
+                movw wl,tosl  popt  pushw  ret c;
+code OVER       ( x1 x2 -- x1 x2 x1 )           c( copy 2nd item on the stack)
+                ld wh,Y+  ld wl,Y  sbiw y,1
+                pusht   movw tosl,wl  ret c;
+code AND        ( x1 x2 -- x3 )                 c( bitwise AND TOS with NOS )
+                popw  and tosl,wl  and tosh,wh  ret c;
+code OR         ( x1 x2 -- x3 )                 c( bitwise OR  TOS with NOS )
+                popw   or tosl,wl   or tosh,wh  ret c;
+code XOR        ( x1 x2 -- x3 )                 c( bitwise XOR TOS with NOS )
+                popw  eor tosl,wl  eor tosh,wh  ret c;
+code UM+        ( u1 u2 -- ud )                 c( add top two items, double result)
+                popw  add tosl,wl  adc tosh,wh  pusht
+                ldi tosl,0  if_c  inc tosl  then  clr tosh
+                ret c;
+code +          ( x1 x2 -- x1+x2 )              c( add TOS to NOS)
+                popw  add tosl,wl  adc tosh,wh  ret c;
+code -          ( x1 x2 -- x1-x2 )              c( subtract TOS from NOS)
+                popw  sub wl,tosl  sbc wh,tosh
+                mov tosl,wl  mov tosh,wh  ret c;
+code 0=         ( x -- f )                      c( T if zero )
+                or tosl,tosh  ldi tosh,0
+        if_z    dec tosh
+        then    mov tosl,tosh  ret c;
+code 0<         ( x -- f )                      c( T if negative )
+                ldi tosl,0  tst tosh
+        if_mi   dec tosl
+        then    mov tosh,tosl  ret c;
+code >R         ( x -- )  ( R:  -- x )          c( push cell to return stack)
+                pop zh  pop zl
+                push tosl  push tosh  popt
+                ijmp c;                         call-only
+code R>         ( -- x )  ( R:  x -- )          c( pop cell from return stack)
+                pop zh  pop zl  pusht
+                pop tosh  pop tosl
+                ijmp c;                         call-only
+code U2/        ( x1 -- x2 )                    c( logical right shift one bit)
+                lsr tosh  ror tosl  ret c;      macro
+code 2/         ( x1 -- x2 )                    c( arithmetic right shift one bit)
+                asr tosh  ror tosl  ret c;      macro
+code C@         ( addr -- c )                   c( char fetch )
+                ld tosl,x  clr tosh  ret c;     macro
+code @          ( addr -- x )                   c( cell fetch, LSB first )
+                ld wl,x+   ld tosh,x
+                mov tosl,wl  ret  c;
+code C!         ( c addr -- )                   c( char store )
+                popw  st x,wl  popt  ret  c;    macro
+code !          ( x addr -- )                   c( cell store )
+                popw  st x+,wl  st x+,wh  popt  ret  c;
+code +!         ( x addr -- )                   c( add to memory cell )
+                ld wl,x+   ld wh,x              \ W = (addr)
+                popd R17 popd R16
+                add wl,R16  adc wh,R17          \ W = W+X
+                st x,wh    st -x,wl             \ update (addr)
+                rjmp DROP c;
+code incr       ( addr -- )
+                ld zl,x+   ld zh,x    adiw z,1
+                st x,zh    st -x,zl
+                rjmp DROP c;
+code decr       ( addr -- )
+                ld zl,x+   ld zh,x    sbiw z,1
+                st x,zh    st -x,zl
+                rjmp DROP c;
+
+code A!         ( addr -- )                     c( set A register )
+                mov al,tosl  mov ah,tosh  popt  ret c;
+code A@         ( -- addr )                     c( get A register )
+                pusht  mov tosl,al  mov tosh,ah  ret c;
+code @A         ( -- x )                        c( fetch cell from A stream)
+                pusht     movw zl,al
+                ld tosl,z+  ld tosh,z+  ret c;
+code @A+        ( -- x )                        c( lift cell from A stream)
+                pusht                   movw zl,al
+                ld tosl,z+  ld tosh,z+  movw al,zl  ret c;
+code C@A        ( -- c )                        c( fetch char from A stream)
+                pusht     movw zl,al  clr tosh
+                ld tosl,z+  clr tosh  ret c;
+code C@A+       ( -- c )                        c( lift char from A stream)
+                pusht     movw zl,al  clr tosh
+                ld tosl,z+  movw al,zl  ret c;
+code !A         ( x -- )                        c( store cell to A stream)
+                movw zl,al  st z+,tosl  st z+,tosh
+                popt  ret c;
+code !A+        ( x -- )                        c( append cell to A stream)
+                movw zl,al  st z+,tosl  st z+,tosh
+                movw al,zl  popt  ret c;
+code C!A        ( x -- )                        c( store char to A stream)
+                movw zl,al  st z+,tosl
+                popt  ret c;
+code C!A+       ( x -- )                        c( append char to A stream)
+                movw zl,al  st z+,tosl
+                movw al,zl  popt  ret c;
+code @R         ( -- x ) ( R: a -- a )          c( fetch cell from R stream)
+                pusht
+                pop zh   pop zl
+                pop tosh   pop tosl  push tosl  push tosh
+                ld wl,x+ ld xh,x+  mov xl,wl
+                ijmp c;                         call-only
+code @R+        ( -- x ) ( R: a -- a+4 )        c( lift cell from R stream)
+                pusht
+                pop zh   pop zl
+                pop tosh   pop tosl
+                ld wl,x+  ld wh,x+
+                push tosl  push tosh  movw x,w
+                ijmp c;                         call-only
+code !R         ( x -- ) ( R: a -- a )          c( store cell to R stream)
+                movw r16,tosl
+                pop zh   pop zl
+                pop tosh   pop tosl  push tosl  push tosh
+                st x+,r16  st x+,r17
+                popt ijmp c;                    call-only
+code !R+        ( x -- ) ( R: a -- a+4 )        c( append cell to R stream)
+                movw r16,tosl
+                pop zh   pop zl
+                pop tosh   pop tosl
+                st x+,r16  st x+,r17
+                push tosl  push tosh
+                popt ijmp c;                    call-only
+
+code C>N        ( c -- x )                      c( sign extend byte --> cell)
+                tst tosl  ldi tosh,0
+        if_mi   dec tosh
+        then    ret c;
+
+code C@P        ( addr -- c )                   c( char fetch from program memory)
+                movw z,x  lpm | mov xl,R0  clr xh  ret c;
+
+code @P         ( addr -- x )                   c( fetch from program memory)
+                movw z,x  lpm | mov xl,R0
+                adiw z,1  lpm | mov xh,R0
+                ret c;
+
+
+{{ multitasking? }} [IF]
+
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offsets:       -4    -2    0    2    4     6        8      0A...
+\ U register points to ------^               ^-------- link points to status of next task
+\ TID of a task points to its status --------^
+
+code PAUSE      ( -- )                          c( switch to the next active task)
+\ Execution time: 68 cycles + 12 cycles per sleeping task.
+                mov zl,ul  mov zh,uh                \ z = task pointer
+                pop R17 pop R16 st z+,R16 st z+,R17 \ save PC
+                pusht  st z+,yl  st z+,yh           \ save data stack
+                in R16,SPL  st z+,R16
+                in R16,SPH  st z+,R16               \ save return stack
+                adiw z,2
+       begin    ld R16,z+  ld zh,z  mov zl,R16      \ point to next task's status
+                ld R16,z+  adiw z,1
+                tst R16                             \ until active task is found
+       until_mi sbiw z,2
+                ld R17,-z  ld R16,-z
+                cli                                 \ critical section 3 clocks
+                out SPH,R17  out SPL,R16            \ load new return stack
+                sei
+                ld yh,-z  ld yl,-z  popt            \ load new data stack
+                ld R17,-z  ld R16,-z                \ load new PC
+                mov uh,zh  mov ul,zl
+                mov zh,R17 mov zl,R16
+                ijmp  c;
+
+code TID        ( -- addr )                     c( ID of current task )
+\ TCB structure: sp0 / rp0 / pc / sp / rp / status / link / userdata...
+\ offsets:       -10   -8    -6   -4   -2     0        2      4
+                pusht  mov tosl,ul  mov tosh,uh  adiw tos,6
+                ret c;
+[ELSE]
+: PAUSE ;
+[THEN]
+
+
+code REBOOT     ( -- )  clr zl  clr zh  ijmp c; c( reset the processor)
+
+: UNINITIALIZED ( -- )  ;                       c( error handler for DEFERed words)
+: bind@         ( -- )  u2/ ;                   c( convert XT to CFA )
+\ xt is a byte address, translate to a word address
+
+code false      ( -- n )                        c( all '0' bits)
+\ this is the first constant, and is needed by CONSTANT if optimizing for size
+                pusht  ldi tosh,0  ldi tosl,0  ret c;
+
+   2 constant  CELL     c( address units per cell)
+  -1 constant  true     c( all '1' bits)
+  -1 constant -1        c( -1)
+   0 constant  0        c( 0)
+   1 constant  1        c( 1)
+   2 constant  2        c( 2)
+0x20 constant  BL       c( ASCII blank)
+
+code NIP        ( x1 x2 -- x1 )                 c( discard 2nd item on stack)
+                adiw y,2  ret c;        macro
+code 1+         ( x -- x+1 )                    c( add 1 to TOS )
+                adiw x,1  ret c;        macro
+code CELL+      ( x -- x+2 )                    c( add cellsize to TOS )
+                adiw x,2  ret c;        macro
+code CELL-      ( x -- x-2 )                    c( subtract cellsize from TOS )
+                sbiw x,2  ret c;        macro
+code 1-         ( x -- x-1 )                    c( subtract 1 from TOS )
+                sbiw x,1  ret c;        macro
+code INVERT     ( x -- ~x )                     c( bitwise invert TOS )
+                com tosl  com tosh  ret c;  macro
+: NEGATE        ( x -- -x )     INVERT 1+ ;     c( negate TOS )
+code ABS        ( x -- |x| )                    c( absolute value )
+                tst tosh if_mi goto negate then ret c;
+code 2*         ( x1 -- x2 )                    c( logical left shift one bit)
+                lsl tosl  rol tosh  ret c; macro
+code CELLS      ( x1 -- x2 )                    c( multiply by cell size)
+                lsl tosl  rol tosh  ret c; macro
+code EXECUTE    ( xt -- )                       c( execute byte absolute address)
+\ xt is a byte address, we convert it to a word address before IJMP
+                mov zl,tosl   mov zh,tosh
+                lsr zh  ror zl                  \ convert to AVR code address
+                popt          ijmp  c;          \ jump to address
+code ?NEGATE    ( n1 n2 -- n3 )                 c( negate n2 if n1<0, for math stuff)
+                popw  or wl,wh
+        if_mi   rjmp negate
+        then    ret c;
+code R@         ( -- x )   ( R: x -- x )        c( copy cell from return stack)
+                pop zh  pop zl  pusht
+                pop tosh  pop tosl  push tosl  push tosh
+                ijmp c;                         call-only
+code DUP>R      ( x -- x ) ( R: -- x )          c( copy cell to return stack)
+        never   push tosl  push tosh  ret
+        then    pop zh  pop zl
+                push tosl  push tosh
+                ijmp  c;                        call-only macro
+code R>DROP     ( x -- x ) ( R: x -- )          c( drop cell from return stack)
+        never   pop r16  pop r16  ret
+        then    pop zh  pop zl
+                pop r16  pop r16
+                ijmp  c;                        call-only macro
+code 0<>        ( x -- f )                      c( T if nonzero )
+                or tosl,tosh  ldi tosh,0
+        if_nz   dec tosh
+        then    mov tosl,tosh  ret c;
+: 0>=           ( x -- f )       0< 0= ;        c( T if non-negative )
+: =             ( x1 x2 -- f )   - 0= ;         c( true if NOS = TOS)
+: <>            ( x1 x2 -- f )   - 0<> ;        c( true if NOS = TOS)
+
+code >          ( n1 n2 -- f )
+                popw  cp tosl,wl  cpc tosh,wh
+                ldi tosl,0
+        if_lt   ldi tosl,-1
+        then    mov tosh,tosl ret c;
+
+code <          ( n1 n2 -- f )
+                popw  cp tosl,wl  cpc tosh,wh
+                ldi tosl,0
+        if_ge   if_ne   ldi tosl,-1
+                then
+        then    mov tosh,tosl ret c;
+
+: <=    > 0= ;
+: >=    < 0= ;
+
+code max        ( n1 n2 -- n3 )                 c( MAX of two cells)
+                popw  cp tosl,wl  cpc tosh,wh
+        if_lt   movw tos,w
+        then    ret c;
+
+code min        ( n1 n2 -- n3 )                 c( MIN of two cells)
+                popw  cp tosl,wl  cpc tosh,wh
+        if_ge   movw tos,w
+        then    ret c;
+
+code d0<>       ( d -- f )                      c( T if double is nonzero)
+                popw  or wh,wl
+                or wh,tosl  or wh,tosh  ldi tosh,0
+        if_nz   dec tosh
+        then    mov tosl,tosh  ret c;
+
+code ?DUP       ( x -- x x | 0 )                c( duplicate top item if nonzero)
+                or tosl,tosh
+        if_nz   pusht
+        then    ret c;
+code LSHIFT     ( x1 u -- x1<<u )               c( left shift u places )
+                popw
+       begin    tst tosl
+       while_nz dec tosl  lsl wl  rol wh
+       repeat   movw tos,w  ret c;
+code RSHIFT     ( x1 u -- x1>>u )               c( logical right shift u places )
+                popw
+       begin    tst tosl
+       while_nz dec tosl  lsr wh  ror wl
+       repeat   movw tos,w  ret c;
+code >>A        ( x1 u -- x1<<u )               c( arithmetic right shift u places )
+                popw
+       begin    tst tosl
+       while_nz dec tosl  asr wh  ror wl
+       repeat   movw tos,w  ret c;
+code PICK       ( ... n -- ... xn )             c( get nth stack element)
+                movw zl,yl
+                lsl tosl     rol tosh
+                add zl,tosl  adc zh,tosh
+                ld tosh,z+   ld tosl,z+
+                ret c;
+: PLUCK         ( x1 x2 -- x1 x2 x1 )  2 PICK ;       c( 2 pick )
+: 2DUP          ( x1 x2 -- x1 x2 x1 x2 )  OVER OVER ; c( duplicate cell pair )
+: 2OVER         ( abcd -- abcdab ) 3 PICK 3 PICK ;    c( copy 2nd cell pair)
+
+code 2DROP      ( x1 x2 -- )                    c( drop cell pair )
+                adiw yl,2  popt  ret c;
+
+code 2SWAP      ( x1 x2 x3 x4 -- x3 x4 x1 x2 )  c( exchange top two cell pairs)
+                pusht  ldi R16,4   \ abcdefgh = [Y]
+                movw X,Y  movw Z,Y \ X
+                adiw Z,4           \     Z
+        for     ld R0,x  ld R17,z
+                st z+,R0 st x+,R17
+        next R16 popt ret c;
+code D+         ( d1 d2 -- d3 )                 c( double-cell add)
+                pusht
+                movw x,y  movw z,y              \ ah am am al bh bm bm bl = [Y]
+                adiw x,4  adiw z,8              \ X -> A      Z -> B
+                ldi R16,4      clc
+        for     ld wl,-x  ld wh,-z  adc wl,wh
+                st z,wl
+        next R16 adiw y,4 popt ret c;
+code DNEGATE    ( xd1 -- -xd1 )                 c( double-cell negate)
+                popw
+                com tosl  com tosh  com wl  com wh
+                inc wl
+        if_z    inc wh
+                if_z adiw tosl,1 then
+        then    pushw ret c;
+code DABS       ( x -- |x| )                    c( absolute value double)
+                tst tosh if_mi goto dnegate then ret c;
+: D-            ( d1 d2 -- d3 )    DNEGATE D+ ; c( double-cell subtract)
+code UD2/       ( d1 -- d2 )                    c( logical right shift double)
+                popw
+                lsr tosh  ror tosl  ror wh  ror wl
+                pushw  ret c;
+code D2/        ( d1 -- d2 )                    c( arithmetic right shift double)
+                popw
+                asr tosh  ror tosl  ror wh  ror wl
+                pushw  ret c;
+code D2*        ( d1 -- d2 )                    c( left shift double)
+                popw
+                lsl wl  rol wh  rol tosl  rol tosh
+                pushw  ret c;
+: NOOP          ( -- )  ;                       c( do nothing)
+code CHAR+      ( x -- x+1 ) adiw x,1 ret c; macro c( add chararacter size to TOS )
+code CHARS      ( x1 -- x2 )     ret c; macro   c( multiply by character size)
+code COUNT      ( a -- a' c )                   c( get length of a counted string)
+                ld wl,x+  pusht  mov tosl,wl  clr tosh  ret c;
+
+code COUNTP     ( a -- a' c )                   c( get length of a counted string)
+                movw z,x  adiw x,1  lpm |  pusht
+                mov tosl,R0  clr tosh  ret c;
+
+code ROT        ( a b c -- b c a )              c( rotate third stack item to top)
+                movw R16,tosl  popw  popt       \ tos=a temp=b
+                pushw  pushd R16  pushd R17
+                ret c;
+
+code -ROT       ( a b c -- c a b )              c( rotate top to third stack item)
+                movw R16,tosl  popt  popw       \ tos=b temp=a
+                pushd R16  pushd R17  pushw
+                ret c;
+
+code TUCK       ( x1 x2 -- x2 x1 x2 )           c( tuck TOS under NOS)
+                popw pusht pushw ret c;
+
+code UNDER+     ( a b c -- a+c b )              c( add TOS to item under NOS)
+                movw R16,tosl  popt  popw
+                add wl,R16  adc wh,R17
+                pushw  ret c;
+
+code ON         ( addr -- )                     c( store true to addr)
+                ldi zl,-1  st x+,zl  st x+,zl  popt ret c;
+
+code OFF        ( addr -- )                     c( store false to addr)
+                clr zl     st x+,zl  st x+,zl  popt  ret c;
+
+
+code UM*        ( u1 u2 -- ud )                 c( unsigned 16*16 --> 32 multiply)
+                movw R16,tosl  popt  ldi R18,10   ; result = tosh tosl wh wl
+                clr R19  clr wl  clr wh
+       for      lsl wl  rol wh  rol tosl  rol tosh
+                if_c    add wl,R16  adc wh,R17  adc tosl,R19  adc tosh,R19
+                then
+       next r18 pushw ret c;
+\ You might use the following if MUL were available
+\                popw
+\                mul wl,tosl  movw R16,R0
+\                mul wh,tosh  movw R18,R0
+\                mul wl,tosh  add  R17,R0  adc R18,R1  clr R0  adc R19,R0
+\                mul wh,tosl  add  R17,R0  adc R18,R1  clr R0  adc R19,R0
+\                movw tosl,r18  pushd R16  pushd R17
+\                ret c;
+
+code UM/MOD     ( ud u -- ur uq )       c( unsigned 32/16 --> r16 q16)
+\ Unsigned 32 by 16 division --> 16-bit remainder, 16-bit quotient
+                mov r16,tosl  mov r17,tosh
+                popd wh     popd wl
+                popd tosh     popd tosl
+                mov r18,r16 or r18,r17
+        if_nz   ldi zl,10
+                for     lsl tosl  rol tosh  rol wl  rol wh
+                        sub wl,r16      sbc wh,r17
+                        if_c    ori tosl,1
+                                add wl,r16  adc wh,r17
+                        then
+                next zl com tosl  com tosh
+        else    ldi tosl,-1   ldi tosh,-1   \ zero denominator
+                mov wl,tosh   mov wh,tosh
+        then    pushw ret c;
+
+: mu/mod        ( ud# un1 -- rem d#quot )       c( unsigned 32/16 --> r16 q32)
+\ Divide unsigned double by a single, leaving a remainder and quotient.
+                >r  0  r@  um/mod  r>  swap
+                >r  um/mod  r> ;
+
+variable BASE       ( -- a )     c( radix for number conversion)
+variable HLD        ( -- a )     c( pointer for numeric conversion)
+
+code (%IF)      ( f -- )                        c( runtime for IF/WHILE/UNTIL)
+\ Swallow flag, bump return address if non-zero.  A zero flag
+\ lets the instruction after the call execute, which is an RJMP
+\ past the IF clause.
+                or tosl,tosh  popt
+        if_nz   pop zh  pop zl
+                adiw z,1  ijmp
+        then    ret c;              call-only
+
+code (%OF)      ( n1 n2 -- n1 | )               c( runtime for OF)
+\ Compare n1 & n2.  If equal drop both and bump ret address,
+\ else drop n2.
+                popw  sub tosl,wl  sbc tosh,wh  or tosl,tosh
+        if_z    popt  pop zh  pop zl
+                adiw z,1  ijmp
+        then    movw tos,w ret c;   call-only
+
+code (%MULTI)   ( -- | R: x -- x-1 )            c( runtime for MULTI )
+\ x=x-1, if x >= 0 then bump return address ( compiled by MULTI )
+                pop zh   pop zl         \ Z = return address
+                pop R17  pop R16        \ R16 = x
+                subi R16,1 sbci R17,0
+                push R16 push R17
+        if_pl   adiw z,1
+        then    ijmp  c;            call-only
+
+code >digit     ( n -- char )                   c( convert to ASCII digit)
+                cpi tosl,0A
+        if_ge   subi tosl,-7
+        then    subi tosl,-30
+                ret c;
+
+code FILL       ( addr len c -- )               c( fill data memory with chars)
+                mov R17,tosl
+                popt  popz              ; X = len, Z = addr
+                mov R16,tosh  or R16,tosl
+  if_nz begin   st z+,R17
+                sbiw tos,1
+        until_z
+  then          rjmp DROP c;
+
+: DECIMAL       ( -- )  0A base ! ;             c( radix is decimal)
+
+20 string PAD$  c( scratchpad/conversion area) \ 32 bytes total
+: NUMPAD ( -- addr ) pad$ + ; datatype cell     c( -> numeric conversion area)
+: PAD    ( -- addr ) pad$ drop ; datatype cell  c( address of scratchpad area)
+: <#     ( -- )   numpad hld ! ;                c( start pictured numeric output)
+: HOLD   ( char -- ) hld @ 1- dup hld ! c! ;    c( insert character into number)
+: #      ( ud1 -- ud2 ) base @ mu/mod rot >digit hold ; c( convert one digit)
+: #S     ( ud -- 0 ) begin # 2dup d0<> while repeat ; c( convert remaining digits)
+: SIGN   ( x -- ) 0< if [char] - hold then ;    c( insert minus sign if n<0)
+: #>     ( ud -- addr len ) 2drop hld @ numpad over - ; c( finish pictured numeric output)
+
+: (U.)          ( u -- a len )        0  <# #s #> ;
+               c( convert unsigned to string)
+: (.)           ( n -- a len )        dup abs 0 <# #s  rot sign  #> ;
+               c( convert signed to string)
+: (UD.)         ( ud -- a len )       <# #s #> ;
+               c( conv unsigned double to string)
+: (D.)          ( d -- a len )        tuck dabs <# #s rot sign #> ;
+               c( convert signed double to string)
+
+code 1+1+       ( a b -- a+1 b+1 )
+                adiw tos,1  popd R17 popd R16
+                inc R16  if_z inc R17 then
+                pushd R16 pushd R17
+                ret c;
+
+: 2!            ( x1 x2 a -- )  SWAP OVER ! CELL+ ! ;   c( double-cell store)
+: 2@            ( a -- x1 x2 )  DUP CELL+ @ SWAP @ ;    c( double-cell fetch)
+
+: *             ( n1 n2 -- n3 ) um* drop ;      c( signed mult)
+
+: M*            ( n1 n2 -- d )                  c( signed mult, double-cell result)
+                2dup xor 0<
+                >r  abs swap abs um*  r>
+        if      dnegate
+        then    ;
+
+code 0MAX       ( x -- u )                      c( limit TOS to 0)
+                tst tosh
+        if_mi   clr tosh clr tosl
+        then    ret c;
+
+code byte-split ( n -- c c )                    c( split cell into U and L bytes)
+                mov wl,tosl  clr wh
+                mov tosl,tosh  clr tosh
+                pushw ret c;
+
+code byte-join  ( l h -- n )                    c( join U and L bytes)
+                popw  mov tosh,tosl  mov tosl,wl
+                ret c;
+
+: S>D           ( n -- d )                      c( signed single --> signed double )
+                dup 0< ;
+
+: M/MOD         ( d n -- r q )  ( floored )     c( signed   d/n --> r q )
+                dup 0<  dup>r
+                if      negate >r dnegate r>
+                then    >r dup 0<
+                        if      r@ +
+                        then    r> um/mod r>
+                if      swap negate swap
+                then    ;
+
+: /MOD          ( n1 n2 -- r q )  over 0< swap m/mod ;  c( dividend divisor -- rem quot)
+: MOD           ( n1 n2 -- r )    /mod drop ;           c( dividend divisor -- rem )
+: */MOD         ( n1 n2 n3 -- r q )  >r m* r> m/mod ;   c( n1*n2/n3 --> rem quot)
+: /             ( n1 n2 -- q )       /mod nip ;         c( dividend divisor -- quot)
+: BETWEEN       ( n lo hi --- f1 )                      c( lo <= n <= hi signed)
+                pluck >=  -rot >=  and ;
+: ERASE         ( a n -- )      0 FILL ;        c( fill array with zeros)
+
+
+{{ multitasking? }} [IF]
+\ Multitasker for TOF                        by Brad Eckert
+\ Based on eForth and Win32forth multitasker by Bill Muench
+
+\ Uses: TID and PAUSE
+\ TID returns the value of the TP register plus an offset.
+\ PAUSE takes a lap around the task queue.
+
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / userdata...
+\ cell offsets:   -2    -1    0    1    2    3        4      5...
+\ TP register points to -----^               ^-------- link points to status of next task
+\ TID of a task points to its status --------^
+
+: WAKE          ( tid -- )      ON ;            c( Turn on a task)
+: SLEEP         ( tid -- )      OFF ;           c( Turn off a task)
+: STOP          ( -- )          TID OFF PAUSE ; c( Stop the current task)
+
+: REASSIGN      ( xt tid -- )                   c( Assign a new xt to a task)
+                [ {{ 5 cells }} ] literal - A! bind@
+                @A+ @A+ >R >R                   ( cfa | rp0 sp0 )
+                !A+ R> CELL-
+                !A+ R> CELL- !A+ ;              \ set address, clear stacks
+
+: LOCAL         ( tid n -- a )                  c( Access another task's data)
+\ Access another task's user variables
+                + [ {{ 2 cells }} ] literal + ;
+
+: ALSOTASK      ( tid -- )                      c( add to the task queue)
+\ Places a new task between current and next tasks
+                >r tid cell+ dup @              ( 'link link | tid )
+                r@ cell+ !                      \ new task jumps to next tcb
+                r> swap ! ;                     \ current task jumps to this one
+
+: SEM-GET       ( semaphore -- )                c( Acquire access to a semaphore)
+\ Get a semaphore, locking out other tasks from using the resource related
+\ to this semaphore.
+                PAUSE  DUP @ TID XOR                    ( do we own it? )
+        IF      BEGIN  DUP @ WHILE  PAUSE  REPEAT       ( no, wait for release )
+                TID SWAP ! ( lock ) EXIT
+        THEN    DROP ;
+
+: SEM-RELEASE   ( semaphore -- )                c( Release a semaphore)
+\ Release a semaphore, allowing other tasks to access the resource related
+\ to this semaphore
+                DUP @ TID XOR
+        IF      DROP EXIT
+        THEN    OFF !    ( unlock ) ;
+
+\ Since there's no provision for automatic initialization of RAM structures, we
+\ don't include NEWTASK.  Instead, we use RAM CREATE MyTask 100 ALLOT to allocate
+\ space for stacks and user data.  Then, we execute TASKALLOC to initialize the
+\ TCB.  Example: 4 20 20 MyTask TaskAlloc allocates 4 bytes of user variables and
+\ two 20-byte stacks.
+
+: TASKALLOC     ( user data return tid -- )
+                2 cells + >r
+                rot + tuck +  ( u+r u+r+d )
+                r@ + swap r@ + swap
+                r> 7 cells - A!
+                dup !A+  over !A+  0 !A+ !A+ !A+
+                A@ 0 !A+ !A+ ;
+\                                           TID
+\ TID structure: sp0 / rp0 / pc / sp / rp / status / link / user...
+\ offset from U   -4    -2    0    2    4    6        8      10...
+[THEN]
+decimal

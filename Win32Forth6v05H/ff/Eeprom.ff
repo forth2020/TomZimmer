@@ -1,0 +1,38 @@
+SYSTEM DEFINITIONS
+
+\ Load basic EEPROM support: <EE@, EE!>, etc. ==================================
+
+{{ EEPROMpart 9 > }} [IF] include IIC.FF        [THEN]  \ Use IIC EEPROM
+
+\ Simple EEPROM evaluation =====================================================
+
+SYSTEM DEFINITIONS
+
+{{ EEPROMpart }} [IF]                           \ is there any EEPROM at all?
+: EVAL=EE       ( -- )                          c( set up to evaluate EEPROM code)
+                ['] ee@  is egetch              \ input device = eeprom
+                ['] <ee@ is <eval
+                ['] ee@> is eval>  ;
+((
+  EEPROM usage:
+
+  EEmin         Offset to primary boot
+  EEmin + 2     Offset to secondary boot (if any)
+  EEmin + 4     User Data
+  ...           Secondary boot program
+  ...           Primary boot program
+  EEmax         Highest allowable address
+))
+
+: EE@N          ( a -- n )              c( read 16-bit value from EEPROM)
+                <EE@ EE@ EE@> swap byte-join ;
+
+: primaryboot   ( -- a )                c( address of pre-boot program)
+                EEmin EE@N EEmin + ;
+
+: secondaryboot ( -- a )                c( address of post-boot program)
+                EEmin 02 + EE@N EEmin + ;
+[THEN]
+
+CORE DEFINITIONS                            
+
