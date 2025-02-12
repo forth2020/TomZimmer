@@ -1,0 +1,26 @@
+******************  GET EXCITED !!!  TCOM is HERE !!!  **********************
+TCOM is a Target COMpiler written by Tom Zimmer that is GREAT for creating
+small .COM applications in Forth. TCOM is Public Domain.
+
+  INSTALL.COM will walk you through installation of TCOM onto your hard-
+-disk.  You get to pick the drive and directory, but you need at least
+1.5meg of disk space.  The install program will by default make a directory
+called TCOM, with additional SRC and SAMPLES directories under it.  More
+than 30 example source files are included, look through the SAMPLES
+directory after installation.  Some of the example programs included are:
+SZ, a small text editor, CARD, a cardfile database, SHELL, a mini DOS
+shell, CLOCK, a bar graph/Roman numeral clock, DRAW, a simple VGA
+drawing program and others. Read the *.DOC files for a full description of
+how to use TCOM.
+
+TRY IT !! See how easy it is to make stand alone program written in FORTH!!
+
+TCOM even has Floating Point, plus Graphics support for Color and Hercules!!
+
+TCOM now also includes a source level debugger for debugging compiled TCOM
+programs called BUG.COM. Just type "BUG <program_name>" and press F1 for
+help.
+
+TCOM also includes a file called TCOMUSER.PRN that is ready to print on
+any printer and will produce a reasonable indexed 100+ page users manual.
+
